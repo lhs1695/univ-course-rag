@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "univ-course-rag-backend"
+version = "0.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy>=2.0",
+    "alembic",
+    "psycopg[binary]",
+    "argon2-cffi",
+    "pydantic-settings",
+    "python-multipart",
+    "pymupdf",
+    "pgvector",
+    "openai",
+]
+
+[project.optional-dependencies]
+dev = [
+    "httpx",
+    "pytest",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: optional live cloud API; skipped without key",
+]
+
+[tool.ruff]
+target-version = "py312"
+src = ["app", "tests"]
+extend-exclude = ["alembic"]

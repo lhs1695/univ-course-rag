@@ -1,0 +1,20 @@
+[
+  {
+    "id": "md-course-filter",
+    "query": "course_id-alpha-9371 向量绑定口令",
+    "source_file": "sample.md",
+    "expect_substring": "紫石英口令：本课向量必须绑定 course_id-alpha-9371。"
+  },
+  {
+    "id": "md-determinant",
+    "query": "行列式有向体积 gamma-2204",
+    "source_file": "sample.md",
+    "expect_substring": "行列式几何意义口令：有向体积 gamma-2204。"
+  },
+  {
+    "id": "pdf-gaussian",
+    "query": "高斯消元口令句 beta-4419",
+    "source_file": "sample.pdf",
+    "expect_substring": "紫石英PDF锚点：高斯消元口令句 beta-4419。"
+  }
+]

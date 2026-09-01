@@ -1,0 +1,3 @@
+target-version = "py312"
+src = ["backend/app", "backend/tests"]
+extend-exclude = ["backend/.venv", "backend/alembic"]

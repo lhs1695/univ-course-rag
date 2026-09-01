@@ -1,0 +1,54 @@
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
+  background: #f5f7fa;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.app-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.app-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #606266;
+  font-size: 14px;
+}
+
+.page {
+  max-width: 880px;
+  margin: 24px auto;
+  padding: 0 16px 40px;
+}
+
+.login-page {
+  display: flex;
+  justify-content: center;
+  padding-top: 12vh;
+}
+
+.login-card {
+  width: 380px;
+}
+
+.citation-snippet {
+  white-space: pre-wrap;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.6;
+}
