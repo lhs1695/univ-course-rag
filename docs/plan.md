@@ -13,7 +13,7 @@
 | 原问题 | 第一期决定 |
 | --- | --- |
 | 学生如何进课 | 管理员建用户与课程；教师把学生加入 `course_members`。无邀请码、无自助选课、无学校 CAS |
-| 文件格式 | **PDF + Markdown/纯文本**。PPT/PPTX、Word 明确放到第一期之后的下一份 plan |
+| 文件格式 | **PDF + Markdown/纯文本**。PPT/PPTX、Word 放到第二期 [`plan-2.md`](plan-2.md) 阶段 12–13 |
 | 学情 | 教师两张表：高频问句（规范化后计数）、检索未命中/拒答问句。只展示问句内容与次数/时间，**不展示具体学生**（无用户名/`user_id`）。只统计课内学生提问。无知识点标签、无预警措辞 |
 | 部署 | 本机 `docker compose` 演示。校园网服务器不在本 plan |
 | Embedding | 硅基流动 `BAAI/bge-m3`，1024 维（已见 002） |
@@ -170,6 +170,6 @@ docs/
 
 PPT/Word、扫描件 OCR、视觉模型入库/问答、MinerU、Qwen3-Embedding、句级 `insert_citations`、Celery / 独立 worker、校园部署、邀请码 / CAS、多 Agent、把评测平台当产品。用户改删、系统监控大盘、多租户亦不在第一期。
 
-第一期已收敛。下一份 plan 若要开，从上述清单里单独立项，不要在本仓继续加阶段 11。
+第一期已收敛。第二期合同是 [`plan-2.md`](plan-2.md)，不要在本文继续加阶段 11。第一期仍不做：扫描件 OCR、视觉模型、MinerU、Qwen3-Embedding、校园部署、邀请码/CAS、多 Agent、评测平台当产品、用户改删、监控大盘、多租户。怎么测（第三期及以后同样）见根目录 `AGENTS.md`，不在各期 plan 里各写一套。
 
 下一会话入口：`docs/NEXT-SESSION.md`。

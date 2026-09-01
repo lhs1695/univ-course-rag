@@ -6,15 +6,18 @@
 
     <div class="doc-actions">
       <el-upload
-        v-if="canUpload"
+        v-if="canManage"
         :http-request="onUpload"
         :show-file-list="false"
-        accept=".pdf,.md,.markdown,.txt,application/pdf,text/markdown,text/plain"
+        accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.markdown,.txt,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
       >
         <el-button type="primary" :loading="uploading">上传资料</el-button>
       </el-upload>
       <el-button @click="router.push(`/courses/${courseId}`)">进入问答</el-button>
-      <el-button v-if="canUpload" text @click="router.push(`/courses/${courseId}/insights`)">学情</el-button>
+      <el-button v-if="canManage" text @click="router.push(`/courses/${courseId}/members`)">
+        本课学生
+      </el-button>
+      <el-button v-if="canManage" text @click="router.push(`/courses/${courseId}/insights`)">学情</el-button>
     </div>
 
     <el-table :data="documents" v-loading="loading" empty-text="还没有资料">
@@ -29,6 +32,11 @@
           {{ row.job_status === "failed" ? row.error_message || "入库失败" : "—" }}
         </template>
       </el-table-column>
+      <el-table-column v-if="canManage" label="" width="100">
+        <template #default="{ row }">
+          <el-button type="danger" link @click="onDelete(row)">删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </div>
 </template>
@@ -36,7 +44,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 import { session } from "../session";
 
@@ -47,7 +55,7 @@ const courseTitle = ref("");
 const documents = ref([]);
 const loading = ref(true);
 const uploading = ref(false);
-const canUpload = computed(() => session.user?.role === "teacher");
+const canManage = computed(() => session.user?.role === "teacher");
 let pollTimer = null;
 
 function statusType(status) {
@@ -134,6 +142,29 @@ async function onUpload({ file }) {
     ElMessage.error(error.message);
   } finally {
     uploading.value = false;
+  }
+}
+
+async function onDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `删除资料「${row.filename}」后不可恢复，本课问答将失去该依据。`,
+      "确认删除",
+      {
+        type: "warning",
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+      },
+    );
+  } catch {
+    return;
+  }
+  try {
+    await api(`/courses/${courseId.value}/documents/${row.id}`, { method: "DELETE" });
+    ElMessage.success("已删除");
+    await loadDocuments();
+  } catch (error) {
+    ElMessage.error(error.message);
   }
 }
 </script>

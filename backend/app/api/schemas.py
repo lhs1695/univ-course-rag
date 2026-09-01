@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.course import CourseMemberRole
 from app.models.user import UserRole
@@ -42,7 +42,16 @@ class AdminAddMemberRequest(BaseModel):
 
 
 class TeacherAddStudentRequest(BaseModel):
-    user_id: str
+    user_id: str | None = None
+    username: str | None = Field(default=None, min_length=1, max_length=64)
+
+    @model_validator(mode="after")
+    def require_student_identity(self) -> "TeacherAddStudentRequest":
+        has_id = bool(self.user_id and self.user_id.strip())
+        has_name = bool(self.username and self.username.strip())
+        if not has_id and not has_name:
+            raise ValueError("user_id or username is required")
+        return self
 
 
 class CourseMemberOut(BaseModel):

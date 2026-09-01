@@ -21,6 +21,22 @@ from app.security.deps import (
 router = APIRouter(prefix="/courses", tags=["courses"])
 
 
+def _resolve_student_user(db: DbSession, body: TeacherAddStudentRequest) -> User | None:
+    if body.user_id and body.user_id.strip():
+        try:
+            user_id = UUID(body.user_id.strip())
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user_id") from None
+        user = db.get(User, user_id)
+        if user is not None and body.username and body.username.strip() and user.username != body.username.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="user_id and username do not match",
+            )
+        return user
+    return db.execute(select(User).where(User.username == body.username.strip())).scalar_one_or_none()
+
+
 @router.get("", response_model=list[CourseOut])
 def list_my_courses(
     user: Annotated[User, Depends(get_current_user)],
@@ -62,11 +78,7 @@ def add_student(
     access: Annotated[CourseAccess, Depends(require_course_teacher)],
     db: Annotated[DbSession, Depends(get_db)],
 ) -> CourseMemberOut:
-    try:
-        user_id = UUID(body.user_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user_id") from None
-    user = db.get(User, user_id)
+    user = _resolve_student_user(db, body)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     if user.role != UserRole.student.value:

@@ -29,7 +29,7 @@ from app.services.ingest import latest_job, process_ingest_job
 
 router = APIRouter(prefix="/courses/{course_id}/documents", tags=["documents"])
 
-_ALLOWED_SUFFIX = {".pdf", ".md", ".markdown", ".txt"}
+_ALLOWED_SUFFIX = {".pdf", ".ppt", ".pptx", ".doc", ".docx", ".md", ".markdown", ".txt"}
 _MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 
 
@@ -65,7 +65,7 @@ def upload_document(
     if not original or suffix not in _ALLOWED_SUFFIX:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="unsupported file type; first period accepts PDF, Markdown, or plain text",
+            detail="unsupported file type; accepted: PDF, PPT/PPTX, Word, Markdown, or plain text",
         )
     data = file.file.read(_MAX_UPLOAD_BYTES + 1)
     if len(data) > _MAX_UPLOAD_BYTES:

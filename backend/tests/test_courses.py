@@ -49,6 +49,50 @@ def test_student_cannot_access_other_course(client: TestClient, db: Session) -> 
     assert str(course2.id) not in ids
 
 
+def test_student_cannot_change_members(client: TestClient, db: Session) -> None:
+    student = add_user(db, "alice", "pass", UserRole.student)
+    other = add_user(db, "carol", "pass", UserRole.student)
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    add_member(db, course, student, CourseMemberRole.student)
+
+    login_as(client, "alice", "pass")
+    add_by_id = client.post(
+        f"/courses/{course.id}/members",
+        json={"user_id": str(other.id)},
+    )
+    assert add_by_id.status_code == 403
+    add_by_name = client.post(
+        f"/courses/{course.id}/members",
+        json={"username": "carol"},
+    )
+    assert add_by_name.status_code == 403
+    removed = client.delete(f"/courses/{course.id}/members/{student.id}")
+    assert removed.status_code == 403
+
+
+def test_teacher_adds_student_by_username(client: TestClient, db: Session) -> None:
+    student = add_user(db, "bob", "pass", UserRole.student)
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+
+    login_as(client, "t1", "pass")
+    added = client.post(
+        f"/courses/{course.id}/members",
+        json={"username": student.username},
+    )
+    assert added.status_code == 201
+    assert added.json()["username"] == "bob"
+    assert added.json()["role"] == CourseMemberRole.student.value
+
+    login_as(client, "bob", "pass")
+    listed = client.get("/courses")
+    assert listed.status_code == 200
+    assert str(course.id) in {row["id"] for row in listed.json()}
+
+
 def test_teacher_cannot_change_other_course_members(client: TestClient, db: Session) -> None:
     student = add_user(db, "bob", "pass", UserRole.student)
     teacher1 = add_user(db, "t1", "pass", UserRole.teacher)

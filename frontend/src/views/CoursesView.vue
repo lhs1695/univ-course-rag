@@ -9,9 +9,10 @@
     />
     <el-table v-else :data="courses" v-loading="loading" empty-text="加载中">
       <el-table-column prop="title" label="课程" />
-      <el-table-column label="" :width="isTeacher ? 220 : 100">
+      <el-table-column label="" :width="isTeacher ? 300 : 100">
         <template #default="{ row }">
           <el-button v-if="isTeacher" type="primary" link @click="openDocs(row)">资料</el-button>
+          <el-button v-if="isTeacher" type="primary" link @click="openMembers(row)">本课学生</el-button>
           <el-button type="primary" link @click="openAsk(row)">提问</el-button>
           <el-button v-if="isTeacher" type="primary" link @click="openInsights(row)">学情</el-button>
         </template>
@@ -54,5 +55,9 @@ function openDocs(row) {
 
 function openInsights(row) {
   router.push(`/courses/${row.id}/insights`);
+}
+
+function openMembers(row) {
+  router.push(`/courses/${row.id}/members`);
 }
 </script>

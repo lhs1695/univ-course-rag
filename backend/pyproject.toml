@@ -16,6 +16,8 @@ dependencies = [
     "pydantic-settings",
     "python-multipart",
     "pymupdf",
+    "python-pptx",
+    "python-docx",
     "pgvector",
     "openai",
 ]

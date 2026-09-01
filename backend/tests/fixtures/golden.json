@@ -16,5 +16,17 @@
     "query": "高斯消元口令句 beta-4419",
     "source_file": "sample.pdf",
     "expect_substring": "紫石英PDF锚点：高斯消元口令句 beta-4419。"
+  },
+  {
+    "id": "pptx-slide-anchor",
+    "query": "幻灯片锚点 delta-8820",
+    "source_file": "sample.pptx",
+    "expect_substring": "紫石英PPT口令：幻灯片锚点 delta-8820。"
+  },
+  {
+    "id": "docx-lab-anchor",
+    "query": "实验指导锚点 epsilon-5503",
+    "source_file": "sample.docx",
+    "expect_substring": "紫石英Word口令：实验指导锚点 epsilon-5503。"
   }
 ]

@@ -5,6 +5,7 @@ import CoursesView from "./views/CoursesView.vue";
 import AskView from "./views/AskView.vue";
 import DocumentsView from "./views/DocumentsView.vue";
 import InsightsView from "./views/InsightsView.vue";
+import MembersView from "./views/MembersView.vue";
 import AdminUsersView from "./views/AdminUsersView.vue";
 import AdminCoursesView from "./views/AdminCoursesView.vue";
 
@@ -17,6 +18,7 @@ export const router = createRouter({
     { path: "/admin/courses", component: AdminCoursesView, meta: { admin: true } },
     { path: "/courses", component: CoursesView },
     { path: "/courses/:courseId/documents", component: DocumentsView },
+    { path: "/courses/:courseId/members", component: MembersView, meta: { teacher: true } },
     { path: "/courses/:courseId/insights", component: InsightsView },
     { path: "/courses/:courseId", component: AskView },
   ],
@@ -30,6 +32,9 @@ router.beforeEach(async (to) => {
     return { path: "/login", query: { next: to.fullPath } };
   }
   if (to.meta.admin && session.user?.role !== "admin") {
+    return "/courses";
+  }
+  if (to.meta.teacher && session.user?.role !== "teacher") {
     return "/courses";
   }
   if (to.path === "/login" && session.user) {

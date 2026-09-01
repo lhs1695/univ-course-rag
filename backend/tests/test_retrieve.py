@@ -44,7 +44,18 @@ def add_member(db: Session, course: Course, user: User, role: CourseMemberRole) 
 
 def upload(client: TestClient, course_id: UUID, path: Path) -> UUID:
     suffix = path.suffix.lower()
-    content_type = "application/pdf" if suffix == ".pdf" else "text/markdown"
+    if suffix == ".pdf":
+        content_type = "application/pdf"
+    elif suffix == ".pptx":
+        content_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    elif suffix == ".ppt":
+        content_type = "application/vnd.ms-powerpoint"
+    elif suffix == ".docx":
+        content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    elif suffix == ".doc":
+        content_type = "application/msword"
+    else:
+        content_type = "text/markdown"
     response = client.post(
         f"/courses/{course_id}/documents",
         files={"file": (path.name, path.read_bytes(), content_type)},
@@ -66,11 +77,15 @@ def test_golden_hits_md_and_pdf(client: TestClient, db: Session) -> None:
     by_file = {
         "sample.md": upload(client, course.id, FIXTURES / "sample.md"),
         "sample.pdf": upload(client, course.id, FIXTURES / "sample.pdf"),
+        "sample.pptx": upload(client, course.id, FIXTURES / "sample.pptx"),
+        "sample.docx": upload(client, course.id, FIXTURES / "sample.docx"),
     }
     login_as(client, "alice", "pass")
     assert len(GOLDEN) >= 3
     sources = {item["source_file"] for item in GOLDEN}
     assert "sample.md" in sources and "sample.pdf" in sources
+    assert "sample.pptx" in sources
+    assert "sample.docx" in sources
     for item in GOLDEN:
         response = client.post(
             f"/courses/{course.id}/search",

@@ -11,7 +11,13 @@ from sqlalchemy.orm import Session
 from tests.conftest import add_user
 
 UNIQUE_SENTENCE = "紫石英口令：本课向量必须绑定 course_id-alpha-9371。"
+PPTX_SENTENCE = "紫石英PPT口令：幻灯片锚点 delta-8820。"
+DOCX_SENTENCE = "紫石英Word口令：实验指导锚点 epsilon-5503。"
 SAMPLE_MD = Path(__file__).parent / "fixtures" / "sample.md"
+SAMPLE_PPTX = Path(__file__).parent / "fixtures" / "sample.pptx"
+SAMPLE_DOCX = Path(__file__).parent / "fixtures" / "sample.docx"
+PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 def login_as(client: TestClient, username: str, password: str) -> None:
@@ -59,6 +65,104 @@ def test_upload_sample_md_indexes_unique_sentence(client: TestClient, db: Sessio
     assert all(chunk.course_id == course.id for chunk in chunks)
     assert any(UNIQUE_SENTENCE in chunk.text for chunk in chunks)
     assert all(len(chunk.embedding) == 1024 for chunk in chunks)
+
+
+def test_upload_sample_pptx_indexes_unique_sentence(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+
+    content = SAMPLE_PPTX.read_bytes()
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("sample.pptx", content, PPTX_MIME)},
+    )
+    assert uploaded.status_code == 201
+    doc_id = UUID(uploaded.json()["id"])
+
+    detail = client.get(f"/courses/{course.id}/documents/{doc_id}")
+    assert detail.status_code == 200
+    assert detail.json()["job_status"] == "succeeded"
+    assert detail.json()["error_message"] is None
+
+    db.expire_all()
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all()
+    assert chunks
+    assert all(chunk.course_id == course.id for chunk in chunks)
+    assert any(PPTX_SENTENCE in chunk.text for chunk in chunks)
+    assert all(len(chunk.embedding) == 1024 for chunk in chunks)
+
+
+def test_corrupt_pptx_fails_without_chunks(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("broken.pptx", b"PK\x03\x04-not-a-real-pptx", PPTX_MIME)},
+    )
+    assert uploaded.status_code == 201
+    doc_id = UUID(uploaded.json()["id"])
+    detail = client.get(f"/courses/{course.id}/documents/{doc_id}")
+    assert detail.status_code == 200
+    assert detail.json()["job_status"] == "failed"
+    assert detail.json()["error_message"]
+
+    db.expire_all()
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all()
+    assert chunks == []
+
+
+def test_upload_sample_docx_indexes_unique_sentence(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+
+    content = SAMPLE_DOCX.read_bytes()
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("sample.docx", content, DOCX_MIME)},
+    )
+    assert uploaded.status_code == 201
+    doc_id = UUID(uploaded.json()["id"])
+
+    detail = client.get(f"/courses/{course.id}/documents/{doc_id}")
+    assert detail.status_code == 200
+    assert detail.json()["job_status"] == "succeeded"
+    assert detail.json()["error_message"] is None
+
+    db.expire_all()
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all()
+    assert chunks
+    assert all(chunk.course_id == course.id for chunk in chunks)
+    assert any(DOCX_SENTENCE in chunk.text for chunk in chunks)
+    assert all(len(chunk.embedding) == 1024 for chunk in chunks)
+
+
+def test_corrupt_docx_fails_without_chunks(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("broken.docx", b"PK\x03\x04-not-a-real-docx", DOCX_MIME)},
+    )
+    assert uploaded.status_code == 201
+    doc_id = UUID(uploaded.json()["id"])
+    detail = client.get(f"/courses/{course.id}/documents/{doc_id}")
+    assert detail.status_code == 200
+    assert detail.json()["job_status"] == "failed"
+    assert detail.json()["error_message"]
+
+    db.expire_all()
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all()
+    assert chunks == []
 
 
 def test_corrupt_pdf_fails_without_chunks(client: TestClient, db: Session) -> None:
