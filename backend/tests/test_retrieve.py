@@ -8,15 +8,21 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from app.models.course import Course, CourseMember, CourseMemberRole
-from app.models.document import Chunk
+from app.models.document import Chunk, Document
 from app.models.user import User, UserRole
 from app.services.embedder import FakeEmbedder
-from app.services.retrieve import retrieve_chunks
+from app.services.retrieve import (
+    _postgres_retrieval_statement,
+    has_incompatible_chunks,
+    retrieve_chunks,
+)
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
 
 from tests.conftest import add_user
@@ -137,6 +143,118 @@ def test_retrieve_only_uses_matching_index_identity(client: TestClient, db: Sess
 
     assert hits
     assert all(hit.chunk_id != incompatible.id for hit in hits)
+
+
+def test_postgres_statement_pushes_filters_distance_order_and_limit_to_sql() -> None:
+    embedder = FakeEmbedder()
+    course_id = UUID("00000000-0000-0000-0000-000000000001")
+    excluded_id = UUID("00000000-0000-0000-0000-000000000002")
+
+    statement = _postgres_retrieval_statement(
+        course_id,
+        embedder,
+        embedder.embed(["database systems"])[0],
+        top_k=8,
+        min_score=0.15,
+        excluded_document_ids={excluded_id},
+    )
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+
+    assert "chunks.embedding <=>" in sql
+    assert "chunks.course_id =" in sql
+    assert "chunks.embedding_model =" in sql
+    assert "chunks.document_id NOT IN" in sql
+    assert "ORDER BY distance" in sql
+    assert "LIMIT" in sql
+    assert "chunks.embedding," not in sql
+
+
+def test_incompatible_check_uses_exists_and_honors_exclusions(db: Session) -> None:
+    course = add_course(db, "Course 1")
+    excluded_document_id = UUID("00000000-0000-0000-0000-000000000003")
+    embedder = FakeEmbedder()
+    db.add(
+        Chunk(
+            course_id=course.id,
+            document_id=excluded_document_id,
+            text="legacy",
+            embedding=embedder.embed(["legacy"])[0],
+            embedding_model="legacy-model",
+        )
+    )
+    db.commit()
+
+    assert has_incompatible_chunks(db, course.id, embedder)
+    assert not has_incompatible_chunks(
+        db,
+        course.id,
+        embedder,
+        excluded_document_ids={excluded_document_id},
+    )
+
+
+@pytest.mark.postgres
+def test_postgres_executes_pgvector_top_k_and_has_filter_index() -> None:
+    if os.environ.get("RUN_POSTGRES_TESTS") != "1":
+        pytest.skip("set RUN_POSTGRES_TESTS=1 for the local Postgres proof")
+    from app.db import SessionLocal
+
+    embedder = FakeEmbedder()
+    query = "database transaction isolation"
+    with SessionLocal() as db:
+        user = User(
+            username=f"pgvector-{uuid4()}",
+            password_hash="test-only",
+            role=UserRole.teacher.value,
+        )
+        course = Course(title="pgvector proof")
+        db.add_all([user, course])
+        db.flush()
+        document = Document(
+            course_id=course.id,
+            uploaded_by=user.id,
+            filename="proof.md",
+            storage_path="test-only",
+        )
+        db.add(document)
+        db.flush()
+        for page, body in enumerate(
+            [query, "database isolation", "unrelated cooking recipe"], start=1
+        ):
+            db.add(
+                Chunk(
+                    course_id=course.id,
+                    document_id=document.id,
+                    page=page,
+                    text=body,
+                    embedding=embedder.embed([body])[0],
+                    embedding_model=embedder.index_identity,
+                )
+            )
+        db.flush()
+
+        statement = _postgres_retrieval_statement(
+            course.id,
+            embedder,
+            embedder.embed([query])[0],
+            top_k=2,
+            min_score=-1.0,
+            excluded_document_ids=(),
+        )
+        compiled = statement.compile(db.get_bind(), compile_kwargs={"literal_binds": True})
+        plan = "\n".join(db.execute(text(f"EXPLAIN {compiled}")).scalars())
+        hits = retrieve_chunks(db, course.id, query, embedder, top_k=2, min_score=-1.0)
+        index_exists = db.scalar(
+            text("SELECT to_regclass('public.ix_chunks_course_embedding_model') IS NOT NULL")
+        )
+        db.rollback()
+
+    assert index_exists is True
+    assert len(hits) == 2
+    assert hits[0].snippet == query
+    assert hits[0].score == pytest.approx(1.0)
+    assert "Limit" in plan
+    assert "Sort Key: ((embedding <=>" in plan
 
 
 def test_search_does_not_leak_other_course(client: TestClient, db: Session) -> None:

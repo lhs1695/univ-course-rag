@@ -17,6 +17,8 @@
 
 ### [P1] 核心检索为全量拉取后在 Python 排序，pgvector 没有承担 Top-K
 
+状态：阶段 28 已修复 Postgres 在线路径与索引身份检查；SQLite/Fake 保留测试专用 Python 排序。
+
 - 证据：`backend/app/services/retrieve.py:45-50` 把课程下所有兼容切片及向量加载到应用进程，`backend/app/services/retrieve.py:54-59` 逐条计算余弦相似度、全量排序后才截取 Top-K；`backend/app/services/retrieve.py:80-83` 的索引身份检查也会拉取全课程身份值。
 - 影响：时间、内存和数据库传输量随课程切片数线性增长，排序为 `O(N log N)`；课件增多后，每次提问都会重复付出该成本。仓库虽然使用 Postgres + pgvector，但当前在线检索没有获得数据库向量检索的伸缩性。
 - 测试缺口：现有检索测试验证正确性和课程隔离，没有查询规模、SQL 形态或索引使用证明。

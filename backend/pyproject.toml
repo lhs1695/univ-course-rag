@@ -36,6 +36,7 @@ include = ["app*"]
 testpaths = ["tests"]
 markers = [
     "integration: optional live cloud API; skipped without key",
+    "postgres: optional local Postgres integration; skipped unless explicitly enabled",
 ]
 
 [tool.ruff]

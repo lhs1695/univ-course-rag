@@ -4,10 +4,11 @@ from collections.abc import Collection
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import select
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import exists, select, type_coerce
 from sqlalchemy.orm import Session as DbSession
 
-from app.models.document import Chunk
+from app.models.document import EMBEDDING_DIM, Chunk
 from app.services.embedder import Embedder
 
 SEARCH_TOP_K = 8
@@ -30,6 +31,61 @@ def cosine_similarity(left: list[float], right: list[float]) -> float:
     return sum(a * b for a, b in zip(left, right, strict=True))
 
 
+def _chunk_filters(
+    course_id: UUID,
+    embedder: Embedder,
+    excluded_document_ids: Collection[UUID],
+) -> list:
+    filters = [
+        Chunk.course_id == course_id,
+        Chunk.embedding_model == embedder.index_identity,
+    ]
+    if excluded_document_ids:
+        filters.append(Chunk.document_id.not_in(excluded_document_ids))
+    return filters
+
+
+def _postgres_retrieval_statement(
+    course_id: UUID,
+    embedder: Embedder,
+    query_vec: list[float],
+    *,
+    top_k: int,
+    min_score: float,
+    excluded_document_ids: Collection[UUID],
+):
+    vector = type_coerce(Chunk.embedding, Vector(EMBEDDING_DIM))
+    distance = vector.cosine_distance(query_vec).label("distance")
+    return (
+        select(Chunk.id, Chunk.document_id, Chunk.page, Chunk.text, distance)
+        .where(
+            *_chunk_filters(course_id, embedder, excluded_document_ids),
+            distance <= 1.0 - min_score,
+        )
+        .order_by(distance)
+        .limit(top_k)
+    )
+
+
+def _search_hit(
+    chunk_id: UUID,
+    document_id: UUID,
+    page: int | None,
+    text: str,
+    score: float,
+) -> SearchHit:
+    snippet = text.strip()
+    if len(snippet) > SNIPPET_CHARS:
+        snippet = snippet[:SNIPPET_CHARS]
+    return SearchHit(
+        chunk_id=chunk_id,
+        document_id=document_id,
+        page=page,
+        snippet=snippet,
+        score=score,
+    )
+
+
 def retrieve_chunks(
     db: DbSession,
     course_id: UUID,
@@ -44,18 +100,26 @@ def retrieve_chunks(
     query = query.strip()
     if not query:
         return []
-    filters = [
-        Chunk.course_id == course_id,
-        Chunk.embedding_model == embedder.index_identity,
-    ]
-    if excluded_document_ids:
-        filters.append(Chunk.document_id.not_in(excluded_document_ids))
-    chunks = db.execute(
-        select(Chunk).where(*filters)
-    ).scalars().all()
-    if not chunks:
+    filters = _chunk_filters(course_id, embedder, excluded_document_ids)
+    if not db.scalar(select(exists().where(*filters))):
         return []
     query_vec = embedder.embed([query])[0]
+    if db.get_bind().dialect.name == "postgresql":
+        statement = _postgres_retrieval_statement(
+            course_id,
+            embedder,
+            query_vec,
+            top_k=top_k,
+            min_score=min_score,
+            excluded_document_ids=excluded_document_ids,
+        )
+        rows = db.execute(statement).all()
+        return [
+            _search_hit(chunk_id, document_id, page, text, 1.0 - float(distance))
+            for chunk_id, document_id, page, text, distance in rows
+        ]
+
+    chunks = db.execute(select(Chunk).where(*filters)).scalars().all()
     ranked: list[tuple[float, Chunk]] = []
     for chunk in chunks:
         ranked.append((cosine_similarity(query_vec, chunk.embedding), chunk))
@@ -64,17 +128,8 @@ def retrieve_chunks(
     for score, chunk in ranked[:top_k]:
         if score < min_score:
             break
-        snippet = chunk.text.strip()
-        if len(snippet) > SNIPPET_CHARS:
-            snippet = snippet[:SNIPPET_CHARS]
         hits.append(
-            SearchHit(
-                chunk_id=chunk.id,
-                document_id=chunk.document_id,
-                page=chunk.page,
-                snippet=snippet,
-                score=score,
-            )
+            _search_hit(chunk.id, chunk.document_id, chunk.page, chunk.text, score)
         )
     return hits
 
@@ -86,10 +141,10 @@ def has_incompatible_chunks(
     *,
     excluded_document_ids: Collection[UUID] = (),
 ) -> bool:
-    filters = [Chunk.course_id == course_id]
+    filters = [
+        Chunk.course_id == course_id,
+        Chunk.embedding_model != embedder.index_identity,
+    ]
     if excluded_document_ids:
         filters.append(Chunk.document_id.not_in(excluded_document_ids))
-    identities = db.execute(
-        select(Chunk.embedding_model).where(*filters)
-    ).scalars().all()
-    return any(identity != embedder.index_identity for identity in identities)
+    return bool(db.scalar(select(exists().where(*filters))))
