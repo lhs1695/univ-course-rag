@@ -1,7 +1,7 @@
 # 检索失败分类（阶段 4–5 用）
 
 日期：2026-09-01  
-栈与阶段以 [`plan.md`](plan.md)、[`plan-2.md`](plan-2.md)、[`decisions/`](decisions/README.md) 为准。本文不再维护技术栈表（旧讨论稿已收敛，避免和实施合同打架）。
+栈与阶段以当前合同 [`plan-3.md`](plan-3.md) 为准；前两期 [`plan.md`](plan.md)、[`plan-2.md`](plan-2.md) 已冻结。决策见 [`decisions/`](decisions/README.md)。本文只保留失败分类，不再维护技术栈表。
 
 效果差时先归类再改层。禁止直接换更大生成模型或加 Agent 跳数。
 

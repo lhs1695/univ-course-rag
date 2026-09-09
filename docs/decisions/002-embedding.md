@@ -36,10 +36,10 @@
 
 1. 打开 [siliconflow.cn](https://siliconflow.cn) / [cloud.siliconflow.cn](https://cloud.siliconflow.cn) 注册。
 2. 控制台创建 API Key（只出现一次，当密码）。
-3. 本机 `.env`（不进 git）：
+3. 本机 `.env`（不进 git）。运行时开关是 **`EMBEDDER_BACKEND`**（见 `app/config.py`），不是下文曾用过的 `EMBEDDING_PROVIDER`：
 
 ```
-EMBEDDING_PROVIDER=siliconflow
+EMBEDDER_BACKEND=siliconflow
 SILICONFLOW_API_KEY=sk-...
 EMBEDDING_MODEL=BAAI/bge-m3
 EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1
