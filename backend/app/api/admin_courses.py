@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -13,12 +14,15 @@ from app.api.schemas import (
     CourseOut,
     CourseUpdateRequest,
 )
+from app.config import Settings, get_settings
 from app.db import get_db
 from app.models.course import Course, CourseMember, CourseMemberRole
 from app.models.user import User, UserRole
 from app.security.deps import get_course_or_404, get_membership, require_admin
+from app.services.storage import StorageError, delete_course_uploads
 
 router = APIRouter(prefix="/admin/courses", tags=["admin-courses"])
+logger = logging.getLogger(__name__)
 
 
 def _course_out(course: Course) -> CourseOut:
@@ -84,10 +88,19 @@ def delete_course(
     course_id: UUID,
     db: Annotated[DbSession, Depends(get_db)],
     _admin: Annotated[User, Depends(require_admin)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> None:
     course = get_course_or_404(db, course_id)
     db.delete(course)
     db.commit()
+    try:
+        delete_course_uploads(settings.upload_dir, course_id)
+    except StorageError as exc:
+        logger.error(
+            "storage_cleanup_failed scope=course course_id=%s error_type=%s",
+            course_id,
+            type(exc).__name__,
+        )
 
 
 @router.post("/{course_id}/members", response_model=CourseMemberOut, status_code=status.HTTP_201_CREATED)

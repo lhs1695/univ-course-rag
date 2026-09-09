@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
@@ -27,8 +28,10 @@ from app.security.deps import (
 )
 from app.services.embedder import Embedder, get_embedder
 from app.services.ingest import latest_job, process_ingest_job, retry_ingest_job
+from app.services.storage import StorageError, delete_document_upload, store_upload
 
 router = APIRouter(prefix="/courses/{course_id}/documents", tags=["documents"])
+logger = logging.getLogger(__name__)
 
 _ALLOWED_SUFFIX = {".pdf", ".ppt", ".pptx", ".doc", ".docx", ".md", ".markdown", ".txt"}
 _MAX_UPLOAD_BYTES = 15 * 1024 * 1024
@@ -80,10 +83,13 @@ def upload_document(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="empty file")
 
     document_id = uuid4()
-    dest_dir = settings.upload_dir / str(access.course.id) / str(document_id)
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    dest = dest_dir / original
-    dest.write_bytes(data)
+    dest = store_upload(
+        settings.upload_dir,
+        access.course.id,
+        document_id,
+        original,
+        data,
+    )
 
     document = Document(
         id=document_id,
@@ -95,7 +101,26 @@ def upload_document(
     job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
     db.add(document)
     db.add(job)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        try:
+            delete_document_upload(
+                settings.upload_dir,
+                access.course.id,
+                document_id,
+                str(dest),
+            )
+        except StorageError as cleanup_error:
+            logger.error(
+                "storage_cleanup_failed scope=upload_compensation course_id=%s "
+                "document_id=%s error_type=%s",
+                access.course.id,
+                document_id,
+                type(cleanup_error).__name__,
+            )
+        raise
     db.refresh(document)
     db.refresh(job)
     background_tasks.add_task(
@@ -166,20 +191,12 @@ def get_document(
     return _document_out(document, latest_job(db, document.id))
 
 
-def _unlink_storage(storage_path: str) -> None:
-    path = Path(storage_path)
-    if path.is_file():
-        path.unlink()
-    parent = path.parent
-    if parent.is_dir() and not any(parent.iterdir()):
-        parent.rmdir()
-
-
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(
     document_id: UUID,
     access: Annotated[CourseAccess, Depends(require_course_teacher)],
     db: Annotated[DbSession, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> None:
     document = db.get(Document, document_id)
     if document is None or document.course_id != access.course.id:
@@ -189,4 +206,17 @@ def delete_document(
     db.execute(delete(IngestJob).where(IngestJob.document_id == document.id))
     db.delete(document)
     db.commit()
-    _unlink_storage(storage_path)
+    try:
+        delete_document_upload(
+            settings.upload_dir,
+            access.course.id,
+            document_id,
+            storage_path,
+        )
+    except StorageError as exc:
+        logger.error(
+            "storage_cleanup_failed scope=document course_id=%s document_id=%s error_type=%s",
+            access.course.id,
+            document_id,
+            type(exc).__name__,
+        )
