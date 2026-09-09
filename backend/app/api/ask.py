@@ -13,7 +13,12 @@ from app.security.deps import CourseAccess, require_course_member
 from app.services.embedder import Embedder, get_embedder
 from app.services.generate import NO_EVIDENCE, NO_EVIDENCE_MESSAGE, generate_answer
 from app.services.llm import LLM, get_llm
-from app.services.retrieve import retrieve_chunks
+from app.services.retrieve import (
+    EMBEDDING_MISMATCH,
+    EMBEDDING_MISMATCH_MESSAGE,
+    has_incompatible_chunks,
+    retrieve_chunks,
+)
 
 router = APIRouter(prefix="/courses", tags=["ask"])
 logger = logging.getLogger(__name__)
@@ -47,11 +52,15 @@ def ask_course(
     llm: Annotated[LLM, Depends(get_llm)],
 ) -> AskResponse:
     started = time.perf_counter()
-    hits = retrieve_chunks(db, access.course.id, body.query, embedder)
+    index_mismatch = has_incompatible_chunks(db, access.course.id, embedder)
+    hits = [] if index_mismatch else retrieve_chunks(db, access.course.id, body.query, embedder)
     cited_ids: list = []
     error_code = None
     answer = None
-    if not hits:
+    if index_mismatch:
+        error_code = EMBEDDING_MISMATCH
+        llm_called = False
+    elif not hits:
         error_code = NO_EVIDENCE
         llm_called = False
     else:
@@ -83,7 +92,11 @@ def ask_course(
     )
     return AskResponse(
         error_code=error_code,
-        message=NO_EVIDENCE_MESSAGE if error_code == NO_EVIDENCE else None,
+        message=(
+            EMBEDDING_MISMATCH_MESSAGE
+            if error_code == EMBEDDING_MISMATCH
+            else NO_EVIDENCE_MESSAGE if error_code == NO_EVIDENCE else None
+        ),
         answer=answer,
         citations=_citations(hits, cited_ids),
     )

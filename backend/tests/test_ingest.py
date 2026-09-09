@@ -4,6 +4,7 @@ from uuid import UUID
 from app.models.course import Course, CourseMember, CourseMemberRole
 from app.models.document import Chunk
 from app.models.user import User, UserRole
+from app.services.embedder import FakeEmbedder
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -65,6 +66,7 @@ def test_upload_sample_md_indexes_unique_sentence(client: TestClient, db: Sessio
     assert all(chunk.course_id == course.id for chunk in chunks)
     assert any(UNIQUE_SENTENCE in chunk.text for chunk in chunks)
     assert all(len(chunk.embedding) == 1024 for chunk in chunks)
+    assert all(chunk.embedding_model == FakeEmbedder().index_identity for chunk in chunks)
 
 
 def test_upload_sample_pptx_indexes_unique_sentence(client: TestClient, db: Session) -> None:

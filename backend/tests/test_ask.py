@@ -9,10 +9,13 @@ from uuid import uuid4
 import pytest
 from app.main import app
 from app.models.course import CourseMemberRole
+from app.models.document import Chunk
 from app.models.query_log import QueryLog
 from app.models.user import UserRole
+from app.services.embedder import FakeEmbedder, get_embedder
 from app.services.generate import NO_EVIDENCE
 from app.services.llm import FakeLLM, get_llm, parse_cited_ids
+from app.services.retrieve import EMBEDDING_MISMATCH
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -85,6 +88,63 @@ def test_ask_drops_illegal_citation_ids(client: TestClient, db: Session) -> None
     allowed_in_prompt = {str(item) for item in parse_cited_ids(llm.prompts[0])}
     assert cited <= allowed_in_prompt
     assert len(cited) == 1
+
+
+def test_ask_rejects_incompatible_index_without_calling_llm(
+    client: TestClient, db: Session
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    upload(client, course.id, FIXTURES / "sample.md")
+
+    class DifferentBackendEmbedder(FakeEmbedder):
+        def __init__(self) -> None:
+            super().__init__(model_name="fake-bge-m3")
+            self.index_identity = "siliconflow|fake-bge-m3|1024|v1"
+
+    llm = FakeLLM()
+    app.dependency_overrides[get_embedder] = DifferentBackendEmbedder
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["error_code"] == EMBEDDING_MISMATCH
+    assert body["answer"] is None
+    assert body["citations"] == []
+    assert "重新入库" in (body["message"] or "")
+    assert llm.prompts == []
+
+
+def test_ask_rejects_mixed_index_without_calling_llm(
+    client: TestClient, db: Session
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    document_id = upload(client, course.id, FIXTURES / "sample.md")
+    embedder = FakeEmbedder()
+    db.add(
+        Chunk(
+            course_id=course.id,
+            document_id=document_id,
+            text="旧索引切片",
+            embedding=embedder.embed([GOLDEN[0]["query"]])[0],
+            embedding_model="BAAI/bge-m3",
+        )
+    )
+    db.commit()
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+
+    response = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
+
+    assert response.status_code == 200
+    assert response.json()["error_code"] == EMBEDDING_MISMATCH
+    assert llm.prompts == []
 
 
 @pytest.mark.parametrize("answer", ["没有引用的回答。", "编造 [Source 00000000-0000-0000-0000-000000000000]"])

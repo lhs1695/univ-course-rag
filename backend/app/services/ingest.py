@@ -60,7 +60,7 @@ def process_ingest_job(db: DbSession, job_id: UUID, embedder: Embedder) -> None:
                     page=page,
                     text=text,
                     embedding=vector,
-                    embedding_model=embedder.model_name,
+                    embedding_model=embedder.index_identity,
                 )
             )
         job.status = IngestJobStatus.succeeded.value

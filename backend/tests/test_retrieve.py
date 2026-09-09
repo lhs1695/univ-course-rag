@@ -12,7 +12,10 @@ from uuid import UUID
 
 import pytest
 from app.models.course import Course, CourseMember, CourseMemberRole
+from app.models.document import Chunk
 from app.models.user import User, UserRole
+from app.services.embedder import FakeEmbedder
+from app.services.retrieve import retrieve_chunks
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -110,6 +113,30 @@ def test_low_score_returns_empty_not_guess(client: TestClient, db: Session) -> N
     response = client.post(f"/courses/{course.id}/search", json={"query": UNRELATED})
     assert response.status_code == 200
     assert response.json()["hits"] == []
+
+
+def test_retrieve_only_uses_matching_index_identity(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    document_id = upload(client, course.id, FIXTURES / "sample.md")
+    embedder = FakeEmbedder()
+    query = GOLDEN[0]["query"]
+    incompatible = Chunk(
+        course_id=course.id,
+        document_id=document_id,
+        text="不兼容索引不应被检索到",
+        embedding=embedder.embed([query])[0],
+        embedding_model="siliconflow|fake-bge-m3|1024|v1",
+    )
+    db.add(incompatible)
+    db.commit()
+
+    hits = retrieve_chunks(db, course.id, query, embedder)
+
+    assert hits
+    assert all(hit.chunk_id != incompatible.id for hit in hits)
 
 
 def test_search_does_not_leak_other_course(client: TestClient, db: Session) -> None:

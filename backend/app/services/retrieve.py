@@ -12,6 +12,8 @@ from app.services.embedder import Embedder
 SEARCH_TOP_K = 8
 SEARCH_MIN_SCORE = 0.15
 SNIPPET_CHARS = 240
+EMBEDDING_MISMATCH = "EMBEDDING_MISMATCH"
+EMBEDDING_MISMATCH_MESSAGE = "向量模型已切换，请从原文件重新入库。"
 
 
 @dataclass
@@ -40,7 +42,12 @@ def retrieve_chunks(
     query = query.strip()
     if not query:
         return []
-    chunks = db.execute(select(Chunk).where(Chunk.course_id == course_id)).scalars().all()
+    chunks = db.execute(
+        select(Chunk).where(
+            Chunk.course_id == course_id,
+            Chunk.embedding_model == embedder.index_identity,
+        )
+    ).scalars().all()
     if not chunks:
         return []
     query_vec = embedder.embed([query])[0]
@@ -65,3 +72,12 @@ def retrieve_chunks(
             )
         )
     return hits
+
+
+def has_incompatible_chunks(
+    db: DbSession, course_id: UUID, embedder: Embedder
+) -> bool:
+    identities = db.execute(
+        select(Chunk.embedding_model).where(Chunk.course_id == course_id)
+    ).scalars().all()
+    return any(identity != embedder.index_identity for identity in identities)

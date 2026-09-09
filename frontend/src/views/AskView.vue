@@ -28,7 +28,7 @@
     </el-form>
 
     <el-alert
-      v-if="result?.error_code === 'NO_EVIDENCE'"
+      v-if="result?.error_code === 'NO_EVIDENCE' || result?.error_code === 'EMBEDDING_MISMATCH'"
       :title="result.message || '依据不足'"
       type="warning"
       :closable="false"

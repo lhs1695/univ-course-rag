@@ -14,8 +14,13 @@ from app.models.document import EMBEDDING_DIM
 
 class Embedder(Protocol):
     model_name: str
+    index_identity: str
 
     def embed(self, texts: list[str]) -> list[list[float]]: ...
+
+
+def _index_identity(backend: str, model_name: str) -> str:
+    return f"{backend}|{model_name}|{EMBEDDING_DIM}|v1"
 
 
 class FakeEmbedder:
@@ -23,6 +28,7 @@ class FakeEmbedder:
 
     def __init__(self, model_name: str = "fake-bge-m3") -> None:
         self.model_name = model_name
+        self.index_identity = _index_identity("fake", model_name)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         return [_token_vector(text) for text in texts]
@@ -63,6 +69,7 @@ class SiliconFlowEmbedder:
         from openai import OpenAI
 
         self.model_name = model_name
+        self.index_identity = _index_identity("siliconflow", model_name)
         self._client = OpenAI(api_key=api_key, base_url=base_url)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
