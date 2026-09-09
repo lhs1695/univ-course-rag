@@ -26,11 +26,15 @@
 
 ### [P2] 入库任务依赖进程内 BackgroundTasks，没有中断恢复
 
+状态：阶段 29 已增加教师受控恢复、陈旧判定、心跳和 token 租约；仍保留进程内执行，不宣称为持久化队列。
+
 - 证据：`backend/app/api/documents.py:89-95` 先把任务写为 `pending`，再注册 FastAPI 进程内后台任务；`backend/app/services/ingest.py:39-41` 会把任务提交为 `running`。启动路径没有扫描或恢复遗留的 `pending/running` 任务。
 - 影响：进程崩溃、开发热重载或主机重启发生在响应之后时，任务可能永久停在 `pending/running`，用户只能看到卡住状态，且没有重试入口。
 - 建议验收：在不引入本期明确排除的 Celery 集群前，先实现可重复执行的恢复策略或受控重试端点，定义 stale-running 判定，并测试重复执行不会产生重复切片。
 
 ### [P2] 单个文件的所有切片一次性发送给向量服务
+
+状态：阶段 29 已改为可配置批次，并保证全部批次成功后才事务替换切片。
 
 - 证据：`backend/app/services/ingest.py:45-50` 先生成全部切片，再通过一次 `embedder.embed([...])` 请求发送；上传上限为 `backend/app/api/documents.py:33` 的 15 MiB。
 - 影响：较大 Word/PDF/PPT 文件可能超过供应商单次输入数量或 token 限制，也会放大内存峰值、超时和整批重试成本。

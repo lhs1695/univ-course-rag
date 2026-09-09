@@ -1,10 +1,19 @@
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
+import pytest
+from app.main import app
 from app.models.course import Course, CourseMember, CourseMemberRole
-from app.models.document import Chunk
+from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.models.user import User, UserRole
-from app.services.embedder import FakeEmbedder
+from app.services.embedder import FakeEmbedder, get_embedder
+from app.services.ingest import (
+    IngestLeaseLost,
+    _touch_running_job,
+    process_ingest_job,
+    retry_ingest_job,
+)
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,6 +28,19 @@ SAMPLE_PPTX = Path(__file__).parent / "fixtures" / "sample.pptx"
 SAMPLE_DOCX = Path(__file__).parent / "fixtures" / "sample.docx"
 PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+class RecordingEmbedder(FakeEmbedder):
+    def __init__(self, *, fail_on_call: int | None = None) -> None:
+        super().__init__()
+        self.batch_sizes: list[int] = []
+        self.fail_on_call = fail_on_call
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        self.batch_sizes.append(len(texts))
+        if self.fail_on_call == len(self.batch_sizes):
+            raise RuntimeError("scripted embedding failure")
+        return super().embed(texts)
 
 
 def login_as(client: TestClient, username: str, password: str) -> None:
@@ -219,3 +241,208 @@ def test_student_cannot_upload(client: TestClient, db: Session) -> None:
         files={"file": ("sample.md", SAMPLE_MD.read_bytes(), "text/markdown")},
     )
     assert uploaded.status_code == 403
+
+
+def test_ingest_sends_configured_embedding_batches(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    embedder = RecordingEmbedder()
+    app.dependency_overrides[get_embedder] = lambda: embedder
+    monkeypatch.setenv("EMBEDDING_BATCH_SIZE", "2")
+
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("large.txt", ("batch boundary " * 200).encode(), "text/plain")},
+    )
+
+    assert uploaded.status_code == 201
+    assert len(embedder.batch_sizes) > 1
+    assert all(size <= 2 for size in embedder.batch_sizes)
+    assert sum(embedder.batch_sizes) > 2
+
+
+def test_mid_batch_failure_preserves_previous_complete_chunks(
+    db: Session, tmp_path: Path
+) -> None:
+    course = add_course(db, "Course 1")
+    source = tmp_path / "retry.txt"
+    source.write_text("transactional chunks " * 150, encoding="utf-8")
+    document = Document(
+        course_id=course.id,
+        uploaded_by=uuid4(),
+        filename=source.name,
+        storage_path=str(source),
+    )
+    db.add(document)
+    db.flush()
+    embedder = RecordingEmbedder(fail_on_call=2)
+    old_chunk = Chunk(
+        course_id=course.id,
+        document_id=document.id,
+        page=1,
+        text="previous complete index",
+        embedding=embedder.embed(["previous complete index"])[0],
+        embedding_model=embedder.index_identity,
+    )
+    embedder.batch_sizes.clear()
+    job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
+    db.add_all([old_chunk, job])
+    db.commit()
+
+    process_ingest_job(db, job.id, embedder, batch_size=1)
+
+    db.expire_all()
+    stored_job = db.get(IngestJob, job.id)
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == document.id)).scalars().all()
+    assert stored_job is not None
+    assert stored_job.status == IngestJobStatus.failed.value
+    assert stored_job.run_token is None
+    assert [chunk.id for chunk in chunks] == [old_chunk.id]
+    assert chunks[0].text == "previous complete index"
+
+
+@pytest.mark.parametrize(
+    "recoverable_status",
+    [
+        IngestJobStatus.failed.value,
+        IngestJobStatus.pending.value,
+        IngestJobStatus.running.value,
+    ],
+)
+def test_teacher_can_recover_failed_or_stale_ingest_job(
+    client: TestClient,
+    db: Session,
+    recoverable_status: str,
+) -> None:
+    teacher = add_user(db, f"teacher-{recoverable_status}", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    document = Document(
+        course_id=course.id,
+        uploaded_by=teacher.id,
+        filename=SAMPLE_MD.name,
+        storage_path=str(SAMPLE_MD),
+    )
+    db.add(document)
+    db.flush()
+    job = IngestJob(
+        document_id=document.id,
+        status=recoverable_status,
+        run_token=(
+            uuid4() if recoverable_status == IngestJobStatus.running.value else None
+        ),
+        updated_at=(
+            datetime.now(UTC)
+            if recoverable_status == IngestJobStatus.failed.value
+            else datetime.now(UTC) - timedelta(hours=1)
+        ),
+    )
+    db.add(job)
+    db.commit()
+    login_as(client, teacher.username, "pass")
+
+    retried = client.post(f"/courses/{course.id}/documents/{document.id}/retry")
+
+    assert retried.status_code == 202
+    db.expire_all()
+    stored_job = db.get(IngestJob, job.id)
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == document.id)).scalars().all()
+    assert stored_job is not None
+    assert stored_job.status == IngestJobStatus.succeeded.value
+    assert stored_job.run_token is None
+    assert chunks
+    chunk_ids = [chunk.id for chunk in chunks]
+
+    duplicate = client.post(f"/courses/{course.id}/documents/{document.id}/retry")
+    assert duplicate.status_code == 409
+    db.expire_all()
+    after_duplicate = db.execute(
+        select(Chunk).where(Chunk.document_id == document.id)
+    ).scalars().all()
+    assert [chunk.id for chunk in after_duplicate] == chunk_ids
+
+
+def test_revoked_worker_lease_cannot_refresh_or_change_retried_job(db: Session) -> None:
+    course = add_course(db, "Course 1")
+    document = Document(
+        course_id=course.id,
+        uploaded_by=uuid4(),
+        filename=SAMPLE_MD.name,
+        storage_path=str(SAMPLE_MD),
+    )
+    old_token = uuid4()
+    db.add(document)
+    db.flush()
+    job = IngestJob(
+        document_id=document.id,
+        status=IngestJobStatus.running.value,
+        run_token=old_token,
+        updated_at=datetime.now(UTC) - timedelta(hours=1),
+    )
+    db.add(job)
+    db.commit()
+
+    assert retry_ingest_job(db, job.id, datetime.now(UTC) - timedelta(minutes=15))
+    with pytest.raises(IngestLeaseLost, match="lease lost"):
+        _touch_running_job(db, job.id, old_token)
+
+    db.expire_all()
+    stored_job = db.get(IngestJob, job.id)
+    assert stored_job is not None
+    assert stored_job.status == IngestJobStatus.pending.value
+    assert stored_job.run_token is None
+
+
+def test_active_ingest_job_cannot_be_retried(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    document = Document(
+        course_id=course.id,
+        uploaded_by=teacher.id,
+        filename=SAMPLE_MD.name,
+        storage_path=str(SAMPLE_MD),
+    )
+    db.add(document)
+    db.flush()
+    db.add(
+        IngestJob(
+            document_id=document.id,
+            status=IngestJobStatus.running.value,
+            run_token=uuid4(),
+            updated_at=datetime.now(UTC),
+        )
+    )
+    db.commit()
+    login_as(client, "t1", "pass")
+
+    response = client.post(f"/courses/{course.id}/documents/{document.id}/retry")
+
+    assert response.status_code == 409
+
+
+def test_student_cannot_retry_ingest_job(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    student = add_user(db, "alice", "pass", UserRole.student)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    add_member(db, course, student, CourseMemberRole.student)
+    document = Document(
+        course_id=course.id,
+        uploaded_by=teacher.id,
+        filename=SAMPLE_MD.name,
+        storage_path=str(SAMPLE_MD),
+    )
+    db.add(document)
+    db.flush()
+    db.add(IngestJob(document_id=document.id, status=IngestJobStatus.failed.value))
+    db.commit()
+    login_as(client, "alice", "pass")
+
+    response = client.post(f"/courses/{course.id}/documents/{document.id}/retry")
+
+    assert response.status_code == 403

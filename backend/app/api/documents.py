@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -25,7 +26,7 @@ from app.security.deps import (
     require_course_teacher,
 )
 from app.services.embedder import Embedder, get_embedder
-from app.services.ingest import latest_job, process_ingest_job
+from app.services.ingest import latest_job, process_ingest_job, retry_ingest_job
 
 router = APIRouter(prefix="/courses/{course_id}/documents", tags=["documents"])
 
@@ -42,10 +43,15 @@ def _document_out(document: Document, job: IngestJob | None) -> DocumentOut:
     )
 
 
-def _run_ingest(job_id: UUID, maker: SessionMaker, embedder: Embedder) -> None:
+def _run_ingest(
+    job_id: UUID,
+    maker: SessionMaker,
+    embedder: Embedder,
+    batch_size: int,
+) -> None:
     db = maker()
     try:
-        process_ingest_job(db, job_id, embedder)
+        process_ingest_job(db, job_id, embedder, batch_size=batch_size)
     finally:
         db.close()
 
@@ -92,7 +98,46 @@ def upload_document(
     db.commit()
     db.refresh(document)
     db.refresh(job)
-    background_tasks.add_task(_run_ingest, job.id, session_maker, embedder)
+    background_tasks.add_task(
+        _run_ingest,
+        job.id,
+        session_maker,
+        embedder,
+        settings.embedding_batch_size,
+    )
+    return _document_out(document, job)
+
+
+@router.post("/{document_id}/retry", response_model=DocumentOut, status_code=status.HTTP_202_ACCEPTED)
+def retry_document_ingest(
+    document_id: UUID,
+    background_tasks: BackgroundTasks,
+    access: Annotated[CourseAccess, Depends(require_course_teacher)],
+    db: Annotated[DbSession, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    embedder: Annotated[Embedder, Depends(get_embedder)],
+    session_maker: Annotated[SessionMaker, Depends(get_session_maker)],
+) -> DocumentOut:
+    document = db.get(Document, document_id)
+    if document is None or document.course_id != access.course.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    job = latest_job(db, document.id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ingest job is missing")
+    stale_before = datetime.now(UTC) - timedelta(seconds=settings.ingest_stale_seconds)
+    if not retry_ingest_job(db, job.id, stale_before):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ingest job is active or already succeeded",
+        )
+    db.refresh(job)
+    background_tasks.add_task(
+        _run_ingest,
+        job.id,
+        session_maker,
+        embedder,
+        settings.embedding_batch_size,
+    )
     return _document_out(document, job)
 
 

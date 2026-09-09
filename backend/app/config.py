@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -30,6 +31,8 @@ class Settings(BaseSettings):
     embedding_model: str = "BAAI/bge-m3"
     embedding_base_url: str = "https://api.siliconflow.cn/v1"
     siliconflow_api_key: str = ""
+    embedding_batch_size: int = Field(default=32, ge=1, le=256)
+    ingest_stale_seconds: int = Field(default=15 * 60, ge=60)
     llm_backend: str = "fake"
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
