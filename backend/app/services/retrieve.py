@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -37,16 +38,20 @@ def retrieve_chunks(
     *,
     top_k: int = SEARCH_TOP_K,
     min_score: float = SEARCH_MIN_SCORE,
+    excluded_document_ids: Collection[UUID] = (),
 ) -> list[SearchHit]:
     """Course-scoped vector top-k. Below min_score → empty, never a guess."""
     query = query.strip()
     if not query:
         return []
+    filters = [
+        Chunk.course_id == course_id,
+        Chunk.embedding_model == embedder.index_identity,
+    ]
+    if excluded_document_ids:
+        filters.append(Chunk.document_id.not_in(excluded_document_ids))
     chunks = db.execute(
-        select(Chunk).where(
-            Chunk.course_id == course_id,
-            Chunk.embedding_model == embedder.index_identity,
-        )
+        select(Chunk).where(*filters)
     ).scalars().all()
     if not chunks:
         return []
@@ -75,9 +80,16 @@ def retrieve_chunks(
 
 
 def has_incompatible_chunks(
-    db: DbSession, course_id: UUID, embedder: Embedder
+    db: DbSession,
+    course_id: UUID,
+    embedder: Embedder,
+    *,
+    excluded_document_ids: Collection[UUID] = (),
 ) -> bool:
+    filters = [Chunk.course_id == course_id]
+    if excluded_document_ids:
+        filters.append(Chunk.document_id.not_in(excluded_document_ids))
     identities = db.execute(
-        select(Chunk.embedding_model).where(Chunk.course_id == course_id)
+        select(Chunk.embedding_model).where(*filters)
     ).scalars().all()
     return any(identity != embedder.index_identity for identity in identities)

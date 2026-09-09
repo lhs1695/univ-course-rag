@@ -4,7 +4,7 @@
 
 ## 先固定本地题集
 
-在已忽略的 `corpus/local/eval-cases.json` 建立 20–30 条案例。题集不得进入 Git，也不得使用真实学生问题、完整私密课件或任何 key。每项固定 `id`、`category`、`query`、`expected_documents`（课程资料的文件名列表）和 `should_refuse`。拒答题的 `expected_documents` 必须为空；可回答题必须至少有一个预期文件。删除对照题可用 `excluded_documents` 列出本次评测中视为已删除的文件，无需破坏本机课程数据。
+在已忽略的 `corpus/local/eval-cases.json` 建立 20–30 条案例。题集不得进入 Git，也不得使用真实学生问题、完整私密课件或任何 key。每项固定 `id`、`category`、`query`、`expected_documents`（课程资料的文件名列表）和 `should_refuse`。拒答题的 `expected_documents` 必须为空；可回答题必须至少有一个预期文件。删除对照题可用 `excluded_documents` 列出本次评测中视为已删除的文件；评测器会在索引身份检查和 Top-K 排序前排除这些文件，无需破坏本机课程数据。
 
 类别至少覆盖：PDF 单点事实、PPTX 单点事实、跨页归纳、中文问英文资料、相似但无答案、完全无关、删除资料后的对照。每类保留失败样本，不得为分数删除或重写题目。
 

@@ -1,7 +1,20 @@
 import json
+from uuid import uuid4
 
 import pytest
-from app.eval import CaseSetError, load_cases, main
+from app.eval import (
+    CaseSetError,
+    EvalCase,
+    _classify_failure,
+    load_cases,
+    main,
+    run_evaluation,
+)
+from app.models.course import Course
+from app.models.document import Chunk, Document
+from app.services.embedder import FakeEmbedder
+from app.services.llm import FakeLLM
+from sqlalchemy.orm import Session
 
 
 def _cases() -> list[dict]:
@@ -43,3 +56,112 @@ def test_eval_run_requires_explicit_cloud_authorization(tmp_path) -> None:
 
     with pytest.raises(SystemExit):
         main(["--case-file", str(case_file), "--run"])
+
+
+def test_eval_excludes_documents_before_mismatch_check_and_top_k(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    course = Course(title="Evaluation course")
+    db.add(course)
+    db.flush()
+    excluded = Document(
+        course_id=course.id,
+        uploaded_by=uuid4(),
+        filename="deleted.pdf",
+        storage_path="deleted.pdf",
+    )
+    included = Document(
+        course_id=course.id,
+        uploaded_by=uuid4(),
+        filename="remaining.pdf",
+        storage_path="remaining.pdf",
+    )
+    db.add_all([excluded, included])
+    db.flush()
+
+    embedder = FakeEmbedder()
+    query = "alpha beta gamma"
+    db.add_all(
+        [
+            Chunk(
+                course_id=course.id,
+                document_id=excluded.id,
+                page=index,
+                text=query,
+                embedding=embedder.embed([query])[0],
+                embedding_model=embedder.index_identity,
+            )
+            for index in range(8)
+        ]
+    )
+    db.add(
+        Chunk(
+            course_id=course.id,
+            document_id=excluded.id,
+            page=9,
+            text=query,
+            embedding=embedder.embed([query])[0],
+            embedding_model="legacy-model",
+        )
+    )
+    db.add(
+        Chunk(
+            course_id=course.id,
+            document_id=included.id,
+            page=1,
+            text="alpha beta",
+            embedding=embedder.embed(["alpha beta"])[0],
+            embedding_model=embedder.index_identity,
+        )
+    )
+    db.commit()
+    monkeypatch.setattr("app.eval.build_embedder", lambda _settings: embedder)
+    monkeypatch.setattr("app.eval.build_llm", lambda _settings: FakeLLM())
+
+    report = run_evaluation(
+        db,
+        course.id,
+        [
+            EvalCase(
+                case_id="post-delete",
+                category="post_delete",
+                query=query,
+                expected_documents=("remaining.pdf",),
+                should_refuse=False,
+                excluded_documents=("deleted.pdf",),
+            )
+        ],
+    )
+
+    assert report["summary"]["recall_at_k"] == 1.0
+    assert report["summary"]["valid_citation_rate"] == 1.0
+    assert report["summary"]["failure_counts"] == {}
+
+
+@pytest.mark.parametrize(
+    ("should_refuse", "mismatch", "recall", "reliable", "expected"),
+    [
+        (False, True, False, False, "embedding_mismatch"),
+        (False, False, False, False, "retrieval_miss"),
+        (False, False, True, False, "missing_valid_citation"),
+        (True, False, False, True, "unexpected_answer"),
+        (False, False, True, True, None),
+        (True, False, False, False, None),
+    ],
+)
+def test_eval_failure_classification(
+    should_refuse: bool,
+    mismatch: bool,
+    recall: bool,
+    reliable: bool,
+    expected: str | None,
+) -> None:
+    assert (
+        _classify_failure(
+            should_refuse=should_refuse,
+            mismatch=mismatch,
+            recall=recall,
+            reliable=reliable,
+        )
+        == expected
+    )

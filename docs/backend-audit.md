@@ -8,7 +8,9 @@
 
 ### [P1] 删除后评测在 Top-K 之后才排除文档，可能高估拒答准确率
 
-- 证据：`backend/app/eval.py:117` 先调用 `retrieve_chunks` 得到已截断的 Top-K，随后才在 `backend/app/eval.py:118-122` 按文件名过滤 `excluded_documents`。
+状态：阶段 27 已修复；旧阶段 24 报告仍是历史结果，尚未调用云服务重跑。
+
+- 审计时证据（提交 `2783914`）：`backend/app/eval.py:117` 先调用 `retrieve_chunks` 得到已截断的 Top-K，随后才在 `backend/app/eval.py:118-122` 按文件名过滤 `excluded_documents`。
 - 影响：被排除文档的切片仍会占据 Top-K 名额，其他仍存在的文档没有机会递补。所谓“删除后对照”并不等价于先删除文档再检索，可能把本应由剩余资料回答的问题误判为正确拒答。阶段 24 的删除后指标因此只能视为当前实现下的结果，不能作为严格删除仿真的最终证据。
 - 测试缺口：`backend/tests/test_eval.py` 只覆盖题集校验、dry-run 和云调用开关，没有覆盖排除文档发生在检索前还是检索后。
 - 建议验收：让文档排除条件进入检索查询与排序之前；构造“被排除文档占据原 Top-K、未排除文档可递补”的回归测试，然后重新运行阶段 24 真评测并保留新旧报告差异。
@@ -40,7 +42,9 @@
 
 ### [P2] 真评测缺少增量落盘，且一个失败类型实际上不可达
 
-- 证据：`backend/app/eval.py:114-153` 在内存中完成全部 case；任一云调用抛错时，`backend/app/eval.py:207` 不能返回，最终的 `backend/app/eval.py:217-218` 不会写报告。另有 `actual_refusal = mismatch or not reliable`（`backend/app/eval.py:132`），因此回答题无合法引用时会先命中 `unexpected_refusal`（`backend/app/eval.py:135-136`），后面的 `missing_valid_citation`（`backend/app/eval.py:139-140`）不可达。
+状态：阶段 27 已修复失败分类；增量落盘仍待后续阶段处理。
+
+- 审计时证据（提交 `2783914`）：`backend/app/eval.py:114-153` 在内存中完成全部 case；任一云调用抛错时，`backend/app/eval.py:207` 不能返回，最终的 `backend/app/eval.py:217-218` 不会写报告。另有 `actual_refusal = mismatch or not reliable`（`backend/app/eval.py:132`），因此回答题无合法引用时会先命中 `unexpected_refusal`（`backend/app/eval.py:135-136`），后面的 `missing_valid_citation`（`backend/app/eval.py:139-140`）不可达。
 - 影响：长评测在末尾失败会丢失此前已付费完成的结果，重跑增加成本；失败分类不能准确区分检索后无合法引用，削弱调参诊断价值。
 - 建议验收：每题原子追加或周期性 checkpoint，保留失败题及安全错误摘要；重排失败分类并用表驱动测试覆盖每个枚举值。
 

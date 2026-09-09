@@ -28,7 +28,7 @@
 | 学情口径（阶段 9） | 第一期 `plan.md` §1 学情行 + 阶段 9；`intent.md` §2 |
 | 第二期范围 / 语料 | [`plan-2.md`](plan-2.md)（已收敛；夹具进仓、真课件不进 git） |
 | 第三期试用 / 答辩 | [`plan-3.md`](plan-3.md)（已收敛；18–19 仍按反馈触发） |
-| 第四期中期交付 / 加固 | [`plan-4.md`](plan-4.md)（当前合同；阶段 20–25） |
+| 第四期中期交付 / 加固 | [`plan-4.md`](plan-4.md)（当前合同；阶段 20–27 已完成，阶段 25 等待外部） |
 | 中期汇报版本 | [`midterm-notes.md`](midterm-notes.md)（tag、启动、门禁、限制与恢复） |
 | 中期汇报材料 | [`midterm-presentation.pptx`](midterm-presentation.pptx) 与 [`midterm-script.md`](midterm-script.md)（10 页 PPT、5/10 分钟口播） |
 | 试用课走位 | [`demo.md`](demo.md)（教师上传、学生问答、学情、删除后拒答） |

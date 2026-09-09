@@ -99,6 +99,24 @@ def _percentile(values: list[float], percentile: float) -> float | None:
     return round(ordered[index], 1)
 
 
+def _classify_failure(
+    *,
+    should_refuse: bool,
+    mismatch: bool,
+    recall: bool,
+    reliable: bool,
+) -> str | None:
+    if mismatch:
+        return "embedding_mismatch"
+    if not should_refuse and not recall:
+        return "retrieval_miss"
+    if not should_refuse and not reliable:
+        return "missing_valid_citation"
+    if should_refuse and reliable:
+        return "unexpected_answer"
+    return None
+
+
 def run_evaluation(db: DbSession, course_id: UUID, cases: list[EvalCase]) -> dict:
     settings = get_settings()
     embedder = build_embedder(settings)
@@ -113,13 +131,28 @@ def run_evaluation(db: DbSession, course_id: UUID, cases: list[EvalCase]) -> dic
     latencies: list[float] = []
     for case in cases:
         started = time.perf_counter()
-        mismatch = has_incompatible_chunks(db, course_id, embedder)
-        hits = [] if mismatch else retrieve_chunks(db, course_id, case.query, embedder)
-        hits = [
-            hit
-            for hit in hits
-            if document_names.get(hit.document_id) not in case.excluded_documents
-        ]
+        excluded_document_ids = {
+            document_id
+            for document_id, filename in document_names.items()
+            if filename in case.excluded_documents
+        }
+        mismatch = has_incompatible_chunks(
+            db,
+            course_id,
+            embedder,
+            excluded_document_ids=excluded_document_ids,
+        )
+        hits = (
+            []
+            if mismatch
+            else retrieve_chunks(
+                db,
+                course_id,
+                case.query,
+                embedder,
+                excluded_document_ids=excluded_document_ids,
+            )
+        )
         cited_ids = []
         if hits:
             _, cited_ids = generate_answer(db, case.query, hits, llm)
@@ -130,16 +163,12 @@ def run_evaluation(db: DbSession, course_id: UUID, cases: list[EvalCase]) -> dic
         recall = bool(set(case.expected_documents) & retrieved_documents)
         reliable = bool(cited_ids)
         actual_refusal = mismatch or not reliable
-        if mismatch:
-            failure_type = "embedding_mismatch"
-        elif case.should_refuse != actual_refusal:
-            failure_type = "unexpected_answer" if case.should_refuse else "unexpected_refusal"
-        elif not case.should_refuse and not recall:
-            failure_type = "retrieval_miss"
-        elif not case.should_refuse and not reliable:
-            failure_type = "missing_valid_citation"
-        else:
-            failure_type = None
+        failure_type = _classify_failure(
+            should_refuse=case.should_refuse,
+            mismatch=mismatch,
+            recall=recall,
+            reliable=reliable,
+        )
         results.append(
             {
                 "id": case.case_id,
