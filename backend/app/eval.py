@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
@@ -117,7 +120,132 @@ def _classify_failure(
     return None
 
 
-def run_evaluation(db: DbSession, course_id: UUID, cases: list[EvalCase]) -> dict:
+def _report(results: list[dict], cases: list[EvalCase]) -> dict:
+    by_id = {case.case_id: case for case in cases}
+    completed = [
+        row for row in results if row.get("id") in by_id and "latency_ms" in row
+    ]
+    answered = [case for case in cases if not case.should_refuse]
+    answered_results = [
+        row for row in completed if not by_id[row["id"]].should_refuse
+    ]
+    latencies = [row["latency_ms"] for row in completed]
+    return {
+        "summary": {
+            "case_count": len(completed),
+            "recall_at_k": (
+                round(sum(row["recall_at_k"] for row in answered_results) / len(answered), 3)
+                if len(answered_results) == len(answered)
+                else None
+            ),
+            "valid_citation_rate": (
+                round(
+                    sum(row["reliable_citation"] for row in answered_results) / len(answered),
+                    3,
+                )
+                if len(answered_results) == len(answered)
+                else None
+            ),
+            "refusal_accuracy": (
+                round(sum(row["refusal_correct"] for row in completed) / len(cases), 3)
+                if len(completed) == len(cases)
+                else None
+            ),
+            "latency_ms": {
+                "p50": _percentile(latencies, 0.5),
+                "p95": _percentile(latencies, 0.95),
+            },
+            "failure_counts": {
+                name: sum(row["failure_type"] == name for row in results)
+                for name in sorted(
+                    {row["failure_type"] for row in results if row["failure_type"]}
+                )
+            },
+        },
+        "failures": [row for row in results if row["failure_type"]],
+    }
+
+
+def _metadata(case_file: Path, course_id: UUID, settings: Settings) -> dict:
+    return {
+        "case_set_sha256": hashlib.sha256(case_file.read_bytes()).hexdigest(),
+        "course_id": str(course_id),
+        "embedding_backend": settings.embedder_backend,
+        "embedding_model": settings.embedding_model,
+        "llm_backend": settings.llm_backend,
+        "llm_model": settings.deepseek_model,
+    }
+
+
+def _public_metadata(metadata: dict) -> dict:
+    return {key: value for key, value in metadata.items() if key != "course_id"}
+
+
+def _atomic_write_json(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(temporary, path)
+
+
+def _checkpoint_report(metadata: dict, cases: list[EvalCase], results: list[dict]) -> dict:
+    report = _report(results, cases)
+    report["metadata"] = metadata
+    report["checkpoint"] = {
+        "status": "in_progress",
+        "total_case_count": len(cases),
+        "completed_case_ids": [row["id"] for row in results if "latency_ms" in row],
+        "results": results,
+    }
+    return report
+
+
+def _load_checkpoint(path: Path, metadata: dict, cases: list[EvalCase]) -> list[dict]:
+    try:
+        saved = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CaseSetError("cannot read evaluation checkpoint") from exc
+    if not isinstance(saved, dict) or saved.get("metadata") != metadata:
+        raise CaseSetError("checkpoint metadata does not match this evaluation")
+    checkpoint = saved.get("checkpoint")
+    if not isinstance(checkpoint, dict) or checkpoint.get("status") != "in_progress":
+        raise CaseSetError("checkpoint is not an unfinished evaluation")
+    results = checkpoint.get("results")
+    if not isinstance(results, list):
+        raise CaseSetError("checkpoint results are invalid")
+    case_ids = {case.case_id for case in cases}
+    completed_ids = checkpoint.get("completed_case_ids")
+    if (
+        not isinstance(completed_ids, list)
+        or len(completed_ids) != len(set(completed_ids))
+        or not set(completed_ids) <= case_ids
+    ):
+        raise CaseSetError("checkpoint completed cases are invalid")
+    completed = [row for row in results if isinstance(row, dict) and row.get("id") in completed_ids]
+    if {row.get("id") for row in completed} != set(completed_ids):
+        raise CaseSetError("checkpoint result records are invalid")
+    return completed
+
+
+def _evaluation_error(case: EvalCase, exc: Exception) -> dict:
+    error_type = type(exc).__name__
+    return {
+        "id": case.case_id,
+        "category": case.category,
+        "failure_type": "evaluation_error",
+        "error_type": error_type,
+        "error_summary": f"{error_type}: evaluation request failed",
+    }
+
+
+def run_evaluation(
+    db: DbSession,
+    course_id: UUID,
+    cases: list[EvalCase],
+    *,
+    completed_results: list[dict] | None = None,
+    on_case_complete: Callable[[list[dict]], None] | None = None,
+) -> dict:
     settings = get_settings()
     embedder = build_embedder(settings)
     llm = build_llm(settings)
@@ -127,9 +255,11 @@ def run_evaluation(db: DbSession, course_id: UUID, cases: list[EvalCase]) -> dic
             select(Document).where(Document.course_id == course_id)
         ).scalars()
     }
-    results: list[dict] = []
-    latencies: list[float] = []
+    results = completed_results if completed_results is not None else []
+    completed_ids = {row["id"] for row in results}
     for case in cases:
+        if case.case_id in completed_ids:
+            continue
         started = time.perf_counter()
         excluded_document_ids = {
             document_id
@@ -157,7 +287,6 @@ def run_evaluation(db: DbSession, course_id: UUID, cases: list[EvalCase]) -> dic
         if hits:
             _, cited_ids = generate_answer(db, case.query, hits, llm)
         latency_ms = (time.perf_counter() - started) * 1000
-        latencies.append(latency_ms)
         retrieved_documents = {document_names.get(hit.document_id) for hit in hits}
         retrieved_documents.discard(None)
         recall = bool(set(case.expected_documents) & retrieved_documents)
@@ -169,40 +298,20 @@ def run_evaluation(db: DbSession, course_id: UUID, cases: list[EvalCase]) -> dic
             recall=recall,
             reliable=reliable,
         )
-        results.append(
-            {
-                "id": case.case_id,
-                "category": case.category,
-                "recall_at_k": recall,
-                "reliable_citation": reliable,
-                "refusal_correct": case.should_refuse == actual_refusal,
-                "failure_type": failure_type,
-                "latency_ms": round(latency_ms, 1),
-            }
-        )
+        row = {
+            "id": case.case_id,
+            "category": case.category,
+            "recall_at_k": recall,
+            "reliable_citation": reliable,
+            "refusal_correct": case.should_refuse == actual_refusal,
+            "failure_type": failure_type,
+            "latency_ms": round(latency_ms, 1),
+        }
+        results.append(row)
+        if on_case_complete is not None:
+            on_case_complete(results)
 
-    answered = [case for case in cases if not case.should_refuse]
-    answered_results = [
-        row for case, row in zip(cases, results, strict=True) if not case.should_refuse
-    ]
-    summary = {
-        "case_count": len(cases),
-        "recall_at_k": round(
-            sum(row["recall_at_k"] for row in answered_results) / len(answered), 3
-        ),
-        "valid_citation_rate": round(
-            sum(row["reliable_citation"] for row in answered_results) / len(answered), 3
-        ),
-        "refusal_accuracy": round(
-            sum(row["refusal_correct"] for row in results) / len(cases), 3
-        ),
-        "latency_ms": {"p50": _percentile(latencies, 0.5), "p95": _percentile(latencies, 0.95)},
-        "failure_counts": {
-            name: sum(row["failure_type"] == name for row in results)
-            for name in sorted({row["failure_type"] for row in results if row["failure_type"]})
-        },
-    }
-    return {"summary": summary, "failures": [row for row in results if row["failure_type"]]}
+    return _report(results, cases)
 
 
 def _require_live_configuration(settings: Settings) -> None:
@@ -222,6 +331,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run", action="store_true", help="execute the local course evaluation")
     parser.add_argument("--allow-cloud", action="store_true", help="acknowledge live API use and cost")
     parser.add_argument("--output", type=Path, help="write summary and failure list JSON")
+    parser.add_argument("--resume", action="store_true", help="resume a matching unfinished checkpoint")
     args = parser.parse_args(argv)
     cases = load_cases(args.case_file)
     if not args.run:
@@ -231,20 +341,37 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--run requires --allow-cloud, --course-id, and --output")
     settings = get_settings()
     _require_live_configuration(settings)
+    metadata = _metadata(args.case_file, args.course_id, settings)
+    if args.resume:
+        completed_results = _load_checkpoint(args.output, metadata, cases)
+    else:
+        completed_results = []
+
+    def save_checkpoint(results: list[dict]) -> None:
+        _atomic_write_json(args.output, _checkpoint_report(metadata, cases, results))
+
     db = SessionLocal()
     try:
-        report = run_evaluation(db, args.course_id, cases)
+        try:
+            report = run_evaluation(
+                db,
+                args.course_id,
+                cases,
+                completed_results=completed_results,
+                on_case_complete=save_checkpoint,
+            )
+        except Exception as exc:  # noqa: BLE001 - cloud clients expose provider-specific errors.
+            current_case = next(
+                case for case in cases if case.case_id not in {row["id"] for row in completed_results}
+            )
+            failed_results = [*completed_results, _evaluation_error(current_case, exc)]
+            _atomic_write_json(args.output, _checkpoint_report(metadata, cases, failed_results))
+            print("evaluation interrupted; safe checkpoint saved", file=sys.stderr)
+            return 1
     finally:
         db.close()
-    report["metadata"] = {
-        "case_set_sha256": hashlib.sha256(args.case_file.read_bytes()).hexdigest(),
-        "embedding_backend": settings.embedder_backend,
-        "embedding_model": settings.embedding_model,
-        "llm_backend": settings.llm_backend,
-        "llm_model": settings.deepseek_model,
-    }
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    report["metadata"] = _public_metadata(metadata)
+    _atomic_write_json(args.output, report)
     print(json.dumps(report["summary"], ensure_ascii=False))
     return 0
 

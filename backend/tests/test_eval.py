@@ -5,7 +5,12 @@ import pytest
 from app.eval import (
     CaseSetError,
     EvalCase,
+    _atomic_write_json,
+    _checkpoint_report,
     _classify_failure,
+    _evaluation_error,
+    _load_checkpoint,
+    _report,
     load_cases,
     main,
     run_evaluation,
@@ -165,3 +170,118 @@ def test_eval_failure_classification(
         )
         == expected
     )
+
+
+def test_eval_checkpoint_preserves_completed_cases_and_resume_skips_them(
+    db: Session, monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    course = Course(title="Checkpoint course")
+    db.add(course)
+    db.flush()
+    document = Document(
+        course_id=course.id,
+        uploaded_by=uuid4(),
+        filename="lecture.pdf",
+        storage_path="lecture.pdf",
+    )
+    db.add(document)
+    db.commit()
+    cases = [
+        EvalCase("first", "pdf_fact", "first query", ("lecture.pdf",), False, ()),
+        EvalCase("second", "pdf_fact", "second query", ("lecture.pdf",), False, ()),
+    ]
+    embedder = FakeEmbedder()
+    calls: list[str] = []
+    metadata = {"course_id": str(course.id), "case_set_sha256": "test"}
+    output = tmp_path / "checkpoint.json"
+
+    monkeypatch.setattr("app.eval.build_embedder", lambda _settings: embedder)
+    monkeypatch.setattr("app.eval.build_llm", lambda _settings: FakeLLM())
+    monkeypatch.setattr("app.eval.has_incompatible_chunks", lambda *args, **kwargs: False)
+
+    def retrieve(_db, _course_id, query, _embedder, **_kwargs):
+        calls.append(query)
+        if query == "second query" and calls.count(query) == 1:
+            raise RuntimeError("query text must not be persisted")
+        return []
+
+    monkeypatch.setattr("app.eval.retrieve_chunks", retrieve)
+
+    with pytest.raises(RuntimeError):
+        run_evaluation(
+            db,
+            course.id,
+            cases,
+            on_case_complete=lambda rows: _atomic_write_json(
+                output, _checkpoint_report(metadata, cases, rows)
+            ),
+        )
+
+    completed = _load_checkpoint(output, metadata, cases)
+    _atomic_write_json(
+        output,
+        _checkpoint_report(
+            metadata,
+            cases,
+            [*completed, _evaluation_error(cases[1], RuntimeError("private query detail"))],
+        ),
+    )
+    completed = _load_checkpoint(output, metadata, cases)
+    assert [row["id"] for row in completed] == ["first"]
+    assert "first query" not in output.read_text(encoding="utf-8")
+    assert "private query detail" not in output.read_text(encoding="utf-8")
+    report = run_evaluation(db, course.id, cases, completed_results=completed)
+
+    assert calls == ["first query", "second query", "second query"]
+    assert report["summary"]["case_count"] == 2
+    assert "checkpoint" not in report
+
+
+def test_eval_checkpoint_rejects_different_metadata_and_redacts_exception(tmp_path) -> None:
+    cases = [EvalCase("case", "pdf_fact", "private question", ("lecture.pdf",), False, ())]
+    metadata = {
+        "case_set_sha256": "same-cases",
+        "course_id": str(uuid4()),
+        "embedding_backend": "siliconflow",
+        "embedding_model": "BAAI/bge-m3",
+        "llm_backend": "deepseek",
+        "llm_model": "deepseek-v4-flash",
+    }
+    output = tmp_path / "checkpoint.json"
+    output.write_text(
+        json.dumps(_checkpoint_report(metadata, cases, [])), encoding="utf-8"
+    )
+
+    changed = {**metadata, "llm_model": "other-model"}
+    with pytest.raises(CaseSetError, match="metadata"):
+        _load_checkpoint(output, changed, cases)
+
+    row = _evaluation_error(cases[0], RuntimeError("private question and API detail"))
+    assert row == {
+        "id": "case",
+        "category": "pdf_fact",
+        "failure_type": "evaluation_error",
+        "error_type": "RuntimeError",
+        "error_summary": "RuntimeError: evaluation request failed",
+    }
+
+
+def test_eval_final_report_keeps_existing_public_shape() -> None:
+    cases = [EvalCase("case", "pdf_fact", "query", ("lecture.pdf",), False, ())]
+    report = _report(
+        [
+            {
+                "id": "case",
+                "category": "pdf_fact",
+                "recall_at_k": True,
+                "reliable_citation": True,
+                "refusal_correct": True,
+                "failure_type": None,
+                "latency_ms": 1.0,
+            }
+        ],
+        cases,
+    )
+
+    assert set(report) == {"summary", "failures"}
+    assert report["summary"]["case_count"] == 1

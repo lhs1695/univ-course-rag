@@ -44,6 +44,20 @@ backend\.venv\Scripts\python.exe -m app.eval `
 
 输出只保存汇总和失败案例的 ID、类别、失败类型、Recall@k、有效引用标志、拒答判定和延迟；不会保存 query、答案、引用摘录、课件正文或 key。建议将输出也保留在已忽略的 `corpus/local/`。
 
+## 中断与恢复
+
+真运行每完成一题都会通过原子替换更新 `--output` 指定的 checkpoint。因此 API 或网络异常时，之前已经完成的付费题目不会丢失；异常题会记录 `evaluation_error`、异常类别及固定安全摘要，不保存供应商原始错误文本。中断后使用相同的命令并加 `--resume` 恢复：
+
+```powershell
+backend\.venv\Scripts\python.exe -m app.eval `
+  --case-file corpus/local/eval-cases.json `
+  --run --allow-cloud --resume `
+  --course-id <同一课程 UUID> `
+  --output corpus/local/eval-result-summary.json
+```
+
+恢复会严格比较题集 SHA-256、课程 ID、embedding backend/model 和 LLM backend/model；任一不同都会拒绝，不能把不同配置的指标拼在一起。已完成题会跳过，异常题会重新执行。全部题成功后 checkpoint 自动收敛回原有的 `summary`、`failures` 与 `metadata` 汇总格式。
+
 ## 判读与后续
 
 记录四项主指标：正确文件 Recall@k、可回答题的有效引用率、拒答准确率、p50/p95 延迟；失败类型包含索引不一致、检索漏召回、意外拒答、意外回答和缺少合法引用。先按类别审查失败清单，再决定是否另立调参阶段。不能因为一次结果而直接修改 `top_k=8` 或 `min_score=0.15`；若有稳定收益证据，阈值修改必须单独提交并重跑 `test_retrieve.py`、`test_ask.py` 与 Ruff。
