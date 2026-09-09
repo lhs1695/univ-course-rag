@@ -2,9 +2,9 @@
 
 高校课程知识库智能问答（个人大创项目）。Python / FastAPI / Vue 3 / PostgreSQL+pgvector / DeepSeek v4-flash 生成 / 硅基流动 BGE-M3 向量。
 
-**先读 [`docs/INDEX.md`](docs/INDEX.md)。第一期 [`docs/plan.md`](docs/plan.md)、第二期 [`docs/plan-2.md`](docs/plan-2.md) 已收敛。第三期合同 [`docs/plan-3.md`](docs/plan-3.md)（试用与答辩）。**
+**先读 [`docs/INDEX.md`](docs/INDEX.md)。第一至三期主线已收敛，第四期以 [`docs/plan-4.md`](docs/plan-4.md) 为当前合同。阶段 20、21 已完成，下一阶段为 22。**
 
-当前进度：课务、多格式入库与本机真模型开关已落地；中期基线见 [`docs/midterm-notes.md`](docs/midterm-notes.md)，试用课走位见 [`docs/demo.md`](docs/demo.md)。真课件与 API Key 不要进 git。
+当前进度：课务、多格式入库、本机真模型开关与真课件试用已落地；中期版本见 [`docs/midterm-notes.md`](docs/midterm-notes.md)，汇报材料见 [`docs/midterm-presentation.pptx`](docs/midterm-presentation.pptx) 和 [`docs/midterm-script.md`](docs/midterm-script.md)，试用走位见 [`docs/demo.md`](docs/demo.md)。真课件与 API Key 不要进 git。
 
 开发期前端：`cd frontend && npm install && npm run dev`（Vite proxy 到 `127.0.0.1:8000`）。
 
