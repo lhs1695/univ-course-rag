@@ -105,6 +105,15 @@ def test_insights_aggregates_student_queries_without_identities(
     _add_log(
         db,
         course_id=course1.id,
+        user_id=student_a.id,
+        query="课件里有期末范围吗",
+        hit=True,
+        error_code=NO_EVIDENCE,
+        created_at=t3,
+    )
+    _add_log(
+        db,
+        course_id=course1.id,
         user_id=teacher.id,
         query="课件里有期末范围吗",
         hit=False,
@@ -140,7 +149,7 @@ def test_insights_aggregates_student_queries_without_identities(
     assert len(body["no_evidence"]) == 1
     miss = body["no_evidence"][0]
     assert miss["query"] == "课件里有期末范围吗"
-    assert miss["count"] == 2
+    assert miss["count"] == 3
     assert miss["last_asked_at"].startswith("2026-03-01T11:00:00")
 
 

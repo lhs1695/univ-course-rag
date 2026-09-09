@@ -87,6 +87,32 @@ def test_ask_drops_illegal_citation_ids(client: TestClient, db: Session) -> None
     assert len(cited) == 1
 
 
+@pytest.mark.parametrize("answer", ["没有引用的回答。", "编造 [Source 00000000-0000-0000-0000-000000000000]"])
+def test_ask_with_hits_but_no_legal_citations_is_no_evidence(
+    client: TestClient, db: Session, answer: str
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    upload(client, course.id, FIXTURES / "sample.md")
+    llm = FakeLLM(scripted=answer)
+    app.dependency_overrides[get_llm] = lambda: llm
+
+    response = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["error_code"] == NO_EVIDENCE
+    assert body["answer"] is None
+    assert body["citations"] == []
+    assert llm.prompts
+    db.expire_all()
+    log = db.execute(select(QueryLog)).scalars().one()
+    assert log.hit is True
+    assert log.error_code == NO_EVIDENCE
+
+
 def test_ask_golden_citations(client: TestClient, db: Session) -> None:
     teacher = add_user(db, "t1", "pass", UserRole.teacher)
     student = add_user(db, "alice", "pass", UserRole.student)

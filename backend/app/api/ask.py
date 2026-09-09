@@ -57,6 +57,9 @@ def ask_course(
     else:
         llm_called = True
         answer, cited_ids = generate_answer(db, body.query, hits, llm)
+        if not cited_ids:
+            answer = None
+            error_code = NO_EVIDENCE
     duration_ms = int((time.perf_counter() - started) * 1000)
     db.add(
         QueryLog(

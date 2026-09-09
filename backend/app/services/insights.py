@@ -45,7 +45,7 @@ def aggregate_course_insights(db: DbSession, course_id: UUID) -> dict:
         key = normalize_query(log.query)
         if not key:
             continue
-        if log.hit:
+        if log.error_code is None:
             frequent_groups[key].append(log)
         if log.error_code == NO_EVIDENCE:
             no_evidence_groups[key].append(log)
