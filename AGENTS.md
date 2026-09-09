@@ -1,6 +1,6 @@
 # AGENTS.md
 
-大创 `univ-course-rag`。第一、二期已收敛；第三期以 `docs/plan-3.md` 为准，一次会话只做一个阶段。阶段 16、16.5 已完成，阶段 17 走位文档已完成、浏览器待维护者实走；阶段 18、19 仍需真实反馈触发，不要提前实施，也不要默认 push。
+大创 `univ-course-rag`。第一、二期已收敛；第三期以 `docs/plan-3.md` 为准，一次会话只做一个阶段。阶段 16、16.5 已完成；阶段 17 的文档及非破坏性浏览器核验已完成，因 `corpus/local/` 无真课件，上传/删除实走待完成。阶段 18、19 仍需真实反馈触发，不要提前实施，也不要默认 push。
 
 权威顺序：当前 plan > `docs/decisions` > `docs/intent.md`。不要重开 Cookie session、Postgres + pgvector、Fake 测试、无 LangChain/RAGFlow 等已拍板技术栈。
 

@@ -50,6 +50,7 @@
 
 - 开发和 pytest 默认 FakeEmbedder/FakeLLM，不需要云 key，也不会靠真实 API 通过测试。
 - 中期演示如需真模型，只在本机 `.env` 设置 `EMBEDDER_BACKEND=siliconflow`、`LLM_BACKEND=deepseek` 并填写对应 key，然后重启 uvicorn。
+- 切换 Embedder 后必须从原文件重新入库；Fake 与硅基流动向量不能混用，旧切片不会自动重算。
 - `.env`、key 正文、真实课件和上传数据不得提交、截图或写进普通日志。
 
 ## 发布门禁（2026-09-09）
