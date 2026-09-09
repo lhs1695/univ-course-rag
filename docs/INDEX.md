@@ -4,18 +4,19 @@
 
 ## 下一会话
 
-先读 [`NEXT-SESSION.md`](NEXT-SESSION.md)。第一期 [`plan.md`](plan.md)、第二期 [`plan-2.md`](plan-2.md) 已收敛。第三期：[`plan-3.md`](plan-3.md)（已立项；下一会话只做阶段 16）。
+先读 [`NEXT-SESSION.md`](NEXT-SESSION.md)。第一至三期主线已收敛。第四期：[`plan-4.md`](plan-4.md)（已立项；下一会话只做阶段 20）。
 
 ## 权威顺序
 
 冲突时以更具体的施工合同为准：
 
-1. [`plan-3.md`](plan-3.md) — **第三期**当前合同（试用与答辩；16–17 主线；18–19 默认跳过）
-2. [`plan-2.md`](plan-2.md) — **第二期**已冻结（主线 11–13；14–15 默认跳过）
-3. [`plan.md`](plan.md) — **第一期**已冻结（阶段 0–10）
-4. [`decisions/`](decisions/README.md) — 已拍板取舍（001–004）
-5. [`intent.md`](intent.md) — 产品要什么 / 不做什么
-6. [`tech-recommendations.md`](tech-recommendations.md) — **仅**检索失败分类
+1. [`plan-4.md`](plan-4.md) — **第四期**当前合同（中期交付与证据加固；阶段 20–25）
+2. [`plan-3.md`](plan-3.md) — **第三期**已收敛（16–17 完成；18–19 仍按反馈触发）
+3. [`plan-2.md`](plan-2.md) — **第二期**已冻结（主线 11–13；14–15 默认跳过）
+4. [`plan.md`](plan.md) — **第一期**已冻结（阶段 0–10）
+5. [`decisions/`](decisions/README.md) — 已拍板取舍（001–004）
+6. [`intent.md`](intent.md) — 产品要什么 / 不做什么
+7. [`tech-recommendations.md`](tech-recommendations.md) — **仅**检索失败分类
 
 ## 按需读
 
@@ -26,7 +27,8 @@
 | 阶段 3–5 借鉴开源 | `decisions/003-rag-reference-repos.md` |
 | 学情口径（阶段 9） | 第一期 `plan.md` §1 学情行 + 阶段 9；`intent.md` §2 |
 | 第二期范围 / 语料 | [`plan-2.md`](plan-2.md)（已收敛；夹具进仓、真课件不进 git） |
-| 第三期试用 / 答辩 | [`plan-3.md`](plan-3.md)（当前合同） |
+| 第三期试用 / 答辩 | [`plan-3.md`](plan-3.md)（已收敛；18–19 仍按反馈触发） |
+| 第四期中期交付 / 加固 | [`plan-4.md`](plan-4.md)（当前合同；阶段 20–25） |
 | 中期汇报版本 | [`midterm-notes.md`](midterm-notes.md)（tag、启动、门禁、限制与恢复） |
 | 试用课走位 | [`demo.md`](demo.md)（教师上传、学生问答、学情、删除后拒答） |
 | 怎么测（仓级） | 根目录 [`AGENTS.md`](../AGENTS.md)「怎么测」；不限第二期 |

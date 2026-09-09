@@ -1,6 +1,6 @@
 # AGENTS.md
 
-大创 `univ-course-rag`。第一、二期已收敛；第三期以 `docs/plan-3.md` 为准，一次会话只做一个阶段。阶段 16、16.5、17 已完成；阶段 17 已用 MIT OCW 真 PDF/PPTX 跑通上传、真模型问答与引用、教师学情、删除依据后拒答。阶段 18、19 仍需真实反馈触发，不要提前实施，也不要默认 push。
+大创 `univ-course-rag`。第一、二期与第三期主线已收敛；第四期以 `docs/plan-4.md` 为准，一次会话只做一个阶段，下一阶段为 20。阶段 18、19 仍沿用第三期的真实反馈触发条件，不要提前实施，也不要默认 push。
 
 权威顺序：当前 plan > `docs/decisions` > `docs/intent.md`。不要重开 Cookie session、Postgres + pgvector、Fake 测试、无 LangChain/RAGFlow 等已拍板技术栈。
 
@@ -30,7 +30,7 @@ Unix 使用 `python3.12 -m venv .venv` 和 `source .venv/bin/activate`。
 - 只跑当前阶段“证明”点名的 pytest 和本次 diff 直接改到的测试；不要默认跑全量。
 - 改 Python 后，在已激活 `backend/.venv` 的仓库根运行 `python -m ruff check`；Windows 不要假定根目录有 `ruff.exe`。
 - 已有 pytest 覆盖的行为不在浏览器重复验证。若改 UI，只实际点击本阶段的新控件一次；文件选择器受阻时按阶段测试验收并如实交接。
-- 只有 diff 可能影响权限、串课或问答时，才补跑对应旧测试；阶段证明以 `plan-3.md` 为准。
+- 只有 diff 可能影响权限、串课或问答时，才补跑对应旧测试；阶段证明以当前 `plan-4.md` 为准。
 
 需要条件回归时，在已激活虚拟环境的仓库根运行：
 
