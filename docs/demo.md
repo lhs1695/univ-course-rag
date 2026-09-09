@@ -71,7 +71,10 @@
 
 ## 2026-09-09 实走记录
 
-- 已验证：Vite 登录、teacher/student 课程列表、教师资料页、学生 `NO_EVIDENCE` 展示、教师学情“未命中 / 拒答”记录。
-- 真模型开关与两个 key 的“是否就绪”检查通过；已用硅基流动查询向量请求现有资料，未读取或展示 key 正文。
-- 未完成：`corpus/local/` 无真课件，因此未上传，也未执行不可恢复的删除步骤。
-- 现有成功资料是 Fake 阶段测试夹具；切到硅基流动后用其旧向量提问返回 `NO_EVIDENCE`，因此 DeepSeek 未被调用。该结果符合向量空间不兼容预期，不作为真模型召回或生成效果结论。
+- 来源：MIT OpenCourseWare 12.010（Fall 2024），使用 Lecture 1 PDF 与 Lecture 22 PPTX；来源和 CC BY-NC-SA 4.0 许可记录随本机课件保存在已忽略的 `corpus/local/`，课件不进 Git。
+- 离线预检：项目解析器从 PDF 提取 8 页、约 4.3k 字符，从 PPTX 提取 29 页、约 10.3k 字符；两份均为文本型课件。
+- 真模型：仅确认 `EMBEDDER_BACKEND=siliconflow`、`LLM_BACKEND=deepseek` 与两个 key 已就绪，未读取或展示 key 正文。新建“MIT公开课件试用课”，teacher/student 按角色加入，两份课件均真实入库成功。
+- 命中验证：中文询问共同编程环境，DeepSeek 回答 Jupyter Notebooks，引用 Lecture 1 PDF 第 6 页；中文询问 Pull Request，回答其向官方仓库维护者请求合并改动，引用 Lecture 22 PPTX 第 15、16 页。教师学情正确显示两条命中问句且不展示学生身份。
+- 删除验证：确认框明确指向 Lecture 22 PPTX 后删除，资料及相关切片消失；学生复问完全相同的 Pull Request 问题时不再显示引用，并明确回答课件未提及。PPTX 原文件仍在 `corpus/local/`，可重新上传恢复。
+- 已知观察：删除后剩余 PDF 的泛化编程片段仍越过当前 `0.15` 检索阈值，因此该次日志的 `hit=True`，但生成层没有引用并作出拒答；“未命中 / 拒答”表不会把这类生成层拒答计入。阶段 17 的产品拒答目标已满足，此统计语义留作后续真实反馈项，不在本阶段扩改。
+- 浏览器控制台只有未登录时 `/auth/me` 的预期 401 与缺失 `favicon.ico` 的 404，未发现业务流程异常。

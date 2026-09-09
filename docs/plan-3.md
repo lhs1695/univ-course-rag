@@ -1,12 +1,12 @@
 # Plan：univ-course-rag 第三期
 
-状态：已立项；主线 **中期汇报与试用**；阶段 16、16.5 已完成；阶段 17 已完成非破坏性浏览器核验，待真课件上传与删除实走
+状态：第三期主线 **中期汇报与试用** 已完成；阶段 16、16.5、17 已完成，阶段 18、19 未触发
 日期：2026-09-01  
 对照：第一期 `plan.md`、第二期 `plan-2.md` 已收敛。栈不重开（Cookie session、Postgres+pgvector、**pytest 默认 FakeEmbedder/FakeLLM**、无 LangChain/RAGFlow 骨架）
 
 **施工纪律：** 一次会话只做下面某一个阶段；课件/提问当不可信文本；**两个云 key 只写本机 `.env`，不进 git、不进普通日志、不贴进聊天。** 怎么测以根目录 `AGENTS.md` 为准。偏离则同一批改动更新本文。
 
-主线 **16（已完成）→ 16.5（已完成）→ 17**。阶段 **18** 仅当试用发现失败原因完全读不懂时再做。管理员改密、句级引用、独立 worker **默认不做**（未触发则交接写「未做 / 未触发」）。
+主线 **16（已完成）→ 16.5（已完成）→ 17（已完成）**。阶段 **18** 仅当试用发现失败原因完全读不懂时再做。管理员改密、句级引用、独立 worker **默认不做**（未触发则交接写「未做 / 未触发」）。
 
 ---
 
@@ -61,7 +61,7 @@
 - **不做：** 不改业务功能、不提前写阶段 17 的 `docs/demo.md`、不制作汇报 PPT、不调用真实云 API、不重写 Git 历史、不为了快照新增长期分支。
 - **证明：** 在 `backend/.venv` 环境按仓库门禁运行 `pytest backend/tests/test_health.py backend/tests/test_auth.py backend/tests/test_courses.py backend/tests/test_ingest.py backend/tests/test_retrieve.py backend/tests/test_ask.py backend/tests/test_insights.py` 与仓库根 `python -m ruff check`，前端运行 `npm run build`；记录命令和结果但不记录密钥。`git status --short` 为空；`git show v0.3.0-midterm` 指向验收提交；检查该 tag 的文件树不含 `.env`、`corpus/local/`、上传数据或其他敏感内容。浏览器与真实问答留到阶段 17。
 
-### 阶段 17 — 试用课走位（文档及非破坏性浏览器核验已完成，真课件上传/删除待实走）
+### 阶段 17 — 试用课走位（已完成）
 
 - **做：** 书面走位（建议 `docs/demo.md`）：教师登录 → 本课上传 1–3 份**可抽文本**的真 PPT/PDF（文件放 `corpus/local/`，不进 git）→ 学生用 Vite 地址提问（命中则有出处）→ 教师看学情两表 → 删一份资料后同一问应变拒答。附一句失败分类口播，对照 `tech-recommendations.md`。上传区文案可提示「扫描件/纯截图页抽不到字」。
 - **不做：** 把真课件推进 git；为演示改 golden；OCR/vision。
@@ -89,6 +89,6 @@
 
 ## 4. 开工顺序
 
-**16（已完成）→ 16.5（已完成）→ 17**。18、19 默认不做。不要把真课件或 API Key 写入仓库。
+**16（已完成）→ 16.5（已完成）→ 17（已完成）**。18、19 默认不做。不要把真课件或 API Key 写入仓库。
 
-下一步由维护者按 `docs/demo.md` 完成阶段 17 浏览器实走，再根据真实反馈决定是否触发阶段 18 或 19。不要提前实施，也不要默认 push。
+2026-09-09 已按 `docs/demo.md` 用 MIT OCW 文本型 PDF/PPTX 完成浏览器实走：真向量入库、真生成、引用、教师学情与删除依据后拒答均有实证。后续只根据新的真实反馈决定是否触发阶段 18 或 19；不要提前实施，也不要默认 push。
