@@ -1,6 +1,6 @@
 # Plan：univ-course-rag 第三期
 
-状态：已立项；主线 **中期汇报与试用**；阶段 16、16.5 已完成；下一会话只做阶段 **17**（试用课走位）
+状态：已立项；主线 **中期汇报与试用**；阶段 16、16.5 已完成；阶段 17 走位文档已完成，待维护者浏览器实走
 日期：2026-09-01  
 对照：第一期 `plan.md`、第二期 `plan-2.md` 已收敛。栈不重开（Cookie session、Postgres+pgvector、**pytest 默认 FakeEmbedder/FakeLLM**、无 LangChain/RAGFlow 骨架）
 
@@ -61,7 +61,7 @@
 - **不做：** 不改业务功能、不提前写阶段 17 的 `docs/demo.md`、不制作汇报 PPT、不调用真实云 API、不重写 Git 历史、不为了快照新增长期分支。
 - **证明：** 在 `backend/.venv` 环境按仓库门禁运行 `pytest backend/tests/test_health.py backend/tests/test_auth.py backend/tests/test_courses.py backend/tests/test_ingest.py backend/tests/test_retrieve.py backend/tests/test_ask.py backend/tests/test_insights.py` 与仓库根 `python -m ruff check`，前端运行 `npm run build`；记录命令和结果但不记录密钥。`git status --short` 为空；`git show v0.3.0-midterm` 指向验收提交；检查该 tag 的文件树不含 `.env`、`corpus/local/`、上传数据或其他敏感内容。浏览器与真实问答留到阶段 17。
 
-### 阶段 17 — 试用课走位（答辩脚本）
+### 阶段 17 — 试用课走位（走位文档已完成，浏览器待实走）
 
 - **做：** 书面走位（建议 `docs/demo.md`）：教师登录 → 本课上传 1–3 份**可抽文本**的真 PPT/PDF（文件放 `corpus/local/`，不进 git）→ 学生用 Vite 地址提问（命中则有出处）→ 教师看学情两表 → 删一份资料后同一问应变拒答。附一句失败分类口播，对照 `tech-recommendations.md`。上传区文案可提示「扫描件/纯截图页抽不到字」。
 - **不做：** 把真课件推进 git；为演示改 golden；OCR/vision。
@@ -91,4 +91,4 @@
 
 **16（已完成）→ 16.5（已完成）→ 17**。18、19 默认不做。不要把真课件或 API Key 写入仓库。
 
-下一会话只实施 **阶段 17**：写并核对试用课走位，浏览器由维护者按脚本走一次。不要提前做 18–19；不要默认 push。
+下一步由维护者按 `docs/demo.md` 完成阶段 17 浏览器实走，再根据真实反馈决定是否触发阶段 18 或 19。不要提前实施，也不要默认 push。

@@ -28,5 +28,6 @@
 | 第二期范围 / 语料 | [`plan-2.md`](plan-2.md)（已收敛；夹具进仓、真课件不进 git） |
 | 第三期试用 / 答辩 | [`plan-3.md`](plan-3.md)（当前合同） |
 | 中期汇报版本 | [`midterm-notes.md`](midterm-notes.md)（tag、启动、门禁、限制与恢复） |
+| 试用课走位 | [`demo.md`](demo.md)（教师上传、学生问答、学情、删除后拒答） |
 | 怎么测（仓级） | 根目录 [`AGENTS.md`](../AGENTS.md)「怎么测」；不限第二期 |
-| 检索失败口播 | [`tech-recommendations.md`](tech-recommendations.md)（阶段 17 对照；16 不要扩写成走位文档） |
+| 检索失败口播 | [`tech-recommendations.md`](tech-recommendations.md)（阶段 17 走位对照） |

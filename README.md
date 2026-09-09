@@ -4,7 +4,7 @@
 
 **先读 [`docs/INDEX.md`](docs/INDEX.md)。第一期 [`docs/plan.md`](docs/plan.md)、第二期 [`docs/plan-2.md`](docs/plan-2.md) 已收敛。第三期合同 [`docs/plan-3.md`](docs/plan-3.md)（试用与答辩）。**
 
-当前进度：课务、多格式入库与本机真模型开关已落地；中期汇报 Git 基线见 [`docs/midterm-notes.md`](docs/midterm-notes.md)，下一阶段是试用课走位。真课件与 API Key 不要进 git。
+当前进度：课务、多格式入库与本机真模型开关已落地；中期基线见 [`docs/midterm-notes.md`](docs/midterm-notes.md)，试用课走位见 [`docs/demo.md`](docs/demo.md)。真课件与 API Key 不要进 git。
 
 开发期前端：`cd frontend && npm install && npm run dev`（Vite proxy 到 `127.0.0.1:8000`）。
 
