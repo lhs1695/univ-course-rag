@@ -1,6 +1,6 @@
 # AGENTS.md
 
-大创 `univ-course-rag`。第一、二期与第三期主线已收敛；第四期以 `docs/plan-4.md` 为准，一次会话只做一个阶段，阶段 20 已完成，下一阶段为 21。阶段 18、19 仍沿用第三期的真实反馈触发条件，不要提前实施，也不要默认 push。
+大创 `univ-course-rag`。第一、二期与第三期主线已收敛；第四期以 `docs/plan-4.md` 为准，一次会话只做一个阶段，阶段 20、21 已完成，下一阶段为 22。阶段 18、19 仍沿用第三期的真实反馈触发条件，不要提前实施，也不要默认 push。
 
 权威顺序：当前 plan > `docs/decisions` > `docs/intent.md`。不要重开 Cookie session、Postgres + pgvector、Fake 测试、无 LangChain/RAGFlow 等已拍板技术栈。
 

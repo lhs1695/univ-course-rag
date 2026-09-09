@@ -4,7 +4,7 @@
 
 ## 下一会话
 
-先读 [`NEXT-SESSION.md`](NEXT-SESSION.md)。第一至三期主线已收敛。第四期：[`plan-4.md`](plan-4.md)（阶段 20 已完成；下一会话只做阶段 21）。
+先读 [`NEXT-SESSION.md`](NEXT-SESSION.md)。第一至三期主线已收敛。第四期：[`plan-4.md`](plan-4.md)（阶段 20、21 已完成；下一会话只做阶段 22）。
 
 ## 权威顺序
 
@@ -30,6 +30,7 @@
 | 第三期试用 / 答辩 | [`plan-3.md`](plan-3.md)（已收敛；18–19 仍按反馈触发） |
 | 第四期中期交付 / 加固 | [`plan-4.md`](plan-4.md)（当前合同；阶段 20–25） |
 | 中期汇报版本 | [`midterm-notes.md`](midterm-notes.md)（tag、启动、门禁、限制与恢复） |
+| 中期汇报材料 | [`midterm-presentation.pptx`](midterm-presentation.pptx) 与 [`midterm-script.md`](midterm-script.md)（10 页 PPT、5/10 分钟口播） |
 | 试用课走位 | [`demo.md`](demo.md)（教师上传、学生问答、学情、删除后拒答） |
 | 怎么测（仓级） | 根目录 [`AGENTS.md`](../AGENTS.md)「怎么测」；不限第二期 |
 | 检索失败口播 | [`tech-recommendations.md`](tech-recommendations.md)（阶段 17 走位对照） |
