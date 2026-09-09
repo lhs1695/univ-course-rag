@@ -32,5 +32,6 @@
 | 中期汇报版本 | [`midterm-notes.md`](midterm-notes.md)（tag、启动、门禁、限制与恢复） |
 | 中期汇报材料 | [`midterm-presentation.pptx`](midterm-presentation.pptx) 与 [`midterm-script.md`](midterm-script.md)（10 页 PPT、5/10 分钟口播） |
 | 试用课走位 | [`demo.md`](demo.md)（教师上传、学生问答、学情、删除后拒答） |
+| 非开发者试用记录 | [`usability-test-template.md`](usability-test-template.md)（匿名任务结果、问题分类与阶段触发判断） |
 | 怎么测（仓级） | 根目录 [`AGENTS.md`](../AGENTS.md)「怎么测」；不限第二期 |
 | 检索失败口播 | [`tech-recommendations.md`](tech-recommendations.md)（阶段 17 走位对照） |
