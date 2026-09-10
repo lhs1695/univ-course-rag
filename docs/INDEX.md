@@ -4,7 +4,7 @@
 
 ## 下一会话
 
-先读 [`NEXT-SESSION.md`](NEXT-SESSION.md)。第一至四期技术主线已收敛。第五期：[`plan-5.md`](plan-5.md)（阶段 32 已完成；下一会话只做阶段 33）。
+先读 [`NEXT-SESSION.md`](NEXT-SESSION.md)。第一至四期技术主线已收敛。第五期：[`plan-5.md`](plan-5.md)（阶段 33 已完成；下一会话只做阶段 34）。
 
 ## 权威顺序
 

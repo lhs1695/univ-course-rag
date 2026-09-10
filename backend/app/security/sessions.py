@@ -1,15 +1,46 @@
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import Response
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session as DbSession
 
 from app.config import Settings
 from app.models.session import Session
 from app.models.user import User
 
+logger = logging.getLogger(__name__)
+
+
+def cleanup_expired_sessions(
+    db: DbSession,
+    *,
+    batch_size: int,
+    now: datetime | None = None,
+) -> int:
+    """Delete at most one oldest-first batch of expired sessions.
+
+    The caller owns the transaction, so login can commit the cleanup and the
+    newly created session together.
+    """
+    cutoff = now or datetime.now(UTC)
+    expired_ids = db.execute(
+        select(Session.id)
+        .where(Session.expires_at <= cutoff)
+        .order_by(Session.expires_at, Session.id)
+        .limit(batch_size)
+    ).scalars().all()
+    if not expired_ids:
+        return 0
+
+    deleted = db.execute(delete(Session).where(Session.id.in_(expired_ids))).rowcount
+    logger.info("expired_sessions_deleted count=%d", deleted)
+    return deleted
+
 
 def create_session(db: DbSession, user: User, settings: Settings) -> Session:
+    cleanup_expired_sessions(db, batch_size=settings.session_cleanup_batch_size)
     session = Session(
         id=uuid.uuid4(),
         user_id=user.id,

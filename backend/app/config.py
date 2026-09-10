@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     session_cookie_name: str = "session_id"
     session_ttl_seconds: int = 60 * 60 * 24 * 7
     session_cookie_secure: bool = False
+    session_cleanup_batch_size: int = Field(default=100, ge=1, le=1_000)
 
     seed_admin_username: str = "admin"
     seed_teacher_username: str = "teacher"
