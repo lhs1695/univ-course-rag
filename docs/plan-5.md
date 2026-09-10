@@ -67,7 +67,7 @@
 
 **32 格式合同（已完成）→ 33 Session 回收（已完成）→ 34 云失败边界（已完成）→ 35 解析资源预算（已完成）→ 36 可观测性/readiness（已完成）→ 37 CI 收口（已完成）**。
 
-阶段 37 已新增 [CI 工作流](../.github/workflows/ci.yml)：Python 3.12 安装后端开发依赖，运行 Ruff、全量 Fake pytest、compose pgvector 的 Alembic upgrade/seed 与显式 Postgres 检索证明；前端使用 lockfile 的 `npm ci` 和构建。工作流不配置云 key、不调用真模型、不上传语料或数据库。已本地验证迁移/seed、Postgres 检索证明、全量 Fake pytest（92 passed、2 skipped）、Ruff 和前端构建；本机 Docker Desktop daemon 当时不可用，compose 启动未完成，但已连接的本机 Postgres 完成了数据库证明。未 push，因此 GitHub Actions 尚未执行，不能声称远端 CI 已绿。
+阶段 37 已新增 [CI 工作流](../.github/workflows/ci.yml)：Python 3.12 安装后端开发依赖，运行 Ruff、全量 Fake pytest、compose pgvector 的 Alembic upgrade/seed 与显式 Postgres 检索证明；前端使用 lockfile 的 `npm ci` 和构建。工作流不配置云 key、不调用真模型、不上传语料或数据库。已本地验证迁移/seed、Postgres 检索证明、全量 Fake pytest（92 passed、2 skipped）、Ruff 和前端构建；Docker Desktop 现已能启动 compose Postgres，并再次完成迁移/seed 与检索证明。提交 `4b805e9` 推送后，GitHub Actions CI 已成功完成。
 
 第五期各阶段已本地提交并收口。阶段 25 继续等待外部试用者；在没有真实反馈时，阶段 18、19 仍不触发。真评测只有维护者再次明确允许联网和计费时才运行。
 

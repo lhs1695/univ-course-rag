@@ -10,4 +10,4 @@
 
 密钥放本机 `.env`，不要提交、不要贴进聊天。
 
-CI 工作流见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)：使用 FakeEmbedder/FakeLLM，运行 Ruff、全量 pytest、迁移后的 pgvector 检索证明和前端 lockfile 构建；不读取云 key 或本地语料。当前提交未 push，因此远端 Actions 尚未运行。
+CI 工作流见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)：使用 FakeEmbedder/FakeLLM，运行 Ruff、全量 pytest、迁移后的 pgvector 检索证明和前端 lockfile 构建；不读取云 key 或本地语料。提交 `4b805e9` 已推送，GitHub Actions CI 已成功完成。

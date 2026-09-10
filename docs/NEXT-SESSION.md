@@ -14,7 +14,7 @@
 
 阶段 36 已完成：每个 HTTP 请求生成或校验最多 64 字符的 `X-Request-ID`，在响应头回传并写入应用日志记录/完成日志；非法外部值会替换，日志不记录 query、课件正文、Cookie 或 key。`/health` 保持不访问数据库的 liveness；新增 `/ready` 仅执行 `SELECT 1`，数据库异常时稳定返回 `503 {"status":"unavailable"}`，不调用 embedding/LLM。`test_health.py`、`test_auth.py`（16 passed）与 Ruff 已通过。
 
-阶段 37 已完成：新增 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)，以 Python 3.12、FakeEmbedder/FakeLLM、pgvector/Postgres 迁移与显式检索证明、以及前端 lockfile 构建为门禁；不读云 key、不调真模型、不上传语料或数据库。已本地完成 Alembic upgrade/seed 和 `RUN_POSTGRES_TESTS=1` 证明、全量 Fake pytest（92 passed、2 skipped）、Ruff 与 Vite 构建。Docker Desktop daemon 在本次本机验证中不可用，因此 compose 启动未完成；已存在的本机 Postgres 仍成功完成迁移和检索证明。CI 工作流仅本地提交、尚未 push，远端 GitHub Actions 未运行。
+阶段 37 已完成：新增 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)，以 Python 3.12、FakeEmbedder/FakeLLM、pgvector/Postgres 迁移与显式检索证明、以及前端 lockfile 构建为门禁；不读云 key、不调真模型、不上传语料或数据库。已本地完成 Alembic upgrade/seed 和 `RUN_POSTGRES_TESTS=1` 证明、全量 Fake pytest（92 passed、2 skipped）、Ruff 与 Vite 构建；Docker Desktop 已成功启动 compose Postgres，并再次完成迁移/seed 与检索证明。提交 `4b805e9` 已推送，远端 GitHub Actions CI 已成功完成。
 
 待显式授权：阶段 24 的旧真评测结果基于修复前删除仿真，仍保留为历史证据。只有再次明确允许联网和计费时才重跑，不把云调用并入普通测试。
 
