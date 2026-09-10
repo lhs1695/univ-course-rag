@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 60 * 60 * 24 * 7
     session_cookie_secure: bool = False
     session_cleanup_batch_size: int = Field(default=100, ge=1, le=1_000)
+    upstream_timeout_seconds: float = Field(default=20.0, ge=1.0, le=60.0)
+    upstream_max_retries: int = Field(default=2, ge=0, le=3)
 
     seed_admin_username: str = "admin"
     seed_teacher_username: str = "teacher"

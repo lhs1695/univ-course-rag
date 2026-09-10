@@ -7,6 +7,7 @@ from typing import Protocol
 
 from app.config import Settings, get_settings
 from app.models.document import EMBEDDING_DIM
+from app.services.upstream import UpstreamUnavailable
 
 # Token / CJK-bigram hashing so shared terms sit closer than unrelated text.
 # Exact-string SHA was too jumpy for retrieval tests. Same model for ingest and query.
@@ -65,19 +66,34 @@ def _token_vector(text: str) -> list[float]:
 
 
 class SiliconFlowEmbedder:
-    def __init__(self, api_key: str, base_url: str, model_name: str) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str,
+        model_name: str,
+        timeout_seconds: float = 20.0,
+        max_retries: int = 2,
+    ) -> None:
         from openai import OpenAI
 
         self.model_name = model_name
         self.index_identity = _index_identity("siliconflow", model_name)
-        self._client = OpenAI(api_key=api_key, base_url=base_url)
+        self._client = OpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout_seconds,
+            max_retries=max_retries,
+        )
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        response = self._client.embeddings.create(model=self.model_name, input=texts)
-        by_index = {item.index: item.embedding for item in response.data}
-        return [list(by_index[i]) for i in range(len(texts))]
+        try:
+            response = self._client.embeddings.create(model=self.model_name, input=texts)
+            by_index = {item.index: item.embedding for item in response.data}
+            return [list(by_index[i]) for i in range(len(texts))]
+        except Exception:  # noqa: BLE001 - provider client exception hierarchy is external.
+            raise UpstreamUnavailable() from None
 
 
 def build_embedder(settings: Settings | None = None) -> Embedder:
@@ -87,6 +103,8 @@ def build_embedder(settings: Settings | None = None) -> Embedder:
             api_key=settings.siliconflow_api_key,
             base_url=settings.embedding_base_url,
             model_name=settings.embedding_model,
+            timeout_seconds=settings.upstream_timeout_seconds,
+            max_retries=settings.upstream_max_retries,
         )
     return FakeEmbedder(model_name=settings.embedding_model)
 

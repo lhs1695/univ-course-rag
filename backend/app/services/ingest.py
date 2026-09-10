@@ -12,6 +12,7 @@ from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.services.chunk import chunk_pages
 from app.services.embedder import Embedder
 from app.services.parse import parse_document
+from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
 
 _SECRET = re.compile(r"sk-[A-Za-z0-9]+")
 
@@ -25,6 +26,8 @@ class IngestLeaseLost(IngestError):
 
 
 def safe_error(exc: BaseException) -> str:
+    if isinstance(exc, UpstreamUnavailable):
+        return UPSTREAM_UNAVAILABLE
     message = f"{type(exc).__name__}: {exc}"
     message = _SECRET.sub("[redacted]", message)
     return message[:400]

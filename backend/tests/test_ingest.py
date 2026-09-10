@@ -14,6 +14,7 @@ from app.services.ingest import (
     process_ingest_job,
     retry_ingest_job,
 )
+from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -334,6 +335,51 @@ def test_mid_batch_failure_preserves_previous_complete_chunks(
     assert stored_job.run_token is None
     assert [chunk.id for chunk in chunks] == [old_chunk.id]
     assert chunks[0].text == "previous complete index"
+
+
+def test_upstream_embedding_failure_is_safe_and_explicitly_retryable(
+    db: Session, tmp_path: Path
+) -> None:
+    course = add_course(db, "Course 1")
+    source = tmp_path / "retry.txt"
+    source.write_text("safe retry content " * 150, encoding="utf-8")
+    document = Document(
+        course_id=course.id,
+        uploaded_by=uuid4(),
+        filename=source.name,
+        storage_path=str(source),
+    )
+    db.add(document)
+    db.flush()
+    working_embedder = FakeEmbedder()
+    old_chunk = Chunk(
+        course_id=course.id,
+        document_id=document.id,
+        page=1,
+        text="previous complete index",
+        embedding=working_embedder.embed(["previous complete index"])[0],
+        embedding_model=working_embedder.index_identity,
+    )
+    job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
+    db.add_all([old_chunk, job])
+    db.commit()
+
+    class FailingEmbedder(FakeEmbedder):
+        def embed(self, texts: list[str]) -> list[list[float]]:
+            raise UpstreamUnavailable("provider-body-should-not-be-stored")
+
+    process_ingest_job(db, job.id, FailingEmbedder())
+
+    db.expire_all()
+    stored_job = db.get(IngestJob, job.id)
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == document.id)).scalars().all()
+    assert stored_job is not None
+    assert stored_job.status == IngestJobStatus.failed.value
+    assert stored_job.error_message == UPSTREAM_UNAVAILABLE
+    assert [chunk.id for chunk in chunks] == [old_chunk.id]
+    assert retry_ingest_job(db, job.id, datetime.now(UTC) - timedelta(minutes=15))
+    db.expire_all()
+    assert db.get(IngestJob, job.id).status == IngestJobStatus.pending.value
 
 
 @pytest.mark.parametrize(

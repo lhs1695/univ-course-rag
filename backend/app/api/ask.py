@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session as DbSession
 
 from app.api.schemas import AskRequest, AskResponse, CitationOut
@@ -18,6 +18,11 @@ from app.services.retrieve import (
     EMBEDDING_MISMATCH_MESSAGE,
     has_incompatible_chunks,
     retrieve_chunks,
+)
+from app.services.upstream import (
+    UPSTREAM_UNAVAILABLE,
+    UPSTREAM_UNAVAILABLE_MESSAGE,
+    UpstreamUnavailable,
 )
 
 router = APIRouter(prefix="/courses", tags=["ask"])
@@ -50,25 +55,29 @@ def ask_course(
     db: Annotated[DbSession, Depends(get_db)],
     embedder: Annotated[Embedder, Depends(get_embedder)],
     llm: Annotated[LLM, Depends(get_llm)],
+    response: Response,
 ) -> AskResponse:
     started = time.perf_counter()
-    index_mismatch = has_incompatible_chunks(db, access.course.id, embedder)
-    hits = [] if index_mismatch else retrieve_chunks(db, access.course.id, body.query, embedder)
+    hits = []
     cited_ids: list = []
     error_code = None
     answer = None
-    if index_mismatch:
-        error_code = EMBEDDING_MISMATCH
-        llm_called = False
-    elif not hits:
-        error_code = NO_EVIDENCE
-        llm_called = False
-    else:
-        llm_called = True
-        answer, cited_ids = generate_answer(db, body.query, hits, llm)
-        if not cited_ids:
-            answer = None
+    llm_called = False
+    try:
+        index_mismatch = has_incompatible_chunks(db, access.course.id, embedder)
+        hits = [] if index_mismatch else retrieve_chunks(db, access.course.id, body.query, embedder)
+        if index_mismatch:
+            error_code = EMBEDDING_MISMATCH
+        elif not hits:
             error_code = NO_EVIDENCE
+        else:
+            llm_called = True
+            answer, cited_ids = generate_answer(db, body.query, hits, llm)
+            if not cited_ids:
+                answer = None
+                error_code = NO_EVIDENCE
+    except UpstreamUnavailable:
+        error_code = UPSTREAM_UNAVAILABLE
     duration_ms = int((time.perf_counter() - started) * 1000)
     db.add(
         QueryLog(
@@ -90,10 +99,15 @@ def ask_course(
         duration_ms,
         len(hits),
     )
+    if error_code == UPSTREAM_UNAVAILABLE:
+        logger.warning("ask_upstream_unavailable error_code=%s", UPSTREAM_UNAVAILABLE)
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return AskResponse(
         error_code=error_code,
         message=(
-            EMBEDDING_MISMATCH_MESSAGE
+            UPSTREAM_UNAVAILABLE_MESSAGE
+            if error_code == UPSTREAM_UNAVAILABLE
+            else EMBEDDING_MISMATCH_MESSAGE
             if error_code == EMBEDDING_MISMATCH
             else NO_EVIDENCE_MESSAGE if error_code == NO_EVIDENCE else None
         ),

@@ -16,6 +16,7 @@ from app.services.embedder import FakeEmbedder, get_embedder
 from app.services.generate import NO_EVIDENCE
 from app.services.llm import FakeLLM, get_llm, parse_cited_ids
 from app.services.retrieve import EMBEDDING_MISMATCH
+from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -272,6 +273,53 @@ def test_ask_info_logs_omit_query_and_courseware(
     assert query not in text
     assert GOLDEN[0]["expect_substring"] not in text
     assert "sk-" not in text
+
+
+@pytest.mark.parametrize("failure_point", ["embedding", "llm"])
+def test_ask_upstream_failure_is_safe_503_and_logged_without_content(
+    client: TestClient,
+    db: Session,
+    caplog: pytest.LogCaptureFixture,
+    failure_point: str,
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    upload(client, course.id, FIXTURES / "sample.md")
+    secret = "provider-body-should-not-be-logged"
+
+    if failure_point == "embedding":
+
+        class FailingEmbedder(FakeEmbedder):
+            def embed(self, texts: list[str]) -> list[list[float]]:
+                raise UpstreamUnavailable(secret)
+
+        app.dependency_overrides[get_embedder] = FailingEmbedder
+    else:
+
+        class FailingLLM:
+            def generate(self, prompt: str) -> str:
+                raise UpstreamUnavailable(secret)
+
+        app.dependency_overrides[get_llm] = FailingLLM
+
+    with caplog.at_level(logging.INFO, logger="app.api.ask"):
+        response = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "error_code": UPSTREAM_UNAVAILABLE,
+        "message": "上游 AI 服务暂时不可用，请稍后重试。",
+        "answer": None,
+        "citations": [],
+    }
+    db.expire_all()
+    log = db.execute(select(QueryLog)).scalars().one()
+    assert log.error_code == UPSTREAM_UNAVAILABLE
+    assert secret not in caplog.text
+    assert GOLDEN[0]["query"] not in caplog.text
+    assert "UPSTREAM_UNAVAILABLE" in caplog.text
 
 
 def test_ask_requires_membership(client: TestClient, db: Session) -> None:
