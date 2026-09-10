@@ -1,6 +1,6 @@
 # Plan：univ-course-rag 第五期
 
-状态：阶段 36 已完成；下一阶段为 37；主线 **单机可运维性与失败边界**
+状态：阶段 32–37 已完成；第五期技术线收口；主线 **单机可运维性与失败边界**
 日期：2026-09-09
 对照：第四期阶段 20–24、26–31 已完成；阶段 25 因没有非开发者试用者继续等待，但不阻塞第五期独立技术工作。
 
@@ -57,7 +57,7 @@
 - **不做：** 不接入第三方 APM、Prometheus 集群或日志平台；不在健康检查里调用 embedding/LLM；不输出用户身份或完整路径。
 - **证明：** `test_health.py` 覆盖 liveness 不访问数据库、readiness 成功/失败、请求 ID 生成与非法外部值替换；`test_auth.py` 抽查受保护请求也回传关联 ID。运行这两个测试与 Ruff。
 
-### 阶段 37 — 可重复 CI 门禁与第五期收口
+### 阶段 37 — 可重复 CI 门禁与第五期收口（已完成）
 
 - **做：** 新增 GitHub Actions：Python 3.12 安装 `backend/.venv` 等价依赖，运行 Ruff 和全部 Fake pytest；启动 pgvector/Postgres，执行 Alembic upgrade head 并显式运行 Postgres 检索测试；Node 安装使用 lockfile，运行前端构建。更新 README、INDEX、NEXT-SESSION 与第五期结果，明确阶段 25 仍未被开发者测试替代。
 - **不做：** CI 不读取云 key、不运行真模型评测、不上传本地语料或数据库、不自动部署、不自动 push/tag。
@@ -65,8 +65,10 @@
 
 ## 4. 开工顺序与停止条件
 
-**32 格式合同（已完成）→ 33 Session 回收（已完成）→ 34 云失败边界（已完成）→ 35 解析资源预算（已完成）→ 36 可观测性/readiness（已完成）→ 37 CI 收口**。
+**32 格式合同（已完成）→ 33 Session 回收（已完成）→ 34 云失败边界（已完成）→ 35 解析资源预算（已完成）→ 36 可观测性/readiness（已完成）→ 37 CI 收口（已完成）**。
 
-每个阶段通过自己的证明后本地提交并停止，不跨阶段施工。阶段 25 继续等待外部试用者；在没有真实反馈时，阶段 18、19 仍不触发。真评测只有维护者再次明确允许联网和计费时才运行。
+阶段 37 已新增 [CI 工作流](../.github/workflows/ci.yml)：Python 3.12 安装后端开发依赖，运行 Ruff、全量 Fake pytest、compose pgvector 的 Alembic upgrade/seed 与显式 Postgres 检索证明；前端使用 lockfile 的 `npm ci` 和构建。工作流不配置云 key、不调用真模型、不上传语料或数据库。已本地验证迁移/seed、Postgres 检索证明、全量 Fake pytest（92 passed、2 skipped）、Ruff 和前端构建；本机 Docker Desktop daemon 当时不可用，compose 启动未完成，但已连接的本机 Postgres 完成了数据库证明。未 push，因此 GitHub Actions 尚未执行，不能声称远端 CI 已绿。
+
+第五期各阶段已本地提交并收口。阶段 25 继续等待外部试用者；在没有真实反馈时，阶段 18、19 仍不触发。真评测只有维护者再次明确允许联网和计费时才运行。
 
 第五期完成后不自动进入生产部署。Cookie Secure/HTTPS、数据库备份恢复、持久化任务队列、多实例文件存储和进程级解析隔离，只有部署目标、主机和运维责任明确后才能另立第六期。

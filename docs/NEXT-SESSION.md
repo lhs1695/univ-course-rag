@@ -1,4 +1,4 @@
-# 第五期交接：下一阶段 37
+# 第五期收口交接
 
 已完成：阶段 30 已集中实现受 upload root、课程 UUID 和资料 UUID 共同约束的存储服务；上传提交失败会补偿清理，单资料与课程删除覆盖文件生命周期，清理失败写入不含完整路径的可观测日志。合同见 `docs/storage-lifecycle.md`。
 
@@ -12,10 +12,12 @@
 
 阶段 35 已完成：PPTX/DOCX 在打开前按可配置的 ZIP 条目数、总解压大小、单条目大小和压缩比做资源预算；PDF/幻灯片解析受页/幻灯片上限与累计抽取字符上限约束。所有阈值均有本机环境配置的合理上下界；超限以稳定、不含课件正文的失败摘要结束，不写入新 chunk，原有完整索引继续保留。`test_ingest.py` 用程序生成 ZIP/PPTX/DOCX 覆盖所有限制、旧索引保持和正常 PDF/PPTX/DOCX 成功（28 passed），Ruff 已通过。
 
-阶段 36 已完成：每个 HTTP 请求生成或校验最多 64 字符的 `X-Request-ID`，在响应头回传并写入应用日志记录/完成日志；非法外部值会替换，日志不记录 query、课件正文、Cookie 或 key。`/health` 保持不访问数据库的 liveness；新增 `/ready` 仅执行 `SELECT 1`，数据库异常时稳定返回 `503 {"status":"unavailable"}`，不调用 embedding/LLM。`test_health.py`、`test_auth.py`（16 passed）与 Ruff 已通过。下一会话只做 `docs/plan-5.md` 阶段 37。
+阶段 36 已完成：每个 HTTP 请求生成或校验最多 64 字符的 `X-Request-ID`，在响应头回传并写入应用日志记录/完成日志；非法外部值会替换，日志不记录 query、课件正文、Cookie 或 key。`/health` 保持不访问数据库的 liveness；新增 `/ready` 仅执行 `SELECT 1`，数据库异常时稳定返回 `503 {"status":"unavailable"}`，不调用 embedding/LLM。`test_health.py`、`test_auth.py`（16 passed）与 Ruff 已通过。
+
+阶段 37 已完成：新增 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)，以 Python 3.12、FakeEmbedder/FakeLLM、pgvector/Postgres 迁移与显式检索证明、以及前端 lockfile 构建为门禁；不读云 key、不调真模型、不上传语料或数据库。已本地完成 Alembic upgrade/seed 和 `RUN_POSTGRES_TESTS=1` 证明、全量 Fake pytest（92 passed、2 skipped）、Ruff 与 Vite 构建。Docker Desktop daemon 在本次本机验证中不可用，因此 compose 启动未完成；已存在的本机 Postgres 仍成功完成迁移和检索证明。CI 工作流仅本地提交、尚未 push，远端 GitHub Actions 未运行。
 
 待显式授权：阶段 24 的旧真评测结果基于修复前删除仿真，仍保留为历史证据。只有再次明确允许联网和计费时才重跑，不把云调用并入普通测试。
 
 并行等待：阶段 25 仍缺至少一名未参与开发的试用者。获得匿名记录后，再整理七类问题并判断阶段 18/19；在此之前不能宣称第四期真人试用收口。
 
-留存：阶段 20–24、26–31 已完成；阶段 25 等待外部；第五期阶段 32–37 已获计划授权但仍须一次会话只做一个阶段；不提前实施阶段 18/19，不默认 push。
+留存：阶段 20–24、26–31 与第五期阶段 32–37 已完成；阶段 25 继续等待外部。不要提前实施阶段 18/19，不默认 push；没有新的计划授权时，不进入第六期。
