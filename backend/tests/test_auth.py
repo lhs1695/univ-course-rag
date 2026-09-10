@@ -45,6 +45,7 @@ def test_login_sets_httponly_cookie_and_me(client: TestClient, db: Session) -> N
     assert "httponly" in cookie.lower()
     me = client.get("/auth/me")
     assert me.status_code == 200
+    assert me.headers.get("X-Request-ID")
     assert me.json()["username"] == "teacher"
     assert me.json()["role"] == "teacher"
 

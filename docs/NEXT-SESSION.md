@@ -1,4 +1,4 @@
-# 第五期交接：下一阶段 36
+# 第五期交接：下一阶段 37
 
 已完成：阶段 30 已集中实现受 upload root、课程 UUID 和资料 UUID 共同约束的存储服务；上传提交失败会补偿清理，单资料与课程删除覆盖文件生命周期，清理失败写入不含完整路径的可观测日志。合同见 `docs/storage-lifecycle.md`。
 
@@ -10,7 +10,9 @@
 
 阶段 34 已完成：SiliconFlow 与 DeepSeek 客户端都使用受 `UPSTREAM_TIMEOUT_SECONDS`（默认 20 秒、范围 1–60）和 `UPSTREAM_MAX_RETRIES`（默认 2、范围 0–3）限制的超时/重试配置；供应商异常统一收敛为不含原始响应、query、prompt 或 key 的 `UPSTREAM_UNAVAILABLE`。问答遇到该异常会记录稳定分类并返回 503，不会伪装成 `NO_EVIDENCE`；入库任务安全失败、不产生半套新 chunk，仍可通过既有受控入口重试。`test_ask.py`、`test_ingest.py`（33 passed）与 Ruff 已通过。
 
-阶段 35 已完成：PPTX/DOCX 在打开前按可配置的 ZIP 条目数、总解压大小、单条目大小和压缩比做资源预算；PDF/幻灯片解析受页/幻灯片上限与累计抽取字符上限约束。所有阈值均有本机环境配置的合理上下界；超限以稳定、不含课件正文的失败摘要结束，不写入新 chunk，原有完整索引继续保留。`test_ingest.py` 用程序生成 ZIP/PPTX/DOCX 覆盖所有限制、旧索引保持和正常 PDF/PPTX/DOCX 成功（28 passed），Ruff 已通过。下一会话只做 `docs/plan-5.md` 阶段 36，不提前做 CI。
+阶段 35 已完成：PPTX/DOCX 在打开前按可配置的 ZIP 条目数、总解压大小、单条目大小和压缩比做资源预算；PDF/幻灯片解析受页/幻灯片上限与累计抽取字符上限约束。所有阈值均有本机环境配置的合理上下界；超限以稳定、不含课件正文的失败摘要结束，不写入新 chunk，原有完整索引继续保留。`test_ingest.py` 用程序生成 ZIP/PPTX/DOCX 覆盖所有限制、旧索引保持和正常 PDF/PPTX/DOCX 成功（28 passed），Ruff 已通过。
+
+阶段 36 已完成：每个 HTTP 请求生成或校验最多 64 字符的 `X-Request-ID`，在响应头回传并写入应用日志记录/完成日志；非法外部值会替换，日志不记录 query、课件正文、Cookie 或 key。`/health` 保持不访问数据库的 liveness；新增 `/ready` 仅执行 `SELECT 1`，数据库异常时稳定返回 `503 {"status":"unavailable"}`，不调用 embedding/LLM。`test_health.py`、`test_auth.py`（16 passed）与 Ruff 已通过。下一会话只做 `docs/plan-5.md` 阶段 37。
 
 待显式授权：阶段 24 的旧真评测结果基于修复前删除仿真，仍保留为历史证据。只有再次明确允许联网和计费时才重跑，不把云调用并入普通测试。
 
