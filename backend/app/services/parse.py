@@ -7,17 +7,17 @@ class ParseError(Exception):
     pass
 
 
-_UNSUPPORTED = "unsupported file type; accepted: PDF, PPT/PPTX, Word, Markdown, or plain text"
+_UNSUPPORTED = "unsupported file type; accepted: PDF, PPTX, DOCX, Markdown, or plain text"
 
 
 def parse_document(filename: str, data: bytes) -> list[tuple[int | None, str]]:
-    """Return (page, text) pairs. Page is 1-based for PDF/PPT, 1 for MD/text/Word."""
+    """Return (page, text) pairs. Page is 1-based for PDF/PPTX, 1 otherwise."""
     name = filename.lower()
     if name.endswith(".pdf"):
         return _parse_pdf(data)
-    if name.endswith((".ppt", ".pptx")):
+    if name.endswith(".pptx"):
         return _parse_ppt(data)
-    if name.endswith((".doc", ".docx")):
+    if name.endswith(".docx"):
         return _parse_word(data)
     if name.endswith((".md", ".markdown", ".txt")):
         return _parse_text(data)

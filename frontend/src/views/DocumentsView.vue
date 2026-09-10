@@ -9,10 +9,13 @@
         v-if="canManage"
         :http-request="onUpload"
         :show-file-list="false"
-        accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.markdown,.txt,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
+        accept=".pdf,.pptx,.docx,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
       >
         <el-button type="primary" :loading="uploading">上传资料</el-button>
       </el-upload>
+      <el-text v-if="canManage" type="info" size="small">
+        支持 PDF、PPTX、DOCX、Markdown 和纯文本；不支持旧版 PPT/DOC
+      </el-text>
       <el-button @click="router.push(`/courses/${courseId}`)">进入问答</el-button>
       <el-button v-if="canManage" text @click="router.push(`/courses/${courseId}/members`)">
         本课学生

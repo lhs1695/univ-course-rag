@@ -11,7 +11,7 @@
 
 - HTTP-only Cookie 登录；admin、teacher、student 三类演示账号
 - 课程成员权限隔离；教师管理本课学生和资料
-- PDF、Markdown、纯文本、PPT/PPTX、Word 文本层解析、切分和 pgvector 入库
+- PDF、Markdown、纯文本、PPTX、DOCX 文本层解析、切分和 pgvector 入库
 - 按课程检索与问答；低相关度时返回 `NO_EVIDENCE`，命中回答带资料出处
 - 教师学情两表，不展示学生身份
 - 教师删除资料后同步清除相关切片，避免继续召回
@@ -64,7 +64,7 @@
 
 ## 汇报前准备
 
-- 使用可抽取文本的 PDF/PPT/PPTX/Word；扫描件和纯截图页不保证有文本
+- 使用可抽取文本的 PDF/PPTX/DOCX；旧二进制 PPT/DOC 不支持，扫描件和纯截图页不保证有文本
 - 真课件放 `corpus/local/`，演示前确认未被 Git 跟踪
 - 如使用真模型，由维护者自行填写本机 `.env` 并重启后端；不要在聊天或汇报材料中展示 key
 - 按阶段 17 的走位文档完成一次教师上传、学生问答、教师学情、删除资料后拒答的浏览器检查

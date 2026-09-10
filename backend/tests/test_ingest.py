@@ -211,6 +211,37 @@ def test_corrupt_pdf_fails_without_chunks(client: TestClient, db: Session) -> No
     assert chunks == []
 
 
+@pytest.mark.parametrize(
+    ("filename", "content_type"),
+    [
+        ("legacy.ppt", "application/vnd.ms-powerpoint"),
+        ("legacy.doc", "application/msword"),
+    ],
+)
+def test_legacy_binary_office_is_rejected_before_persistence(
+    client: TestClient,
+    db: Session,
+    filename: str,
+    content_type: str,
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": (filename, b"legacy binary content", content_type)},
+    )
+
+    assert uploaded.status_code == 400
+    assert uploaded.json() == {
+        "detail": "unsupported file type; accepted: PDF, PPTX, DOCX, Markdown, or plain text"
+    }
+    assert db.execute(select(Document).where(Document.course_id == course.id)).scalars().all() == []
+    assert db.execute(select(IngestJob)).scalars().all() == []
+
+
 def test_student_cannot_delete_document(client: TestClient, db: Session) -> None:
     student = add_user(db, "alice", "pass", UserRole.student)
     teacher = add_user(db, "t1", "pass", UserRole.teacher)
