@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session as DbSession
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 _QUERY_STORE_CHARS = 2000
 
 
-def _citations(hits, cited_ids) -> list[CitationOut]:
+def _citations(course_id: UUID, hits, cited_ids) -> list[CitationOut]:
     by_id = {hit.chunk_id: hit for hit in hits}
     out: list[CitationOut] = []
     for chunk_id in cited_ids:
@@ -43,6 +44,9 @@ def _citations(hits, cited_ids) -> list[CitationOut]:
                 document_id=str(hit.document_id),
                 page=hit.page,
                 snippet=hit.snippet,
+                content_url=(
+                    f"/courses/{course_id}/documents/{hit.document_id}/content"
+                ),
             )
         )
     return out
@@ -112,5 +116,5 @@ def ask_course(
             else NO_EVIDENCE_MESSAGE if error_code == NO_EVIDENCE else None
         ),
         answer=answer,
-        citations=_citations(hits, cited_ids),
+        citations=_citations(access.course.id, hits, cited_ids),
     )

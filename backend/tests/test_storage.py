@@ -10,6 +10,7 @@ from app.services.storage import (
     StorageBoundaryError,
     StorageError,
     delete_document_upload,
+    get_document_upload,
     store_upload,
 )
 from fastapi.testclient import TestClient
@@ -40,6 +41,16 @@ def add_teacher_member(db: Session, course: Course, teacher_id: UUID) -> None:
             role=CourseMemberRole.teacher.value,
         )
     )
+    db.commit()
+
+
+def add_member(
+    db: Session,
+    course: Course,
+    user_id: UUID,
+    role: CourseMemberRole,
+) -> None:
+    db.add(CourseMember(course_id=course.id, user_id=user_id, role=role.value))
     db.commit()
 
 
@@ -77,6 +88,167 @@ def test_store_upload_rejects_traversal_filename(tmp_path: Path) -> None:
         store_upload(tmp_path / "uploads", uuid4(), uuid4(), "../escape.txt", b"keep")
 
     assert not (tmp_path / "escape.txt").exists()
+
+
+def test_get_document_upload_rejects_other_document_directory(tmp_path: Path) -> None:
+    course_id = uuid4()
+    document_id = uuid4()
+    other_document_id = uuid4()
+    target = store_upload(tmp_path, course_id, other_document_id, "other.txt", b"keep")
+
+    with pytest.raises(StorageBoundaryError, match="outside"):
+        get_document_upload(tmp_path, course_id, document_id, str(target))
+
+
+def test_course_members_can_read_document_content(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    student = add_user(db, "alice", "pass", UserRole.student)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher.id, CourseMemberRole.teacher)
+    add_member(db, course, student.id, CourseMemberRole.student)
+    login_as(client, teacher.username, "pass")
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("note.txt", b"bounded source", "text/plain")},
+    )
+    document_id = uploaded.json()["id"]
+
+    teacher_response = client.get(f"/courses/{course.id}/documents/{document_id}/content")
+    login_as(client, student.username, "pass")
+    student_response = client.get(f"/courses/{course.id}/documents/{document_id}/content")
+
+    for response in (teacher_response, student_response):
+        assert response.status_code == 200
+        assert response.content == b"bounded source"
+        assert response.headers["content-type"] == "text/plain; charset=utf-8"
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["content-disposition"].startswith("inline;")
+        assert "note.txt" in response.headers["content-disposition"]
+
+
+def test_document_content_requires_authentication(client: TestClient, db: Session) -> None:
+    course = add_course(db, "Course 1")
+
+    response = client.get(f"/courses/{course.id}/documents/{uuid4()}/content")
+
+    assert response.status_code == 401
+
+
+def test_document_content_requires_course_membership(client: TestClient, db: Session) -> None:
+    outsider = add_user(db, "outsider", "pass", UserRole.student)
+    course = add_course(db, "Course 1")
+    login_as(client, outsider.username, "pass")
+
+    response = client.get(f"/courses/{course.id}/documents/{uuid4()}/content")
+
+    assert response.status_code == 403
+
+
+def test_document_content_does_not_cross_courses(
+    client: TestClient, db: Session, tmp_path: Path
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    other_course = add_course(db, "Course 2")
+    add_member(db, course, teacher.id, CourseMemberRole.teacher)
+    add_member(db, other_course, teacher.id, CourseMemberRole.teacher)
+    document_id = uuid4()
+    stored = store_upload(tmp_path, other_course.id, document_id, "other.txt", b"secret")
+    db.add(
+        Document(
+            id=document_id,
+            course_id=other_course.id,
+            uploaded_by=teacher.id,
+            filename="other.txt",
+            storage_path=str(stored),
+        )
+    )
+    db.commit()
+    login_as(client, teacher.username, "pass")
+
+    response = client.get(f"/courses/{course.id}/documents/{document_id}/content")
+
+    assert response.status_code == 404
+    assert response.content != b"secret"
+
+
+@pytest.mark.parametrize("storage_kind", ["outside", "missing"])
+def test_document_content_hides_invalid_storage_paths(
+    client: TestClient,
+    db: Session,
+    tmp_path: Path,
+    storage_kind: str,
+) -> None:
+    teacher = add_user(db, f"teacher-{storage_kind}", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher.id, CourseMemberRole.teacher)
+    document_id = uuid4()
+    if storage_kind == "outside":
+        storage_path = tmp_path / "outside.txt"
+        storage_path.write_bytes(b"must not leak")
+    else:
+        storage_path = tmp_path / str(course.id) / str(document_id) / "missing.txt"
+    db.add(
+        Document(
+            id=document_id,
+            course_id=course.id,
+            uploaded_by=teacher.id,
+            filename="note.txt",
+            storage_path=str(storage_path),
+        )
+    )
+    db.commit()
+    login_as(client, teacher.username, "pass")
+
+    response = client.get(f"/courses/{course.id}/documents/{document_id}/content")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Document content unavailable"}
+    assert response.content != b"must not leak"
+
+
+@pytest.mark.parametrize(
+    ("filename", "expected_type"),
+    [
+        (
+            "slides.pptx",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ),
+        (
+            "notes.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ),
+    ],
+)
+def test_office_document_content_is_attachment(
+    client: TestClient,
+    db: Session,
+    tmp_path: Path,
+    filename: str,
+    expected_type: str,
+) -> None:
+    teacher = add_user(db, f"teacher-{filename}", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher.id, CourseMemberRole.teacher)
+    document_id = uuid4()
+    stored = store_upload(tmp_path, course.id, document_id, filename, b"safe fixture")
+    db.add(
+        Document(
+            id=document_id,
+            course_id=course.id,
+            uploaded_by=teacher.id,
+            filename=filename,
+            storage_path=str(stored),
+        )
+    )
+    db.commit()
+    login_as(client, teacher.username, "pass")
+
+    response = client.get(f"/courses/{course.id}/documents/{document_id}/content")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == expected_type
+    assert response.headers["content-disposition"].startswith("attachment;")
 
 
 def test_document_api_deletes_file_and_empty_directories(

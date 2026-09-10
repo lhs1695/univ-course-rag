@@ -13,6 +13,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import FileResponse
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session as DbSession
 from sqlalchemy.orm import sessionmaker as SessionMaker
@@ -29,7 +30,12 @@ from app.security.deps import (
 from app.services.embedder import Embedder, get_embedder
 from app.services.ingest import latest_job, process_ingest_job, retry_ingest_job
 from app.services.parse import ParseLimits, parse_limits_from_settings
-from app.services.storage import StorageError, delete_document_upload, store_upload
+from app.services.storage import (
+    StorageError,
+    delete_document_upload,
+    get_document_upload,
+    store_upload,
+)
 
 router = APIRouter(prefix="/courses/{course_id}/documents", tags=["documents"])
 logger = logging.getLogger(__name__)
@@ -39,6 +45,14 @@ _MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 _UNSUPPORTED_FILE_TYPE = (
     "unsupported file type; accepted: PDF, PPTX, DOCX, Markdown, or plain text"
 )
+_CONTENT_TYPES = {
+    ".pdf": "application/pdf",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".md": "text/markdown; charset=utf-8",
+    ".markdown": "text/markdown; charset=utf-8",
+    ".txt": "text/plain; charset=utf-8",
+}
 
 
 def _document_out(document: Document, job: IngestJob | None) -> DocumentOut:
@@ -210,6 +224,39 @@ def get_document(
     if document is None or document.course_id != access.course.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     return _document_out(document, latest_job(db, document.id))
+
+
+@router.get("/{document_id}/content", response_class=FileResponse)
+def get_document_content(
+    document_id: UUID,
+    access: Annotated[CourseAccess, Depends(require_course_member)],
+    db: Annotated[DbSession, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> FileResponse:
+    document = db.get(Document, document_id)
+    if document is None or document.course_id != access.course.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    try:
+        source = get_document_upload(
+            settings.upload_dir,
+            access.course.id,
+            document.id,
+            document.storage_path,
+        )
+    except StorageError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document content unavailable",
+        ) from None
+    suffix = Path(document.filename).suffix.lower()
+    disposition = "inline" if suffix in {".pdf", ".md", ".markdown", ".txt"} else "attachment"
+    return FileResponse(
+        source,
+        media_type=_CONTENT_TYPES.get(suffix, "application/octet-stream"),
+        filename=document.filename,
+        content_disposition_type=disposition,
+        headers={"X-Content-Type-Options": "nosniff"},
+    )
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

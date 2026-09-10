@@ -4,6 +4,10 @@
 
 阶段 38 的 `test_ingest.py`（32 passed）、Ruff、Vite 构建和本机 Postgres 的 0008 upgrade → downgrade → upgrade 已通过，最终为 head。已用专用临时数据库与安全夹具实际点击一次“重试”：页面从失败变为成功，显示 1 个含文本单元、140 个抽取字符、3 个切片和低文本提示；临时数据库与 Playwright 产物已删除。下一阶段为 **39 引用到原资料的受鉴权追溯**。第六期不做部署、云资源、OCR 或模型调参。阶段 25 继续等待非开发者试用，阶段 18/19 保持未触发。
 
+阶段 39 已完成：新增 `GET /courses/{course_id}/documents/{document_id}/content`，必须先通过课程成员鉴权，再按 upload root、课程 UUID、资料 UUID 验证数据库存储路径。PDF、Markdown 和纯文本以内联方式返回，PPTX/DOCX 只作为附件下载；响应使用明确 MIME、受控文件名、`Content-Disposition` 和 `X-Content-Type-Options: nosniff`。越界、串课、缺失或非文件路径统一安全失败，不公开上传目录。引用响应携带当前课程内的相对资料 URL；PDF 链接附加可信 chunk 页码的 `#page=`，其他格式不伪造页内定位。Vite 对 `/courses/.../content` 不再走 SPA fallback，而是代理到 FastAPI。
+
+阶段 39 的 `test_storage.py`、`test_ask.py`（合计 30 passed）、Ruff 和 Vite 构建已通过。已用专用临时数据库、安全 PDF 夹具和 FakeEmbedder/FakeLLM 实际点击一次“查看原资料”，同一 Cookie 会话在新标签进入受鉴权 PDF URL，并保留 `#page=1`；未登录直接访问返回 401。临时数据库、测试上传目录和 Playwright 产物已删除。下一阶段为 **40 提问日志留存与有界维护**。
+
 ## 已收口的第五期
 
 已完成：阶段 30 已集中实现受 upload root、课程 UUID 和资料 UUID 共同约束的存储服务；上传提交失败会补偿清理，单资料与课程删除覆盖文件生命周期，清理失败写入不含完整路径的可观测日志。合同见 `docs/storage-lifecycle.md`。
@@ -26,4 +30,4 @@
 
 并行等待：阶段 25 仍缺至少一名未参与开发的试用者。获得匿名记录后，再整理七类问题并判断阶段 18/19；在此之前不能宣称第四期真人试用收口。
 
-留存：阶段 20–24、26–31、第五期阶段 32–37 与第六期阶段 38 已完成；阶段 25 继续等待外部。不要提前实施阶段 18/19，不默认 push；下一阶段只按 `plan-6.md` 实施阶段 39。
+留存：阶段 20–24、26–31、第五期阶段 32–37 与第六期阶段 38、39 已完成；阶段 25 继续等待外部。不要提前实施阶段 18/19，不默认 push；下一阶段只按 `plan-6.md` 实施阶段 40。

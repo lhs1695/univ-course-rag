@@ -12,6 +12,11 @@ export default defineConfig({
         target: "http://127.0.0.1:8000",
         changeOrigin: true,
         bypass(req) {
+          const pathname = String(req.url || "").split("?", 1)[0];
+          const isDocumentContent = /^\/courses\/[^/]+\/documents\/[^/]+\/content$/.test(pathname);
+          if (req.method === "GET" && isDocumentContent) {
+            return undefined;
+          }
           if (req.method === "GET" && String(req.headers.accept || "").includes("text/html")) {
             return "/index.html";
           }

@@ -198,6 +198,11 @@ def test_ask_golden_citations(client: TestClient, db: Session) -> None:
         hit["document_id"] == expected_doc and item["expect_substring"] in hit["snippet"]
         for hit in body["citations"]
     )
+    assert all(
+        hit["content_url"]
+        == f"/courses/{course.id}/documents/{hit['document_id']}/content"
+        for hit in body["citations"]
+    )
 
 
 def test_ask_after_document_deleted_is_no_evidence(client: TestClient, db: Session) -> None:
@@ -248,6 +253,7 @@ def test_ask_does_not_cite_other_course(client: TestClient, db: Session) -> None
     assert body["error_code"] is None
     assert body["citations"]
     assert all(hit["document_id"] != doc2 for hit in body["citations"])
+    assert all(f"/courses/{course1.id}/" in hit["content_url"] for hit in body["citations"])
     assert "omega-course-two" not in (body["answer"] or "")
 
 

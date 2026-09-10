@@ -96,6 +96,7 @@ class CitationOut(BaseModel):
     document_id: str
     page: int | None
     snippet: str
+    content_url: str
 
 
 class AskResponse(BaseModel):

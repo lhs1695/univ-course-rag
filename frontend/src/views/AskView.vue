@@ -58,6 +58,13 @@
             <div class="citation-snippet">{{ row.snippet }}</div>
           </template>
         </el-table-column>
+        <el-table-column label="原资料" width="110">
+          <template #default="{ row }">
+            <el-link :href="citationUrl(row)" target="_blank" rel="noopener" type="primary">
+              查看原资料
+            </el-link>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
   </div>
@@ -99,6 +106,14 @@ onMounted(async () => {
 
 function filenameOf(documentId) {
   return filenames.value[documentId] || documentId;
+}
+
+function citationUrl(citation) {
+  const filename = filenameOf(citation.document_id).toLowerCase();
+  if (filename.endsWith(".pdf") && citation.page != null) {
+    return `${citation.content_url}#page=${citation.page}`;
+  }
+  return citation.content_url;
 }
 
 async function onAsk() {

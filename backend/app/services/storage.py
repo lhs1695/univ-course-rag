@@ -49,6 +49,23 @@ def store_upload(
     return destination
 
 
+def get_document_upload(
+    upload_dir: Path,
+    course_id: UUID,
+    document_id: UUID,
+    storage_path: str,
+) -> Path:
+    root = _resolved_root(upload_dir)
+    document_dir = _require_within(root / str(course_id) / str(document_id), root)
+    target = _require_within(Path(storage_path), document_dir)
+    try:
+        if not target.is_file():
+            raise StorageError("document upload is unavailable")
+    except OSError as exc:
+        raise StorageError("document upload is unavailable") from exc
+    return target
+
+
 def delete_document_upload(
     upload_dir: Path,
     course_id: UUID,
