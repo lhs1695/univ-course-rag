@@ -35,8 +35,25 @@
           {{ row.job_status === "failed" ? row.error_message || "入库失败" : "—" }}
         </template>
       </el-table-column>
-      <el-table-column v-if="canManage" label="" width="100">
+      <el-table-column label="入库质量" min-width="260">
         <template #default="{ row }">
+          <template v-if="row.job_status === 'succeeded' && row.extracted_char_count != null">
+            <div>
+              含文本单元 {{ row.source_unit_count }} · 抽取 {{ row.extracted_char_count }} 字 ·
+              {{ row.chunk_count }} 切片
+            </div>
+            <el-text v-if="row.quality_warning === 'LOW_EXTRACTED_TEXT'" type="warning">
+              抽取文本较少，问答依据可能不完整
+            </el-text>
+          </template>
+          <span v-else>—</span>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="canManage" label="操作" width="140">
+        <template #default="{ row }">
+          <el-button v-if="row.job_status === 'failed'" type="primary" link @click="onRetry(row)">
+            重试
+          </el-button>
           <el-button type="danger" link @click="onDelete(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -165,6 +182,16 @@ async function onDelete(row) {
   try {
     await api(`/courses/${courseId.value}/documents/${row.id}`, { method: "DELETE" });
     ElMessage.success("已删除");
+    await loadDocuments();
+  } catch (error) {
+    ElMessage.error(error.message);
+  }
+}
+
+async function onRetry(row) {
+  try {
+    await api(`/courses/${courseId.value}/documents/${row.id}/retry`, { method: "POST" });
+    ElMessage.success("已重新提交入库");
     await loadDocuments();
   } catch (error) {
     ElMessage.error(error.message);

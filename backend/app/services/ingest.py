@@ -20,6 +20,7 @@ from app.services.parse import (
 from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
 
 _SECRET = re.compile(r"sk-[A-Za-z0-9]+")
+LOW_EXTRACTED_TEXT = "LOW_EXTRACTED_TEXT"
 
 
 class IngestError(Exception):
@@ -83,9 +84,12 @@ def process_ingest_job(
     *,
     batch_size: int = 32,
     parse_limits: ParseLimits = DEFAULT_PARSE_LIMITS,
+    low_text_chars: int = 200,
 ) -> None:
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
+    if low_text_chars < 1:
+        raise ValueError("low_text_chars must be positive")
     run_token = _claim_pending_job(db, job_id)
     if run_token is None:
         return
@@ -100,6 +104,7 @@ def process_ingest_job(
     try:
         data = Path(document.storage_path).read_bytes()
         pages = parse_document(document.filename, data, limits=parse_limits)
+        extracted_char_count = sum(len(text) for _, text in pages)
         pieces = chunk_pages(pages)
         if not pieces:
             raise IngestError("no chunks produced")
@@ -127,6 +132,12 @@ def process_ingest_job(
                 )
             )
         db.flush()
+        document.source_unit_count = len(pages)
+        document.extracted_char_count = extracted_char_count
+        document.chunk_count = len(pieces)
+        document.quality_warning = (
+            LOW_EXTRACTED_TEXT if extracted_char_count < low_text_chars else None
+        )
         completed = db.execute(
             update(IngestJob)
             .where(

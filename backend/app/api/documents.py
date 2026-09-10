@@ -47,6 +47,10 @@ def _document_out(document: Document, job: IngestJob | None) -> DocumentOut:
         filename=document.filename,
         job_status=job.status if job is not None else IngestJobStatus.pending.value,
         error_message=job.error_message if job is not None else None,
+        source_unit_count=document.source_unit_count,
+        extracted_char_count=document.extracted_char_count,
+        chunk_count=document.chunk_count,
+        quality_warning=document.quality_warning,
     )
 
 
@@ -56,6 +60,7 @@ def _run_ingest(
     embedder: Embedder,
     batch_size: int,
     parse_limits: ParseLimits,
+    low_text_chars: int,
 ) -> None:
     db = maker()
     try:
@@ -65,6 +70,7 @@ def _run_ingest(
             embedder,
             batch_size=batch_size,
             parse_limits=parse_limits,
+            low_text_chars=low_text_chars,
         )
     finally:
         db.close()
@@ -141,6 +147,7 @@ def upload_document(
         embedder,
         settings.embedding_batch_size,
         parse_limits_from_settings(settings),
+        settings.ingest_low_text_chars,
     )
     return _document_out(document, job)
 
@@ -175,6 +182,7 @@ def retry_document_ingest(
         embedder,
         settings.embedding_batch_size,
         parse_limits_from_settings(settings),
+        settings.ingest_low_text_chars,
     )
     return _document_out(document, job)
 

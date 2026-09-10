@@ -65,6 +65,10 @@ class DocumentOut(BaseModel):
     filename: str
     job_status: str
     error_message: str | None = None
+    source_unit_count: int | None = None
+    extracted_char_count: int | None = None
+    chunk_count: int | None = None
+    quality_warning: str | None = None
 
 
 class SearchRequest(BaseModel):

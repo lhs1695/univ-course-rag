@@ -5,12 +5,14 @@ from uuid import UUID, uuid4
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
+from app.config import Settings
 from app.main import app
 from app.models.course import Course, CourseMember, CourseMemberRole
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.models.user import User, UserRole
 from app.services.embedder import FakeEmbedder, get_embedder
 from app.services.ingest import (
+    LOW_EXTRACTED_TEXT,
     IngestLeaseLost,
     _touch_running_job,
     process_ingest_job,
@@ -19,6 +21,7 @@ from app.services.ingest import (
 from app.services.parse import ParseLimits
 from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -88,6 +91,20 @@ def upload_as_teacher(client: TestClient, db: Session, filename: str, content: b
     return UUID(uploaded.json()["id"])
 
 
+def assert_safe_quality_metadata(payload: dict, chunks: list[Chunk]) -> None:
+    assert payload["source_unit_count"] >= 1
+    assert payload["extracted_char_count"] >= 1
+    assert payload["chunk_count"] == len(chunks)
+    assert payload["quality_warning"] in {None, LOW_EXTRACTED_TEXT}
+    assert {"text", "snippet", "storage_path"}.isdisjoint(payload)
+
+
+@pytest.mark.parametrize("threshold", [0, 5_001])
+def test_low_text_threshold_is_bounded(threshold: int) -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, ingest_low_text_chars=threshold)
+
+
 def test_upload_sample_md_indexes_unique_sentence(client: TestClient, db: Session) -> None:
     teacher = add_user(db, "t1", "pass", UserRole.teacher)
     course = add_course(db, "Course 1")
@@ -115,6 +132,7 @@ def test_upload_sample_md_indexes_unique_sentence(client: TestClient, db: Sessio
     assert any(UNIQUE_SENTENCE in chunk.text for chunk in chunks)
     assert all(len(chunk.embedding) == 1024 for chunk in chunks)
     assert all(chunk.embedding_model == FakeEmbedder().index_identity for chunk in chunks)
+    assert_safe_quality_metadata(detail.json(), chunks)
 
 
 def test_upload_sample_pptx_indexes_unique_sentence(client: TestClient, db: Session) -> None:
@@ -142,6 +160,7 @@ def test_upload_sample_pptx_indexes_unique_sentence(client: TestClient, db: Sess
     assert all(chunk.course_id == course.id for chunk in chunks)
     assert any(PPTX_SENTENCE in chunk.text for chunk in chunks)
     assert all(len(chunk.embedding) == 1024 for chunk in chunks)
+    assert_safe_quality_metadata(detail.json(), chunks)
 
 
 def test_corrupt_pptx_fails_without_chunks(client: TestClient, db: Session) -> None:
@@ -191,6 +210,7 @@ def test_upload_sample_docx_indexes_unique_sentence(client: TestClient, db: Sess
     assert all(chunk.course_id == course.id for chunk in chunks)
     assert any(DOCX_SENTENCE in chunk.text for chunk in chunks)
     assert all(len(chunk.embedding) == 1024 for chunk in chunks)
+    assert_safe_quality_metadata(detail.json(), chunks)
 
 
 def test_upload_sample_pdf_stays_available(client: TestClient, db: Session) -> None:
@@ -208,7 +228,49 @@ def test_upload_sample_pdf_stays_available(client: TestClient, db: Session) -> N
     doc_id = UUID(uploaded.json()["id"])
     detail = client.get(f"/courses/{course.id}/documents/{doc_id}")
     assert detail.json()["job_status"] == IngestJobStatus.succeeded.value
-    assert db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all()
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all()
+    assert chunks
+    assert_safe_quality_metadata(detail.json(), chunks)
+
+
+def test_short_text_succeeds_with_quality_warning(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("INGEST_LOW_TEXT_CHARS", "100")
+    doc_id = upload_as_teacher(client, db, "brief.txt", b"brief")
+    document = db.get(Document, doc_id)
+
+    detail = client.get(f"/courses/{document.course_id}/documents/{doc_id}")
+
+    assert detail.status_code == 200
+    assert detail.json() == {
+        "id": str(doc_id),
+        "filename": "brief.txt",
+        "job_status": IngestJobStatus.succeeded.value,
+        "error_message": None,
+        "source_unit_count": 1,
+        "extracted_char_count": 5,
+        "chunk_count": 1,
+        "quality_warning": LOW_EXTRACTED_TEXT,
+    }
+
+
+def test_empty_extracted_text_fails_without_quality_metadata(
+    client: TestClient, db: Session
+) -> None:
+    doc_id = upload_as_teacher(client, db, "blank.txt", b"   \n")
+    document = db.get(Document, doc_id)
+
+    detail = client.get(f"/courses/{document.course_id}/documents/{doc_id}")
+
+    assert detail.status_code == 200
+    assert detail.json()["job_status"] == IngestJobStatus.failed.value
+    assert detail.json()["error_message"] == "no extractable text"
+    assert detail.json()["source_unit_count"] is None
+    assert detail.json()["extracted_char_count"] is None
+    assert detail.json()["chunk_count"] is None
+    assert detail.json()["quality_warning"] is None
+    assert db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all() == []
 
 
 @pytest.mark.parametrize(
@@ -268,6 +330,10 @@ def test_ooxml_resource_limit_preserves_previous_complete_chunks(
         uploaded_by=uuid4(),
         filename=source.name,
         storage_path=str(source),
+        source_unit_count=2,
+        extracted_char_count=800,
+        chunk_count=1,
+        quality_warning=None,
     )
     embedder = FakeEmbedder()
     db.add(document)
@@ -298,6 +364,11 @@ def test_ooxml_resource_limit_preserves_previous_complete_chunks(
     assert stored_job.status == IngestJobStatus.failed.value
     assert stored_job.error_message == "OOXML resource limit exceeded"
     assert [chunk.id for chunk in chunks] == [old_chunk.id]
+    stored_document = db.get(Document, document.id)
+    assert stored_document.source_unit_count == 2
+    assert stored_document.extracted_char_count == 800
+    assert stored_document.chunk_count == 1
+    assert stored_document.quality_warning is None
 
 
 @pytest.mark.parametrize("filename", ["large.pptx", "large.docx"])
@@ -494,6 +565,10 @@ def test_mid_batch_failure_preserves_previous_complete_chunks(
         uploaded_by=uuid4(),
         filename=source.name,
         storage_path=str(source),
+        source_unit_count=2,
+        extracted_char_count=800,
+        chunk_count=1,
+        quality_warning=None,
     )
     db.add(document)
     db.flush()
@@ -521,6 +596,11 @@ def test_mid_batch_failure_preserves_previous_complete_chunks(
     assert stored_job.run_token is None
     assert [chunk.id for chunk in chunks] == [old_chunk.id]
     assert chunks[0].text == "previous complete index"
+    stored_document = db.get(Document, document.id)
+    assert stored_document.source_unit_count == 2
+    assert stored_document.extracted_char_count == 800
+    assert stored_document.chunk_count == 1
+    assert stored_document.quality_warning is None
 
 
 def test_upstream_embedding_failure_is_safe_and_explicitly_retryable(
@@ -618,6 +698,7 @@ def test_teacher_can_recover_failed_or_stale_ingest_job(
     assert stored_job.status == IngestJobStatus.succeeded.value
     assert stored_job.run_token is None
     assert chunks
+    assert db.get(Document, document.id).chunk_count == len(chunks)
     chunk_ids = [chunk.id for chunk in chunks]
 
     duplicate = client.post(f"/courses/{course.id}/documents/{document.id}/retry")

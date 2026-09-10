@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     siliconflow_api_key: str = ""
     embedding_batch_size: int = Field(default=32, ge=1, le=256)
     ingest_stale_seconds: int = Field(default=15 * 60, ge=60)
+    ingest_low_text_chars: int = Field(default=200, ge=1, le=5_000)
     llm_backend: str = "fake"
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
