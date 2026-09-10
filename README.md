@@ -14,6 +14,6 @@
 
 密钥放本机 `.env`，不要提交、不要贴进聊天。
 
-CI 工作流见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)：使用 FakeEmbedder/FakeLLM，运行 Ruff、全量 pytest、迁移后的 pgvector 检索证明和前端 lockfile 构建；不读取云 key 或本地语料。提交 `4b805e9` 的历史 CI 已成功完成；阶段 38–42 的当前工作尚未默认 push。
+CI 工作流见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)：使用 FakeEmbedder/FakeLLM，运行 Ruff、全量 pytest、迁移后的 pgvector 检索证明和前端 lockfile 构建；不读取云 key 或本地语料。阶段 38–42 的提交 `e0b10b9` 已推送，GitHub Actions CI 已成功完成。
 
 本项目仍定位为本机产品：不包含 OCR/vision、旧二进制 Office、定时任务平台、多 Agent、生产部署或法律合规认证。下一项外部工作是由未参与开发的人按 [`docs/usability-test-template.md`](docs/usability-test-template.md) 完成阶段 25 独立试用；开发者走位和自动化测试不能代替。
