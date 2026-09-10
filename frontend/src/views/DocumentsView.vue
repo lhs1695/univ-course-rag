@@ -23,6 +23,15 @@
       <el-button v-if="canManage" text @click="router.push(`/courses/${courseId}/insights`)">学情</el-button>
     </div>
 
+    <el-alert
+      v-if="canManage"
+      class="scope-note"
+      title="入库质量只说明文本是否被抽取和切片，不代表问答一定正确。文本较少的资料仍会保留，请结合引用核对原文。"
+      type="info"
+      :closable="false"
+      show-icon
+    />
+
     <el-table :data="documents" v-loading="loading" empty-text="还没有资料">
       <el-table-column prop="filename" label="文件" min-width="180" />
       <el-table-column label="状态" width="120">
@@ -206,5 +215,9 @@ async function onRetry(row) {
   gap: 12px;
   margin: 16px 0;
   flex-wrap: wrap;
+}
+
+.scope-note {
+  margin-bottom: 16px;
 }
 </style>

@@ -8,6 +8,12 @@
 
 阶段 39 的 `test_storage.py`、`test_ask.py`（合计 30 passed）、Ruff 和 Vite 构建已通过。已用专用临时数据库、安全 PDF 夹具和 FakeEmbedder/FakeLLM 实际点击一次“查看原资料”，同一 Cookie 会话在新标签进入受鉴权 PDF URL，并保留 `#page=1`；未登录直接访问返回 401。临时数据库、测试上传目录和 Playwright 产物已删除。下一阶段为 **40 提问日志留存与有界维护**。
 
+阶段 40 已完成：`QUERY_LOG_RETENTION_DAYS` 默认 90 天、范围 1–3650；`QUERY_LOG_CLEANUP_BATCH_SIZE` 默认 100 条、范围 1–1000。仅管理员可调用 `POST /admin/query-logs/retention`，用 `dry_run` 预览后再用 `delete` 显式删除；每次只按 `created_at, id` 处理最旧一批，并通过 `has_more` 表示仍有余留。学情查询本身只聚合留存窗口内记录。0009 增加清理顺序组合索引，维护日志不含 query、用户或 Session 内容；当前数据库删除不等于从外部备份即时抹除，完整合同见 [`query-log-retention.md`](query-log-retention.md)。相关 pytest（22 passed）、Ruff 与 Alembic 迁移链检查已通过；本阶段没有新增 UI。下一阶段为 **41 合成规模基线与回归证据**。
+
+阶段 41 已完成：新增显式本机入口 `python -m app.benchmark`，确定性生成合成 Markdown，并复用正式解析、切片、Fake embedding 批处理、落库和检索路径。SQLite 原文/数据库只在系统临时目录；Postgres 模式必须传 `--allow-postgres`，逐档清理随机隔离的合成课程和用户。报告不含原文、数据库 URL、路径、账号或实体 ID，只保留聚合正确性、延迟、返回数、工作量单位和脱敏环境。100/500/1000 chunks 的 SQLite 与 pgvector 基线均成功，实际 chunk 数准确、返回数均为 8、Top-1 合成目标命中率均为 1.000；Postgres 运行后合成课程和用户余留均为 0。基线、命令和不过度严格的判读规则见 [`synthetic-benchmark.md`](synthetic-benchmark.md) 与 [`synthetic-benchmark-baseline.json`](synthetic-benchmark-baseline.json)。`test_benchmark.py`（9 passed）与 Ruff 通过。下一阶段为 **42 本机产品收口与试用准备**。
+
+阶段 42 已实现并通过本机验收：README、demo 和前端页面已统一质量提示、引用追溯、留存窗口、备份限制与合成基准口径；学情 API 返回当前留存天数。管理员新增“日志维护”页，先 dry-run、再确认单批删除，有余留时必须重新预览。专用临时 SQLite + Fake 安全夹具已实际完成上传、失败重试、命中引用、打开原资料、拒答、学情和留存维护，临时数据与 Playwright 产物已删除；记录见 [`demo.md`](demo.md)。直接相关 pytest（8 passed）、Ruff 和 Vite 构建通过。阶段 25 仍等待未参与开发者按 [`usability-test-template.md`](usability-test-template.md) 独立试用，阶段 18/19 未触发。当前阶段 38–42 工作尚未提交或 push，因此远端 CI 尚未运行；不要把本机验收写成阶段 25，也不要默认 push。
+
 ## 已收口的第五期
 
 已完成：阶段 30 已集中实现受 upload root、课程 UUID 和资料 UUID 共同约束的存储服务；上传提交失败会补偿清理，单资料与课程删除覆盖文件生命周期，清理失败写入不含完整路径的可观测日志。合同见 `docs/storage-lifecycle.md`。
@@ -30,4 +36,4 @@
 
 并行等待：阶段 25 仍缺至少一名未参与开发的试用者。获得匿名记录后，再整理七类问题并判断阶段 18/19；在此之前不能宣称第四期真人试用收口。
 
-留存：阶段 20–24、26–31、第五期阶段 32–37 与第六期阶段 38、39 已完成；阶段 25 继续等待外部。不要提前实施阶段 18/19，不默认 push；下一阶段只按 `plan-6.md` 实施阶段 40。
+留存：阶段 20–24、26–31、第五期阶段 32–37 与第六期阶段 38–41 已完成；阶段 42 本机验收完成、仅欠提交后远端 CI。阶段 25 继续等待外部。不要提前实施阶段 18/19，不默认 commit/push；下一步是维护者决定是否提交并授权 push，或继续等待阶段 25。

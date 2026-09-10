@@ -9,6 +9,11 @@
       </el-button>
     </div>
 
+    <p class="scope-hint">
+      只依据本课已成功入库的资料作答。引用只能由本课成员打开；PDF 会尝试定位到引用页，PPTX、DOCX
+      等格式只打开或下载原文件，请自行核对原文。
+    </p>
+
     <el-form class="ask-form" @submit.prevent="onAsk">
       <el-form-item>
         <el-input
@@ -143,6 +148,13 @@ async function onAsk() {
 
 .ask-form {
   margin: 20px 0 16px;
+}
+
+.scope-hint {
+  margin: 12px 0 0;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .answer {

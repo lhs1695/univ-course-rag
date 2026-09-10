@@ -8,6 +8,7 @@ import InsightsView from "./views/InsightsView.vue";
 import MembersView from "./views/MembersView.vue";
 import AdminUsersView from "./views/AdminUsersView.vue";
 import AdminCoursesView from "./views/AdminCoursesView.vue";
+import AdminMaintenanceView from "./views/AdminMaintenanceView.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +17,7 @@ export const router = createRouter({
     { path: "/", redirect: "/courses" },
     { path: "/admin/users", component: AdminUsersView, meta: { admin: true } },
     { path: "/admin/courses", component: AdminCoursesView, meta: { admin: true } },
+    { path: "/admin/maintenance", component: AdminMaintenanceView, meta: { admin: true } },
     { path: "/courses", component: CoursesView },
     { path: "/courses/:courseId/documents", component: DocumentsView },
     { path: "/courses/:courseId/members", component: MembersView, meta: { teacher: true } },

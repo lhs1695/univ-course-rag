@@ -10,6 +10,9 @@
         <el-button v-if="isAdmin" text type="primary" @click="router.push('/admin/courses')">
           课程
         </el-button>
+        <el-button v-if="isAdmin" text type="primary" @click="router.push('/admin/maintenance')">
+          日志维护
+        </el-button>
         <el-button v-else text type="primary" @click="goCourses">我的课程</el-button>
         <el-button text @click="onLogout">退出</el-button>
       </div>

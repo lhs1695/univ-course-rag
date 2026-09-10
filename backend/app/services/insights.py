@@ -23,7 +23,12 @@ def _last_asked_at(logs: list[QueryLog]) -> datetime:
     return max(log.created_at for log in logs)
 
 
-def aggregate_course_insights(db: DbSession, course_id: UUID) -> dict:
+def aggregate_course_insights(
+    db: DbSession,
+    course_id: UUID,
+    *,
+    retained_since: datetime,
+) -> dict:
     logs = db.execute(
         select(QueryLog)
         .join(
@@ -35,6 +40,7 @@ def aggregate_course_insights(db: DbSession, course_id: UUID) -> dict:
         )
         .where(
             QueryLog.course_id == course_id,
+            QueryLog.created_at >= retained_since,
             CourseMember.role == CourseMemberRole.student.value,
         )
     ).scalars().all()

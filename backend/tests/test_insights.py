@@ -52,7 +52,7 @@ def test_insights_aggregates_student_queries_without_identities(
     add_member(db, course2, teacher, CourseMemberRole.teacher)
     add_member(db, course2, outsider, CourseMemberRole.student)
 
-    t0 = datetime(2026, 3, 1, 8, 0, tzinfo=UTC)
+    t0 = datetime.now(UTC) - timedelta(hours=4)
     t1 = t0 + timedelta(hours=1)
     t2 = t0 + timedelta(hours=2)
     t3 = t0 + timedelta(hours=3)
@@ -143,6 +143,7 @@ def test_insights_aggregates_student_queries_without_identities(
     assert "carol" not in dumped
     assert "t1" not in dumped
     assert "unique" not in dumped.lower()
+    assert body["retention_days"] == 90
     assert "frequent" in body
     assert "no_evidence" in body
     assert body["frequent"] == [{"query": "什么是 向量检索", "count": 2}]
@@ -150,7 +151,45 @@ def test_insights_aggregates_student_queries_without_identities(
     miss = body["no_evidence"][0]
     assert miss["query"] == "课件里有期末范围吗"
     assert miss["count"] == 3
-    assert miss["last_asked_at"].startswith("2026-03-01T11:00:00")
+    assert miss["last_asked_at"].startswith(t3.replace(tzinfo=None).isoformat())
+
+
+def test_insights_excludes_queries_outside_retention_window(
+    client: TestClient, db: Session, monkeypatch
+) -> None:
+    monkeypatch.setenv("QUERY_LOG_RETENTION_DAYS", "30")
+    teacher = add_user(db, "teacher-retention", "pass", UserRole.teacher)
+    student = add_user(db, "student-retention", "pass", UserRole.student)
+    course = add_course(db, "Retention Course")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    add_member(db, course, student, CourseMemberRole.student)
+    now = datetime.now(UTC)
+    _add_log(
+        db,
+        course_id=course.id,
+        user_id=student.id,
+        query="已经到期的问题",
+        hit=True,
+        error_code=None,
+        created_at=now - timedelta(days=31),
+    )
+    _add_log(
+        db,
+        course_id=course.id,
+        user_id=student.id,
+        query="仍在留存期的问题",
+        hit=True,
+        error_code=None,
+        created_at=now - timedelta(days=29),
+    )
+    db.commit()
+
+    login_as(client, teacher.username, "pass")
+    response = client.get(f"/courses/{course.id}/insights")
+
+    assert response.status_code == 200
+    assert response.json()["retention_days"] == 30
+    assert response.json()["frequent"] == [{"query": "仍在留存期的问题", "count": 1}]
 
 
 def test_student_cannot_open_insights(client: TestClient, db: Session) -> None:

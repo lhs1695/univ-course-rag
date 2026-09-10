@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -118,5 +119,20 @@ class NoEvidenceQuestionOut(BaseModel):
 
 
 class InsightsResponse(BaseModel):
+    retention_days: int
     frequent: list[FrequentQuestionOut]
     no_evidence: list[NoEvidenceQuestionOut]
+
+
+class QueryLogRetentionRequest(BaseModel):
+    mode: Literal["dry_run", "delete"] = "dry_run"
+
+
+class QueryLogRetentionResponse(BaseModel):
+    mode: Literal["dry_run", "delete"]
+    retention_days: int
+    batch_limit: int
+    matched_count: int
+    deleted_count: int
+    has_more: bool
+    cutoff: datetime

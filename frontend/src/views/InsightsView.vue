@@ -3,7 +3,9 @@
     <el-page-header @back="router.push('/courses')">
       <template #content>学情</template>
     </el-page-header>
-    <p class="hint">只统计本课学生提问（规范化后计数）。不展示提问者，也不对学习情况下结论。</p>
+    <p class="hint">
+      只统计本课学生在最近 {{ retentionDays || "当前配置" }} 天留存窗口内的提问（规范化后计数）。不展示提问者，也不对学习情况作结论；到期记录即使尚未清理，也不会进入这里。
+    </p>
 
     <h3>高频问句</h3>
     <el-table :data="frequent" v-loading="loading" empty-text="暂无命中问句">
@@ -36,6 +38,7 @@ const courseId = computed(() => String(route.params.courseId));
 const loading = ref(true);
 const frequent = ref([]);
 const noEvidence = ref([]);
+const retentionDays = ref(null);
 
 function formatTime(value) {
   if (!value) {
@@ -51,6 +54,7 @@ function formatTime(value) {
 onMounted(async () => {
   try {
     const data = await api(`/courses/${courseId.value}/insights`);
+    retentionDays.value = data.retention_days || null;
     frequent.value = data.frequent || [];
     noEvidence.value = data.no_evidence || [];
   } catch (error) {
