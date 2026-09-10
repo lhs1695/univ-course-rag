@@ -1,6 +1,6 @@
 # Intent：高校课程知识库智能问答（univ-course-rag）
 
-状态：产品定位已拍板；第一至五期技术线已收敛；第六期见 [`plan-6.md`](plan-6.md)（单主机部署前置条件与可恢复性）
+状态：产品定位已拍板；第一至五期技术线已收敛；第六期见 [`plan-6.md`](plan-6.md)（本机产品可解释性、数据边界与效果证据）
 日期：2026-09-01  
 约束栈：Python、FastAPI、B/S、LLM = DeepSeek v4-flash
 
