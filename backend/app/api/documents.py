@@ -28,6 +28,7 @@ from app.security.deps import (
 )
 from app.services.embedder import Embedder, get_embedder
 from app.services.ingest import latest_job, process_ingest_job, retry_ingest_job
+from app.services.parse import ParseLimits, parse_limits_from_settings
 from app.services.storage import StorageError, delete_document_upload, store_upload
 
 router = APIRouter(prefix="/courses/{course_id}/documents", tags=["documents"])
@@ -54,10 +55,17 @@ def _run_ingest(
     maker: SessionMaker,
     embedder: Embedder,
     batch_size: int,
+    parse_limits: ParseLimits,
 ) -> None:
     db = maker()
     try:
-        process_ingest_job(db, job_id, embedder, batch_size=batch_size)
+        process_ingest_job(
+            db,
+            job_id,
+            embedder,
+            batch_size=batch_size,
+            parse_limits=parse_limits,
+        )
     finally:
         db.close()
 
@@ -132,6 +140,7 @@ def upload_document(
         session_maker,
         embedder,
         settings.embedding_batch_size,
+        parse_limits_from_settings(settings),
     )
     return _document_out(document, job)
 
@@ -165,6 +174,7 @@ def retry_document_ingest(
         session_maker,
         embedder,
         settings.embedding_batch_size,
+        parse_limits_from_settings(settings),
     )
     return _document_out(document, job)
 

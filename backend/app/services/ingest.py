@@ -11,7 +11,12 @@ from sqlalchemy.orm import Session as DbSession
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.services.chunk import chunk_pages
 from app.services.embedder import Embedder
-from app.services.parse import parse_document
+from app.services.parse import (
+    DEFAULT_PARSE_LIMITS,
+    ParseError,
+    ParseLimits,
+    parse_document,
+)
 from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
 
 _SECRET = re.compile(r"sk-[A-Za-z0-9]+")
@@ -28,6 +33,8 @@ class IngestLeaseLost(IngestError):
 def safe_error(exc: BaseException) -> str:
     if isinstance(exc, UpstreamUnavailable):
         return UPSTREAM_UNAVAILABLE
+    if isinstance(exc, ParseError):
+        return str(exc)
     message = f"{type(exc).__name__}: {exc}"
     message = _SECRET.sub("[redacted]", message)
     return message[:400]
@@ -75,6 +82,7 @@ def process_ingest_job(
     embedder: Embedder,
     *,
     batch_size: int = 32,
+    parse_limits: ParseLimits = DEFAULT_PARSE_LIMITS,
 ) -> None:
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
@@ -91,7 +99,7 @@ def process_ingest_job(
 
     try:
         data = Path(document.storage_path).read_bytes()
-        pages = parse_document(document.filename, data)
+        pages = parse_document(document.filename, data, limits=parse_limits)
         pieces = chunk_pages(pages)
         if not pieces:
             raise IngestError("no chunks produced")

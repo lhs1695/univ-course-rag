@@ -1,6 +1,8 @@
+import io
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 from app.main import app
@@ -14,6 +16,7 @@ from app.services.ingest import (
     process_ingest_job,
     retry_ingest_job,
 )
+from app.services.parse import ParseLimits
 from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -25,6 +28,7 @@ UNIQUE_SENTENCE = "紫石英口令：本课向量必须绑定 course_id-alpha-93
 PPTX_SENTENCE = "紫石英PPT口令：幻灯片锚点 delta-8820。"
 DOCX_SENTENCE = "紫石英Word口令：实验指导锚点 epsilon-5503。"
 SAMPLE_MD = Path(__file__).parent / "fixtures" / "sample.md"
+SAMPLE_PDF = Path(__file__).parent / "fixtures" / "sample.pdf"
 SAMPLE_PPTX = Path(__file__).parent / "fixtures" / "sample.pptx"
 SAMPLE_DOCX = Path(__file__).parent / "fixtures" / "sample.docx"
 PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
@@ -61,6 +65,27 @@ def add_course(db: Session, title: str) -> Course:
 def add_member(db: Session, course: Course, user: User, role: CourseMemberRole) -> None:
     db.add(CourseMember(course_id=course.id, user_id=user.id, role=role.value))
     db.commit()
+
+
+def make_zip(entries: list[tuple[str, bytes]]) -> bytes:
+    output = io.BytesIO()
+    with ZipFile(output, "w", compression=ZIP_DEFLATED) as archive:
+        for name, content in entries:
+            archive.writestr(name, content)
+    return output.getvalue()
+
+
+def upload_as_teacher(client: TestClient, db: Session, filename: str, content: bytes) -> UUID:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": (filename, content, "application/octet-stream")},
+    )
+    assert uploaded.status_code == 201
+    return UUID(uploaded.json()["id"])
 
 
 def test_upload_sample_md_indexes_unique_sentence(client: TestClient, db: Session) -> None:
@@ -166,6 +191,167 @@ def test_upload_sample_docx_indexes_unique_sentence(client: TestClient, db: Sess
     assert all(chunk.course_id == course.id for chunk in chunks)
     assert any(DOCX_SENTENCE in chunk.text for chunk in chunks)
     assert all(len(chunk.embedding) == 1024 for chunk in chunks)
+
+
+def test_upload_sample_pdf_stays_available(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("sample.pdf", SAMPLE_PDF.read_bytes(), "application/pdf")},
+    )
+
+    assert uploaded.status_code == 201
+    doc_id = UUID(uploaded.json()["id"])
+    detail = client.get(f"/courses/{course.id}/documents/{doc_id}")
+    assert detail.json()["job_status"] == IngestJobStatus.succeeded.value
+    assert db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all()
+
+
+@pytest.mark.parametrize(
+    ("filename", "environment", "content"),
+    [
+        (
+            "too-many.pptx",
+            {"OOXML_MAX_ZIP_ENTRIES": "10"},
+            make_zip([(f"entry-{index}.xml", b"x") for index in range(11)]),
+        ),
+        (
+            "too-large-total.docx",
+            {"OOXML_MAX_UNCOMPRESSED_BYTES": str(1024 * 1024)},
+            make_zip([("one.xml", b"a" * (600 * 1024)), ("two.xml", b"b" * (600 * 1024))]),
+        ),
+        (
+            "too-large-entry.pptx",
+            {"OOXML_MAX_ENTRY_BYTES": str(1024 * 1024)},
+            make_zip([("large.xml", b"a" * (1024 * 1024 + 1))]),
+        ),
+        (
+            "too-compressible.docx",
+            {"OOXML_MAX_COMPRESSION_RATIO": "2"},
+            make_zip([("compressed.xml", b"a" * (1024 * 1024))]),
+        ),
+    ],
+    ids=["entry-count", "total-uncompressed", "entry-size", "compression-ratio"],
+)
+def test_ooxml_zip_resource_limits_fail_without_chunks(
+    client: TestClient,
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    filename: str,
+    environment: dict[str, str],
+    content: bytes,
+) -> None:
+    for key, value in environment.items():
+        monkeypatch.setenv(key, value)
+    doc_id = upload_as_teacher(client, db, filename, content)
+
+    detail = client.get(f"/courses/{db.get(Document, doc_id).course_id}/documents/{doc_id}")
+
+    assert detail.status_code == 200
+    assert detail.json()["job_status"] == IngestJobStatus.failed.value
+    assert detail.json()["error_message"] == "OOXML resource limit exceeded"
+    assert db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all() == []
+
+
+def test_ooxml_resource_limit_preserves_previous_complete_chunks(
+    db: Session, tmp_path: Path
+) -> None:
+    course = add_course(db, "Course 1")
+    source = tmp_path / "too-many.pptx"
+    source.write_bytes(make_zip([(f"entry-{index}.xml", b"x") for index in range(11)]))
+    document = Document(
+        course_id=course.id,
+        uploaded_by=uuid4(),
+        filename=source.name,
+        storage_path=str(source),
+    )
+    embedder = FakeEmbedder()
+    db.add(document)
+    db.flush()
+    old_chunk = Chunk(
+        course_id=course.id,
+        document_id=document.id,
+        page=1,
+        text="previous complete index",
+        embedding=embedder.embed(["previous complete index"])[0],
+        embedding_model=embedder.index_identity,
+    )
+    job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
+    db.add_all([old_chunk, job])
+    db.commit()
+
+    process_ingest_job(
+        db,
+        job.id,
+        embedder,
+        parse_limits=ParseLimits(max_zip_entries=10),
+    )
+
+    db.expire_all()
+    stored_job = db.get(IngestJob, job.id)
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == document.id)).scalars().all()
+    assert stored_job is not None
+    assert stored_job.status == IngestJobStatus.failed.value
+    assert stored_job.error_message == "OOXML resource limit exceeded"
+    assert [chunk.id for chunk in chunks] == [old_chunk.id]
+
+
+@pytest.mark.parametrize("filename", ["large.pptx", "large.docx"])
+def test_ooxml_extracted_text_limit_fails_without_chunks(
+    client: TestClient,
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    filename: str,
+) -> None:
+    monkeypatch.setenv("PARSE_MAX_TEXT_CHARS", "10000")
+    text = "x" * 10_001
+    output = io.BytesIO()
+    if filename.endswith(".pptx"):
+        from pptx import Presentation
+
+        presentation = Presentation()
+        slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+        slide.shapes.add_textbox(0, 0, 1, 1).text_frame.text = text
+        presentation.save(output)
+    else:
+        from docx import Document as WordDocument
+
+        document = WordDocument()
+        document.add_paragraph(text)
+        document.save(output)
+    doc_id = upload_as_teacher(client, db, filename, output.getvalue())
+
+    detail = client.get(f"/courses/{db.get(Document, doc_id).course_id}/documents/{doc_id}")
+
+    assert detail.status_code == 200
+    assert detail.json()["job_status"] == IngestJobStatus.failed.value
+    assert detail.json()["error_message"] == "extracted text exceeds resource limit"
+    assert db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all() == []
+
+
+def test_pptx_slide_limit_fails_without_chunks(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("PARSE_MAX_PAGES", "1")
+    output = io.BytesIO()
+    from pptx import Presentation
+
+    presentation = Presentation()
+    for _ in range(2):
+        presentation.slides.add_slide(presentation.slide_layouts[5])
+    presentation.save(output)
+    doc_id = upload_as_teacher(client, db, "two-slides.pptx", output.getvalue())
+
+    detail = client.get(f"/courses/{db.get(Document, doc_id).course_id}/documents/{doc_id}")
+
+    assert detail.status_code == 200
+    assert detail.json()["job_status"] == IngestJobStatus.failed.value
+    assert detail.json()["error_message"] == "extracted text exceeds resource limit"
+    assert db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all() == []
 
 
 def test_corrupt_docx_fails_without_chunks(client: TestClient, db: Session) -> None:
