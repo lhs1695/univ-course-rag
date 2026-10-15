@@ -2,6 +2,7 @@ import logging
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session as DbSession
@@ -15,6 +16,7 @@ from app.api.insights import router as insights_router
 from app.api.query_log_retention import router as query_log_retention_router
 from app.api.search import router as search_router
 from app.api.users import router as admin_users_router
+from app.config import ConfigurationUnavailable, Settings, get_settings, provider_status
 from app.db import get_db
 from app.observability import (
     configure_log_records,
@@ -22,10 +24,63 @@ from app.observability import (
     reset_request_id,
     set_request_id,
 )
+from app.services.fusion import FusionError
+from app.services.keyword import KeywordLimitExceeded
+from app.services.retrieve import (
+    KEYWORD_LIMIT,
+    KEYWORD_LIMIT_MESSAGE,
+    RETRIEVAL_FAILED,
+    RETRIEVAL_FAILED_MESSAGE,
+    RETRIEVAL_STRATEGY,
+    RETRIEVAL_STRATEGY_MESSAGE,
+    RetrievalStrategyError,
+)
+from app.services.upstream import UpstreamUnavailable
 
 app = FastAPI()
 configure_log_records()
 logger = logging.getLogger(__name__)
+
+
+def _service_error(code: str, message: str, status_code: int) -> JSONResponse:
+    logger.warning("service_unavailable error_code=%s", code)
+    return JSONResponse(
+        status_code=status_code,
+        content={"error_code": code, "message": message, "answer": None, "citations": []},
+    )
+
+
+@app.exception_handler(ConfigurationUnavailable)
+async def configuration_unavailable(request: Request, exc: ConfigurationUnavailable):
+    return _service_error("MODEL_NOT_CONFIGURED", "AI 服务配置不可用，请联系管理员核对配置。", 503)
+
+
+@app.exception_handler(UpstreamUnavailable)
+async def upstream_unavailable(request: Request, exc: UpstreamUnavailable):
+    return _service_error(exc.error_code, exc.message, exc.status_code)
+
+
+@app.exception_handler(KeywordLimitExceeded)
+async def keyword_limit_exceeded(request: Request, exc: KeywordLimitExceeded):
+    logger.warning("keyword_limit resource=%s", exc.resource)
+    return _service_error(KEYWORD_LIMIT, KEYWORD_LIMIT_MESSAGE, 503)
+
+
+@app.exception_handler(RetrievalStrategyError)
+async def retrieval_strategy_rejected(request: Request, exc: RetrievalStrategyError):
+    logger.warning("retrieval_strategy_rejected")
+    return _service_error(RETRIEVAL_STRATEGY, RETRIEVAL_STRATEGY_MESSAGE, 503)
+
+
+@app.exception_handler(FusionError)
+async def fusion_rejected(request: Request, exc: FusionError):
+    logger.warning("fusion_rejected kind=%s", exc.kind)
+    return _service_error(RETRIEVAL_FAILED, RETRIEVAL_FAILED_MESSAGE, 503)
+
+
+@app.exception_handler(SQLAlchemyError)
+async def database_unavailable(request: Request, exc: SQLAlchemyError):
+    return _service_error("DATABASE_UNAVAILABLE", "数据库暂时不可用，请稍后重试。", 503)
 
 
 @app.middleware("http")
@@ -72,3 +127,25 @@ def ready(
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "unavailable"}
     return {"status": "ok"}
+
+
+@app.get("/runtime")
+def runtime_status(
+    db: Annotated[DbSession, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> dict:
+    """Local checks only; no provider requests, credentials, URLs, or course data."""
+    database = "available"
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        database = "unavailable"
+    return {
+        "process": "ok",
+        "database": database,
+        "embedding": provider_status(settings, "embedding"),
+        "generation": provider_status(settings, "llm"),
+        "reranking": provider_status(settings, "reranking"),
+        "migration": "not_checked",
+        "index": "not_checked",
+    }

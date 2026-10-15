@@ -40,6 +40,10 @@ def test_ready_returns_stable_503_when_database_is_unavailable(
     response = TestClient(app).get("/ready")
     assert response.status_code == 503
     assert response.json() == {"status": "unavailable"}
+    runtime = TestClient(app).get("/runtime")
+    assert runtime.status_code == 200
+    assert runtime.json()["database"] == "unavailable"
+    assert "connection details" not in runtime.text
 
 
 def test_request_id_is_generated_or_echoed_and_logged_safely(

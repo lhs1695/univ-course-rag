@@ -1,4 +1,6 @@
 from pathlib import Path
+from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -52,7 +54,62 @@ class Settings(BaseSettings):
     llm_backend: str = "fake"
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
-    deepseek_model: str = "deepseek-v4-flash"
+    deepseek_model: str = "deepseek-flash"
+    retrieval_strategy: Literal["dense", "hybrid"] = "dense"
+    rrf_k: int = Field(default=60, ge=1, le=10_000)
+    reranker_backend: str = "disabled"
+    question_grouping_backend: str = "disabled"
+    reranker_model: str = "BAAI/bge-reranker-v2-m3"
+    reranker_base_url: str = "https://api.siliconflow.cn/v1"
+
+
+class ConfigurationUnavailable(Exception):
+    """Only a stable category may leave the configuration boundary."""
+
+
+def provider_status(settings: Settings, kind: str) -> dict:
+    if kind == "embedding":
+        backend, expected = settings.embedder_backend, "siliconflow"
+        key, model, url = (
+            settings.siliconflow_api_key, settings.embedding_model, settings.embedding_base_url
+        )
+    elif kind == "reranking":
+        backend, expected = settings.reranker_backend, "siliconflow"
+        key, model, url = settings.siliconflow_api_key, settings.reranker_model, settings.reranker_base_url
+        if backend == "disabled":
+            return {
+                "backend": "disabled", "status": "disabled", "key_present": False,
+                "model_present": bool(model.strip()), "connectivity": "not_checked",
+            }
+    else:
+        backend, expected = settings.llm_backend, "deepseek"
+        key, model, url = settings.deepseek_api_key, settings.deepseek_model, settings.deepseek_base_url
+    try:
+        parsed = urlsplit(url)
+        valid_url = (
+            parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+            and not parsed.username and not parsed.password and not parsed.query and not parsed.fragment
+        )
+    except ValueError:
+        valid_url = False
+    valid = backend == "fake" or (
+        backend == expected and bool(key.strip()) and bool(model.strip()) and valid_url
+    )
+    if kind == "reranking":
+        valid = backend == expected and valid and settings.retrieval_strategy == "hybrid"
+    fake = backend == "fake" and kind != "reranking"
+    return {
+        "backend": backend if backend == expected or fake else "unsupported",
+        "status": "fake" if fake else "configured" if valid else "unavailable",
+        "key_present": bool(key.strip()),
+        "model_present": bool(model.strip()),
+        "connectivity": "not_checked",
+    }
+
+
+def require_provider_configuration(settings: Settings, kind: str) -> None:
+    if provider_status(settings, kind)["status"] == "unavailable":
+        raise ConfigurationUnavailable()
 
 
 def get_settings() -> Settings:

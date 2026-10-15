@@ -43,22 +43,34 @@ def list_my_courses(
     db: Annotated[DbSession, Depends(get_db)],
 ) -> list[CourseOut]:
     rows = db.execute(
-        select(Course)
+        select(Course, CourseMember)
         .join(CourseMember, CourseMember.course_id == Course.id)
         .where(CourseMember.user_id == user.id)
         .order_by(Course.created_at)
-    ).scalars().all()
-    return [CourseOut(id=str(c.id), title=c.title) for c in rows]
+    ).all()
+    return [
+        _course_out(CourseAccess(course=course, member=member, user=user))
+        for course, member in rows
+    ]
+
+
+def _course_out(access: CourseAccess) -> CourseOut:
+    return CourseOut(
+        id=str(access.course.id),
+        title=access.course.title,
+        membership_role=access.member.role,
+        capabilities=access.capabilities,
+    )
 
 
 @router.get("/{course_id}", response_model=CourseOut)
 def get_course(access: Annotated[CourseAccess, Depends(require_course_member)]) -> CourseOut:
-    return CourseOut(id=str(access.course.id), title=access.course.title)
+    return _course_out(access)
 
 
 @router.get("/{course_id}/members", response_model=list[CourseMemberOut])
 def list_members(
-    access: Annotated[CourseAccess, Depends(require_course_member)],
+    access: Annotated[CourseAccess, Depends(require_course_teacher)],
     db: Annotated[DbSession, Depends(get_db)],
 ) -> list[CourseMemberOut]:
     members = db.execute(

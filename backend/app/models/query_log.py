@@ -2,11 +2,18 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
+
+
+class QueryOutcome(StrEnum):
+    cited_answer = "cited_answer"
+    no_evidence = "no_evidence"
+    failure = "failure"
 
 
 class QueryLog(Base):
@@ -18,6 +25,8 @@ class QueryLog(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     query: Mapped[str] = mapped_column(Text)
     hit: Mapped[bool] = mapped_column(Boolean)
+    outcome: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    member_role_at_ask: Mapped[str | None] = mapped_column(String(16), nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
     chunk_ids: Mapped[str] = mapped_column(Text, default="[]")
     duration_ms: Mapped[int] = mapped_column(Integer)

@@ -4,19 +4,35 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import UTC, datetime
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
+from app.config import Settings
 from app.main import app
-from app.models.course import CourseMemberRole
+from app.models.course import CourseMember, CourseMemberRole
 from app.models.document import Chunk
 from app.models.query_log import QueryLog
 from app.models.user import UserRole
+from app.services import generate
 from app.services.embedder import FakeEmbedder, get_embedder
-from app.services.generate import NO_EVIDENCE
+from app.services.fusion import FusionError
+from app.services.generate import NO_EVIDENCE, assemble_ask_context, generate_answer
+from app.services.keyword import KeywordLimitExceeded
 from app.services.llm import FakeLLM, get_llm, parse_cited_ids
-from app.services.retrieve import EMBEDDING_MISMATCH
-from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
+from app.services.rerank import FakeReranker, RerankError, RerankTimeout, get_reranker
+from app.services.retrieve import (
+    EMBEDDING_MISMATCH,
+    SearchHit,
+    retrieve_chunks,
+    retrieve_hybrid_candidates,
+)
+from app.services.upstream import (
+    UPSTREAM_UNAVAILABLE,
+    UpstreamTimeout,
+    UpstreamUnavailable,
+)
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -26,11 +42,230 @@ from tests.test_retrieve import (
     FIXTURES,
     GOLDEN,
     UNRELATED,
+    _scaled_chunk,
     add_course,
     add_member,
     login_as,
     upload,
 )
+
+
+def evidence_hit(text: str = "检索摘要") -> SearchHit:
+    return SearchHit(uuid4(), uuid4(), None, text, 1.0)
+
+
+@pytest.mark.parametrize("budget_delta, expected_count", [(-1, 0), (0, 1), (1, 1)])
+def test_context_budget_counts_complete_source_blocks(
+    monkeypatch: pytest.MonkeyPatch, budget_delta: int, expected_count: int
+) -> None:
+    first, second = evidence_hit(), evidence_hit()
+    body = "预算内证据"
+    block = f"[Source {first.chunk_id}]\n{body}\n"
+    monkeypatch.setattr(generate, "CONTEXT_CHAR_BUDGET", len(block) + budget_delta)
+    chunks = {hit.chunk_id: Chunk(text=body) for hit in (first, second)}
+
+    context = assemble_ask_context("问题", [first, second], chunks)
+
+    expected = [first.chunk_id][:expected_count]
+    assert context.source_ids == frozenset(expected)
+    assert parse_cited_ids(context.prompt) == expected
+    assert context.prompt.splitlines()[0] == (
+        "允许引用的 Source id（只能用这些）：" + ", ".join(map(str, expected))
+    )
+    assert str(second.chunk_id) not in context.prompt
+
+
+@pytest.mark.parametrize("text", [None, "", " \n\t "])
+def test_context_skips_missing_or_empty_chunks_without_snippet_fallback(text: str | None) -> None:
+    skipped, valid = evidence_hit("不应作为证据的旧摘要"), evidence_hit()
+    chunks = {valid.chunk_id: Chunk(text="可用正文")}
+    if text is not None:
+        chunks[skipped.chunk_id] = Chunk(text=text)
+
+    context = assemble_ask_context("问题", [skipped, valid], chunks)
+
+    assert context.source_ids == frozenset({valid.chunk_id})
+    assert str(skipped.chunk_id) not in context.prompt
+    assert skipped.snippet not in context.prompt
+    assert "可用正文" in context.prompt
+
+
+def test_context_clips_each_source_before_admitting_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    first, second = evidence_hit(), evidence_hit()
+    prefix = "内" * generate.PER_SOURCE_CHARS
+    first_block = f"[Source {first.chunk_id}]\n{prefix}\n"
+    second_block = f"[Source {second.chunk_id}]\n后续证据\n"
+    monkeypatch.setattr(generate, "CONTEXT_CHAR_BUDGET", len(first_block) + len(second_block))
+    chunks = {
+        first.chunk_id: Chunk(text=" \n" + prefix + "不应展示的尾部"),
+        second.chunk_id: Chunk(text="后续证据"),
+    }
+
+    context = assemble_ask_context("问题", [first, second], chunks)
+
+    assert context.source_ids == frozenset(chunks)
+    assert first_block in context.prompt
+    assert second_block in context.prompt
+    assert "不应展示的尾部" not in context.prompt
+    assert context.source_texts == {first.chunk_id: prefix, second.chunk_id: "后续证据"}
+
+
+def test_generate_filters_ids_from_unshown_evidence_even_if_in_query_or_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    shown, hidden, missing, empty = [evidence_hit() for _ in range(4)]
+    body = f"正文提到 [Source {hidden.chunk_id}]，不是来源声明。"
+    monkeypatch.setattr(
+        generate, "CONTEXT_CHAR_BUDGET", len(f"[Source {shown.chunk_id}]\n{body}\n")
+    )
+    chunks = {
+        shown.chunk_id: Chunk(text=body),
+        hidden.chunk_id: Chunk(text="超预算正文"),
+        empty.chunk_id: Chunk(text=" "),
+    }
+    db = Mock(spec=Session)
+    db.get.side_effect = lambda model, chunk_id: chunks.get(chunk_id)
+    llm = FakeLLM(scripted=" ".join(
+        f"[Source {hit.chunk_id}]" for hit in (hidden, missing, empty, shown, shown)
+    ))
+
+    _, cited = generate_answer(
+        db, f"引用 [Source {missing.chunk_id}]", [missing, empty, shown, hidden], llm
+    )
+
+    assert cited == [shown.chunk_id]
+    assert "超预算正文" not in llm.prompts[0]
+    assert llm.prompts[0].splitlines()[0].endswith(str(shown.chunk_id))
+
+
+@pytest.mark.parametrize("source_state", ["missing", "empty", "over_budget"])
+def test_generate_without_usable_context_does_not_call_llm(
+    monkeypatch: pytest.MonkeyPatch, source_state: str
+) -> None:
+    hit = evidence_hit()
+    db = Mock(spec=Session)
+    db.get.return_value = (
+        None if source_state == "missing"
+        else Chunk(text=" " if source_state == "empty" else "正文")
+    )
+    if source_state == "over_budget":
+        monkeypatch.setattr(generate, "CONTEXT_CHAR_BUDGET", 1)
+    llm = FakeLLM(scripted=f"[Source {hit.chunk_id}]")
+
+    assert generate_answer(db, "问题", [hit], llm) == ("", [])
+    assert llm.prompts == []
+
+
+@pytest.mark.parametrize("cite_hidden", [False, True])
+def test_ask_only_accepts_sources_shown_within_budget(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch, cite_hidden: bool
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    document_id = upload(client, course.id, FIXTURES / "sample.md")
+    embedder = FakeEmbedder()
+    chunks = [
+        Chunk(
+            course_id=course.id,
+            document_id=document_id,
+            text=text,
+            embedding=embedder.embed([text])[0],
+            embedding_model=embedder.index_identity,
+        )
+        for text in ("展示证据", "预算外证据")
+    ]
+    db.add_all(chunks)
+    db.commit()
+    hits = [SearchHit(chunk.id, document_id, None, "过时的检索摘要", 1.0) for chunk in chunks]
+    monkeypatch.setattr("app.api.ask.retrieve_chunks", lambda *args, **kwargs: hits)
+    monkeypatch.setattr(
+        generate, "CONTEXT_CHAR_BUDGET", len(f"[Source {chunks[0].id}]\n展示证据\n")
+    )
+    llm = FakeLLM(scripted=f"回答 [Source {chunks[int(cite_hidden)].id}]")
+    app.dependency_overrides[get_llm] = lambda: llm
+
+    response = client.post(f"/courses/{course.id}/ask", json={"query": "合成问题"})
+
+    assert response.status_code == 200
+    body = response.json()
+    if cite_hidden:
+        assert body["error_code"] == NO_EVIDENCE
+        assert body["answer"] is None
+        assert body["citations"] == []
+    else:
+        assert body["error_code"] is None
+        assert [item["chunk_id"] for item in body["citations"]] == [str(chunks[0].id)]
+        assert body["citations"][0]["snippet"] == "展示证据"
+    assert str(chunks[1].id) not in llm.prompts[0]
+
+
+def test_same_terms_without_answer_can_refuse_even_after_retrieval_admission(
+    client, db,
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Synthetic insufficient source")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    query = "事务隔离级别包括哪些？"
+    _scaled_chunk(db, course, FakeEmbedder(), query, "事务隔离级别：目录，正文略。", 1.0)
+    # Scripted refusal tests the contract, not a Fake semantic classifier.
+    llm = FakeLLM(scripted="NO_EVIDENCE")
+    app.dependency_overrides[get_llm] = lambda: llm
+
+    body = client.post(f"/courses/{course.id}/ask", json={"query": query}).json()
+
+    assert body["error_code"] == NO_EVIDENCE
+    assert body["answer"] is None
+    assert body["citations"] == []
+    assert "目录，正文略。" in llm.prompts[0]
+    assert "有合法编号不代表有答案" in llm.prompts[0]
+    log = db.execute(select(QueryLog)).scalars().one()
+    assert log.hit is True  # Existing retrieval-event meaning; P4 will revise statistics.
+    assert log.error_code == NO_EVIDENCE
+
+
+def test_each_ask_attempt_records_final_result_and_role_at_start(client, db) -> None:
+    user = add_user(db, "course-student", "pass", UserRole.teacher)
+    course = add_course(db, "Outcome snapshots")
+    add_member(db, course, user, CourseMemberRole.student)
+    login_as(client, user.username, "pass")
+    query = "合成概念定义"
+    _scaled_chunk(db, course, FakeEmbedder(), query, query + "：合成定义。", 1.0)
+    member = db.scalar(select(CourseMember).where(CourseMember.course_id == course.id))
+
+    class RetryLLM:
+        calls = 0
+
+        def generate(self, prompt):
+            self.calls += 1
+            if self.calls == 1:
+                return NO_EVIDENCE
+            # A role change during generation must not overwrite the entry snapshot.
+            member.role = "teacher"
+            db.flush()
+            return f"合成定义 [Source {parse_cited_ids(prompt)[0]}]"
+
+    # Use one adapter instance across the explicit retry.
+    llm = RetryLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+    before = datetime.now(UTC)
+    first = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    second = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    after = datetime.now(UTC)
+
+    assert first.json()["error_code"] == NO_EVIDENCE
+    assert second.json()["citations"]
+    logs = db.scalars(select(QueryLog).order_by(QueryLog.created_at)).all()
+    assert [log.outcome for log in logs] == ["no_evidence", "cited_answer"]
+    assert [log.member_role_at_ask for log in logs] == ["student", "student"]
+    assert all(log.hit for log in logs)  # Retrieval has evidence in both attempts.
+    assert logs[0].id != logs[1].id
+    assert all(before <= log.created_at.replace(tzinfo=UTC) <= after for log in logs)
+    summary = client.get(f"/courses/{course.id}/insights").json()["summary"]
+    assert summary["recorded_attempts"] == 2
+    assert summary["no_evidence_rate"] == 0.5
 
 
 def test_ask_no_hit_does_not_call_llm(client: TestClient, db: Session) -> None:
@@ -52,9 +287,111 @@ def test_ask_no_hit_does_not_call_llm(client: TestClient, db: Session) -> None:
     db.expire_all()
     log = db.execute(select(QueryLog)).scalars().one()
     assert log.hit is False
+    assert log.outcome == "no_evidence"
+    assert log.member_role_at_ask == "teacher"
     assert json.loads(log.chunk_ids) == []
     assert log.duration_ms >= 0
     assert "sk-" not in (log.query or "")
+
+
+def test_reranking_changes_actual_context_order_and_preserves_citations(client, db, monkeypatch) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Reranked context")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    embedder = FakeEmbedder()
+    query = "事务隔离级别"
+    _scaled_chunk(db, course, embedder, query, query + "目录", 0.9)
+    support = _scaled_chunk(db, course, embedder, query, query + "包括读未提交和读已提交。", 0.4)
+    candidates = retrieve_hybrid_candidates(db, course.id, query, embedder)
+    fake = FakeReranker([0.9 if hit.chunk_id == support.id else 0.1 for hit in candidates])
+    llm = FakeLLM()
+    app.dependency_overrides[get_reranker] = lambda: fake
+    app.dependency_overrides[get_llm] = lambda: llm
+    _hybrid_settings(monkeypatch)
+
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+
+    assert response.status_code == 200
+    assert response.json()["error_code"] is None
+    assert response.json()["citations"][0]["chunk_id"] == str(support.id)
+    assert "包括读未提交和读已提交。" in llm.prompts[0]
+    assert len(fake.calls) == 1
+
+
+def test_high_rerank_score_for_no_answer_does_not_authorize_generation(client, db, monkeypatch) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "No supported evidence")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    query = "事务隔离级别"
+    _scaled_chunk(db, course, FakeEmbedder(), query, query + "目录，具体内容略。", 0.01)
+    fake = FakeReranker([0.999])
+    llm = FakeLLM()
+    app.dependency_overrides[get_reranker] = lambda: fake
+    app.dependency_overrides[get_llm] = lambda: llm
+    _hybrid_settings(monkeypatch)
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    assert response.json()["error_code"] == NO_EVIDENCE
+    assert response.json()["citations"] == []
+    assert fake.calls
+    assert llm.prompts == []
+    assert db.execute(select(QueryLog)).scalars().one().error_code == NO_EVIDENCE
+
+
+@pytest.mark.parametrize("error, status", [(RerankError, 503), (RerankTimeout, 504)])
+def test_rerank_failures_are_logged_without_fallback_or_provider_details(
+    client, db, monkeypatch, caplog, error, status,
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Rerank failure")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    query = "事务隔离级别"
+    _scaled_chunk(db, course, FakeEmbedder(), query, query, 1.0)
+    fake = Mock()
+    fake.score.side_effect = error("provider-private-secret")
+    llm = FakeLLM()
+    app.dependency_overrides[get_reranker] = lambda: fake
+    app.dependency_overrides[get_llm] = lambda: llm
+    _hybrid_settings(monkeypatch)
+    with caplog.at_level(logging.INFO):
+        response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    assert response.status_code == status
+    assert response.json()["error_code"] == error.error_code
+    assert response.json()["answer"] is None
+    assert response.json()["citations"] == []
+    assert "provider-private-secret" not in response.text + caplog.text
+    assert query not in caplog.text
+    assert llm.prompts == []
+    log = db.execute(select(QueryLog)).scalars().one()
+    assert log.error_code == error.error_code
+    assert log.hit is False
+    assert json.loads(log.chunk_ids) == []
+
+
+@pytest.mark.parametrize("blocked", ["membership", "index"])
+def test_unauthorized_or_mismatched_queries_never_send_text_to_reranker(
+    client, db, monkeypatch, blocked,
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Rerank authorization")
+    if blocked != "membership":
+        add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    query = "事务隔离级别"
+    chunk = _scaled_chunk(db, course, FakeEmbedder(), query, query, 1.0)
+    if blocked == "index":
+        chunk.embedding_model = "incompatible"
+        db.commit()
+    fake = FakeReranker()
+    app.dependency_overrides[get_reranker] = lambda: fake
+    _hybrid_settings(monkeypatch)
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    assert response.status_code == (403 if blocked == "membership" else 200)
+    if blocked == "index":
+        assert response.json()["error_code"] == EMBEDDING_MISMATCH
+    assert fake.calls == []
 
 
 def test_ask_drops_illegal_citation_ids(client: TestClient, db: Session) -> None:
@@ -148,7 +485,9 @@ def test_ask_rejects_mixed_index_without_calling_llm(
     assert llm.prompts == []
 
 
-@pytest.mark.parametrize("answer", ["没有引用的回答。", "编造 [Source 00000000-0000-0000-0000-000000000000]"])
+@pytest.mark.parametrize("answer", [
+    "没有引用的回答。", "编造 [Source 00000000-0000-0000-0000-000000000000]", "NO_EVIDENCE", " "
+])
 def test_ask_with_hits_but_no_legal_citations_is_no_evidence(
     client: TestClient, db: Session, answer: str
 ) -> None:
@@ -323,6 +662,8 @@ def test_ask_upstream_failure_is_safe_503_and_logged_without_content(
     db.expire_all()
     log = db.execute(select(QueryLog)).scalars().one()
     assert log.error_code == UPSTREAM_UNAVAILABLE
+    assert log.outcome == "failure"
+    assert log.member_role_at_ask == "teacher"
     assert secret not in caplog.text
     assert GOLDEN[0]["query"] not in caplog.text
     assert "UPSTREAM_UNAVAILABLE" in caplog.text
@@ -336,3 +677,222 @@ def test_ask_requires_membership(client: TestClient, db: Session) -> None:
     login_as(client, "bob", "pass")
     response = client.post(f"/courses/{course.id}/ask", json={"query": "anything"})
     assert response.status_code == 403
+
+
+def test_ask_timeout_is_distinct_and_logged_without_provider_details(client, db) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Timeout course")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    upload(client, course.id, FIXTURES / "sample.md")
+
+    class TimeoutLLM:
+        def generate(self, prompt: str) -> str:
+            raise UpstreamTimeout("raw-timeout-body")
+
+    app.dependency_overrides[get_llm] = TimeoutLLM
+    response = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
+    assert response.status_code == 504
+    assert response.json()["error_code"] == "UPSTREAM_TIMEOUT"
+    assert response.json()["answer"] is None
+    assert "raw-timeout-body" not in response.text
+    db.expire_all()
+    assert db.execute(select(QueryLog)).scalars().one().error_code == "UPSTREAM_TIMEOUT"
+
+
+def _hybrid_settings(monkeypatch: pytest.MonkeyPatch, **overrides) -> None:
+    values = {"retrieval_strategy": "hybrid", "rrf_k": 60, **overrides}
+    monkeypatch.setattr("app.api.ask.get_settings", lambda: Settings(_env_file=None, **values))
+
+
+def test_hybrid_ask_orders_context_by_rrf_and_omits_keyword_only_hits(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Hybrid ask")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    embedder = FakeEmbedder()
+    query = "事务隔离级别"
+    strong = _scaled_chunk(db, course, embedder, query, "qqqq-cooking-recipe", 1.0)
+    lexical = _scaled_chunk(db, course, embedder, query, "事务隔离级别用于定义并发正确性", 0.4)
+    keyword_only = _scaled_chunk(db, course, embedder, query, "事务隔离级别的另一种措辞", 0.01)
+    _hybrid_settings(monkeypatch)
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["error_code"] is None
+    assert [item["chunk_id"] for item in body["citations"]] == [str(lexical.id)]
+    assert str(keyword_only.id) not in llm.prompts[0]
+    assert llm.prompts[0].index(str(lexical.id)) < llm.prompts[0].index(str(strong.id))
+
+
+@pytest.mark.parametrize("body", [
+    "事务隔离级别包括读未提交、读已提交、可重复读和串行化。",
+    "事务隔离级别是本章标题，具体内容略。",
+])
+def test_hybrid_unadmitted_candidates_do_not_call_the_model(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch, body: str,
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Keyword ask")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    embedder = FakeEmbedder()
+    query = "事务隔离级别"
+    _scaled_chunk(db, course, embedder, query, body, 0.01)
+    _hybrid_settings(monkeypatch)
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+
+    assert response.status_code == 200
+    assert response.json()["error_code"] == NO_EVIDENCE
+    assert response.json()["answer"] is None
+    assert response.json()["citations"] == []
+    assert llm.prompts == []
+    db.expire_all()
+    assert db.execute(select(QueryLog)).scalars().one().error_code == NO_EVIDENCE
+
+
+def test_hybrid_evidence_beyond_original_dense_top_k_reaches_actual_context(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Expanded recall ask")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    embedder = FakeEmbedder()
+    query = "事务隔离级别"
+    for _ in range(8):
+        _scaled_chunk(db, course, embedder, query, "qqqq-cooking-recipe", 1.0)
+    body = "事务隔离级别包括读未提交、读已提交、可重复读和串行化。"
+    support = _scaled_chunk(db, course, embedder, query, body, 0.4)
+    assert support.id not in {hit.chunk_id for hit in retrieve_chunks(db, course.id, query, embedder)}
+    _hybrid_settings(monkeypatch)
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+
+    assert response.status_code == 200
+    assert response.json()["error_code"] is None
+    assert response.json()["citations"][0]["chunk_id"] == str(support.id)
+    assert body in llm.prompts[0]
+    assert f"[Source {support.id}]" in llm.prompts[0]
+
+
+def test_deleted_hybrid_evidence_is_not_sent_to_generation(db: Session) -> None:
+    course = add_course(db, "Deleted evidence")
+    embedder = FakeEmbedder()
+    query = "事务隔离级别"
+    chunk = _scaled_chunk(db, course, embedder, query, query, 1.0)
+    hits = retrieve_chunks(db, course.id, query, embedder, strategy="hybrid")
+    assert hits
+    db.delete(chunk)
+    db.commit()
+    llm = FakeLLM()
+
+    assert generate_answer(db, query, hits, llm) == ("", [])
+    assert llm.prompts == []
+
+
+def test_hybrid_index_mismatch_does_not_search_keywords(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Mismatch hybrid")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    upload(client, course.id, FIXTURES / "sample.md")
+    _hybrid_settings(monkeypatch)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("index mismatch must not run keyword retrieval")
+
+    monkeypatch.setattr("app.services.keyword.retrieve_keyword_candidates", forbidden)
+
+    class DifferentBackendEmbedder(FakeEmbedder):
+        def __init__(self) -> None:
+            super().__init__(model_name="fake-bge-m3")
+            self.index_identity = "siliconflow|fake-bge-m3|1024|v1"
+
+    llm = FakeLLM()
+    app.dependency_overrides[get_embedder] = DifferentBackendEmbedder
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
+    assert response.status_code == 200
+    assert response.json()["error_code"] == EMBEDDING_MISMATCH
+    assert llm.prompts == []
+
+
+@pytest.mark.parametrize(
+    ("overrides", "raiser", "code"),
+    [
+        (
+            {"retrieval_strategy": "hybrid"},
+            KeywordLimitExceeded("chunks"),
+            "KEYWORD_LIMIT",
+        ),
+        ({"retrieval_strategy": "sparse", "rrf_k": 60}, None, "RETRIEVAL_STRATEGY"),
+        ({"retrieval_strategy": "hybrid"}, FusionError("identity"), "RETRIEVAL_FAILED"),
+    ],
+)
+def test_hybrid_failures_are_logged_and_not_reported_as_no_evidence(
+    client: TestClient,
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    overrides: dict,
+    raiser: Exception | None,
+    code: str,
+) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Failure hybrid")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    embedder = FakeEmbedder()
+    query = "事务隔离级别"
+    _scaled_chunk(db, course, embedder, query, query, 1.0)
+    if overrides["retrieval_strategy"] == "sparse":
+        monkeypatch.setattr(
+            "app.api.ask.get_settings",
+            lambda: type("Settings", (), overrides)(),
+        )
+    else:
+        _hybrid_settings(monkeypatch)
+    if isinstance(raiser, KeywordLimitExceeded):
+        monkeypatch.setattr(
+            "app.services.keyword.retrieve_keyword_candidates",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(raiser),
+        )
+    elif isinstance(raiser, FusionError):
+        monkeypatch.setattr(
+            "app.services.retrieve.fuse_rrf",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(raiser),
+        )
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["error_code"] == code
+    assert body["answer"] is None
+    assert body["citations"] == []
+    assert body["error_code"] != NO_EVIDENCE
+    assert query not in response.text
+    assert "chunks" not in (body["message"] or "")
+    assert "identity" not in response.text
+    assert "sparse" not in response.text
+    assert llm.prompts == []
+    db.expire_all()
+    log = db.execute(select(QueryLog)).scalars().one()
+    assert log.error_code == code
+    assert log.hit is False
+    assert json.loads(log.chunk_ids) == []

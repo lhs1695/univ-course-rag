@@ -1,39 +1,28 @@
-# 第六期启动交接
+# 当前交接
 
-第六期计划见 [`plan-6.md`](plan-6.md)，主线是本机产品可解释性、数据边界与效果证据。阶段 38 已完成：Alembic 0008 为资料增加含文本来源单元数、抽取字符数、切片数和稳定质量警告码；三个计数仅在新切片事务成功替换时一起更新，失败会保留旧索引和旧指标。`INGEST_LOW_TEXT_CHARS` 默认 200、范围 1–5000；成功但偏短只提示“问答依据可能不完整”，完全无可抽取文本仍明确失败。资料 API 不返回正文、切片或存储路径；教师资料页显示质量信号，并为失败任务接入已有受权限和租约约束的重试入口。
+更新：2026-10-15。本轮完成 P5 后端候选分组合同。下一实现项 **P6：教师反馈看板**，尚未实施。
 
-阶段 38 的 `test_ingest.py`（32 passed）、Ruff、Vite 构建和本机 Postgres 的 0008 upgrade → downgrade → upgrade 已通过，最终为 head。已用专用临时数据库与安全夹具实际点击一次“重试”：页面从失败变为成功，显示 1 个含文本单元、140 个抽取字符、3 个切片和低文本提示；临时数据库与 Playwright 产物已删除。下一阶段为 **39 引用到原资料的受鉴权追溯**。第六期不做部署、云资源、OCR 或模型调参。阶段 25 继续等待非开发者试用，阶段 18/19 保持未触发。
+## 最新决定
 
-阶段 39 已完成：新增 `GET /courses/{course_id}/documents/{document_id}/content`，必须先通过课程成员鉴权，再按 upload root、课程 UUID、资料 UUID 验证数据库存储路径。PDF、Markdown 和纯文本以内联方式返回，PPTX/DOCX 只作为附件下载；响应使用明确 MIME、受控文件名、`Content-Disposition` 和 `X-Content-Type-Options: nosniff`。越界、串课、缺失或非文件路径统一安全失败，不公开上传目录。引用响应携带当前课程内的相对资料 URL；PDF 链接附加可信 chunk 页码的 `#page=`，其他格式不伪造页内定位。Vite 对 `/courses/.../content` 不再走 SPA fallback，而是代理到 FastAPI。
+中期汇报前以改进后的项目重新建立基线、入库和跑数据；当前文档不继续积累旧结果，也不把旧数字作新版本效果证明。现行工程合同与复用/许可保留，重新评测规则见 [validation](validation.md)，新结果仅在实际运行后写入 [evaluation-results](evaluation-results.md)。真实资料、题集/答案、输出、隔离数据库与既有代码改动未被本轮清理触碰。
 
-阶段 39 的 `test_storage.py`、`test_ask.py`（合计 30 passed）、Ruff 和 Vite 构建已通过。已用专用临时数据库、安全 PDF 夹具和 FakeEmbedder/FakeLLM 实际点击一次“查看原资料”，同一 Cookie 会话在新标签进入受鉴权 PDF URL，并保留 `#page=1`；未登录直接访问返回 401。临时数据库、测试上传目录和 Playwright 产物已删除。下一阶段为 **40 提问日志留存与有界维护**。
+P5直接复用SciPy1.18.1 complete-linkage（主体BSD-3-Clause，捆绑许可保留），仅新增该二进制包，无权重。POST /courses/{id}/insights/groups 默认关闭，启用embedding仅复用已有SiliconFlow适配；阈值必填且未校准，须本次外发确认，GET统计不调用模型。保留完整问句、单例、实际代表问句/成员相似度/最低成对相似度、计数与排除量。测试注入预设语义向量，不用Fake词项哈希冒充语义；真实误合并/误拆分仍待验。具体合同见 [engineering](engineering.md#query-log-retention)。
 
-阶段 40 已完成：`QUERY_LOG_RETENTION_DAYS` 默认 90 天、范围 1–3650；`QUERY_LOG_CLEANUP_BATCH_SIZE` 默认 100 条、范围 1–1000。仅管理员可调用 `POST /admin/query-logs/retention`，用 `dry_run` 预览后再用 `delete` 显式删除；每次只按 `created_at, id` 处理最旧一批，并通过 `has_more` 表示仍有余留。学情查询本身只聚合留存窗口内记录。0009 增加清理顺序组合索引，维护日志不含 query、用户或 Session 内容；当前数据库删除不等于从外部备份即时抹除，完整合同见 [`query-log-retention.md`](query-log-retention.md)。相关 pytest（22 passed）、Ruff 与 Alembic 迁移链检查已通过；本阶段没有新增 UI。下一阶段为 **41 合成规模基线与回归证据**。
+## 继续工作的必要背景
 
-阶段 41 已完成：新增显式本机入口 `python -m app.benchmark`，确定性生成合成 Markdown，并复用正式解析、切片、Fake embedding 批处理、落库和检索路径。SQLite 原文/数据库只在系统临时目录；Postgres 模式必须传 `--allow-postgres`，逐档清理随机隔离的合成课程和用户。报告不含原文、数据库 URL、路径、账号或实体 ID，只保留聚合正确性、延迟、返回数、工作量单位和脱敏环境。100/500/1000 chunks 的 SQLite 与 pgvector 基线均成功，实际 chunk 数准确、返回数均为 8、Top-1 合成目标命中率均为 1.000；Postgres 运行后合成课程和用户余留均为 0。基线、命令和不过度严格的判读规则见 [`synthetic-benchmark.md`](synthetic-benchmark.md) 与 [`synthetic-benchmark-baseline.json`](synthetic-benchmark-baseline.json)。`test_benchmark.py`（9 passed）与 Ruff 通过。下一阶段为 **42 本机产品收口与试用准备**。
+- 当前默认 dense、重排 disabled；完整候选并集和可关闭重排已有代码，但关键词独有证据的充分性准入、真实模型增益尚未验收。
+- 结构切分直接复用 semantic-text-splitter 0.33.0；来源为清洗后单位内字符范围，不能当原文件坐标。现行合同见 [engineering](engineering.md)。
+- 新代码需真实目标库迁移至0011；0010来源字段与0011日志字段均不回填。实际迁移、旧资料受控重新入库尚待核验，云调用仍需当次授权。
+- R6的正文快照、安全Markdown和内联引用保持；合法引用不等于事实支持，无可靠逐主张判定，不新增部分依据标签。旧生成合同checkpoint不可续跑。
+- P4最终结果/课内角色快照和分母保持；P5仅按本课/留存窗口/student快照下已知知识结果分组，学生失败/未知/空问句计排除，不按当前成员角色倒推。没有组表/缓存或新迁移，不改现有页面和基础统计字段。
+- 用户本轮明确授权把累计实现与文档清理统一提交为main检查点；完成后用git status/log核对基线。后续改动仍需先检查状态，不reset、不默认提交/push或部署；浏览器验证产物留本机忽略区。
 
-阶段 42 已完成：README、demo 和前端页面已统一质量提示、引用追溯、留存窗口、备份限制与合成基准口径；学情 API 返回当前留存天数。管理员新增“日志维护”页，先 dry-run、再确认单批删除，有余留时必须重新预览。专用临时 SQLite + Fake 安全夹具已实际完成上传、失败重试、命中引用、打开原资料、拒答、学情和留存维护，临时数据与 Playwright 产物已删除；记录见 [`demo.md`](demo.md)。直接相关 pytest（8 passed）、Ruff、Vite 构建及远端 CI 均通过。提交 `e0b10b9` 已推送。阶段 25 仍等待未参与开发者按 [`usability-test-template.md`](usability-test-template.md) 独立试用，阶段 18/19 未触发；不要把本机验收写成阶段 25。
+## P6 开工
 
-## 已收口的第五期
+读 [施工计划](implementation-plan.md)，然后只读教师反馈API/页面、P4/P5合同与直接测试；先核对现成图表/时间筛选组件与实际成本。保持窗口与分母一致、显示失败/未知/单例/未启用与样本量，不把候选组当已验证同义或教学缺口。P5没有已校准默认阈值，页面不能自动POST/外发问句；接入需明确用户动作与当次确认，补齐前端错误码（含QUESTION_GROUPING_LIMIT/413避免显示成上传过大），无云授权用Fake/合成页面验证。
 
-已完成：阶段 30 已集中实现受 upload root、课程 UUID 和资料 UUID 共同约束的存储服务；上传提交失败会补偿清理，单资料与课程删除覆盖文件生命周期，清理失败写入不含完整路径的可观测日志。合同见 `docs/storage-lifecycle.md`。
+按 diff 跑后端直接测试与 Ruff；UI 改动构建并实际点击新增控件。已有 pytest 行为不在浏览器重复验证，不顺手做解析、真实效果评测或数据重跑。
 
-阶段 31 已实现：显式真评测每题经原子替换保存安全 checkpoint，`--resume` 仅接受题集 SHA-256、课程 ID、embedding backend/model 与 LLM backend/model 都相同的未完成 checkpoint。异常题只保留 `evaluation_error`、异常类别和固定安全摘要；恢复跳过完成题、重试异常题；最终成功输出仍是原有 `summary`、`failures`、`metadata`。
+## 本轮检查
 
-维护者确认当前没有非开发者试用者，因此第五期已立项，不再让阶段 25 阻塞独立技术改进。阶段 32 已完成：后端在落盘/建库前稳定拒绝旧二进制 PPT/DOC；解析分派、文件选择器、README、demo、intent 与中期材料均收敛为 PDF、PPTX、DOCX、Markdown、纯文本。`test_ingest.py`（18 passed）、Ruff 和前端构建已通过；教师资料页的格式提示与上传控件已实际点击一次。
-
-阶段 33 已完成：Alembic 0007 为 `sessions.expires_at` 增加索引；登录仅创建新 Session 时执行一次按到期时间排序、受 `SESSION_CLEANUP_BATCH_SIZE`（默认 100、范围 1–1000）限制的过期 Session 清理，并与新 Session 同次提交。受保护请求仍仅校验自身 Session，过期和畸形 Cookie 都稳定返回未认证；清理日志只记录删除数量。`test_auth.py`、Ruff，以及本机 Postgres 的 0007 upgrade → downgrade → upgrade 已通过，最终为 head。
-
-阶段 34 已完成：SiliconFlow 与 DeepSeek 客户端都使用受 `UPSTREAM_TIMEOUT_SECONDS`（默认 20 秒、范围 1–60）和 `UPSTREAM_MAX_RETRIES`（默认 2、范围 0–3）限制的超时/重试配置；供应商异常统一收敛为不含原始响应、query、prompt 或 key 的 `UPSTREAM_UNAVAILABLE`。问答遇到该异常会记录稳定分类并返回 503，不会伪装成 `NO_EVIDENCE`；入库任务安全失败、不产生半套新 chunk，仍可通过既有受控入口重试。`test_ask.py`、`test_ingest.py`（33 passed）与 Ruff 已通过。
-
-阶段 35 已完成：PPTX/DOCX 在打开前按可配置的 ZIP 条目数、总解压大小、单条目大小和压缩比做资源预算；PDF/幻灯片解析受页/幻灯片上限与累计抽取字符上限约束。所有阈值均有本机环境配置的合理上下界；超限以稳定、不含课件正文的失败摘要结束，不写入新 chunk，原有完整索引继续保留。`test_ingest.py` 用程序生成 ZIP/PPTX/DOCX 覆盖所有限制、旧索引保持和正常 PDF/PPTX/DOCX 成功（28 passed），Ruff 已通过。
-
-阶段 36 已完成：每个 HTTP 请求生成或校验最多 64 字符的 `X-Request-ID`，在响应头回传并写入应用日志记录/完成日志；非法外部值会替换，日志不记录 query、课件正文、Cookie 或 key。`/health` 保持不访问数据库的 liveness；新增 `/ready` 仅执行 `SELECT 1`，数据库异常时稳定返回 `503 {"status":"unavailable"}`，不调用 embedding/LLM。`test_health.py`、`test_auth.py`（16 passed）与 Ruff 已通过。
-
-阶段 37 已完成：新增 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)，以 Python 3.12、FakeEmbedder/FakeLLM、pgvector/Postgres 迁移与显式检索证明、以及前端 lockfile 构建为门禁；不读云 key、不调真模型、不上传语料或数据库。已本地完成 Alembic upgrade/seed 和 `RUN_POSTGRES_TESTS=1` 证明、全量 Fake pytest（92 passed、2 skipped）、Ruff 与 Vite 构建；Docker Desktop 已成功启动 compose Postgres，并再次完成迁移/seed 与检索证明。提交 `4b805e9` 已推送，远端 GitHub Actions CI 已成功完成。
-
-待显式授权：阶段 24 的旧真评测结果基于修复前删除仿真，仍保留为历史证据。只有再次明确允许联网和计费时才重跑，不把云调用并入普通测试。
-
-并行等待：阶段 25 仍缺至少一名未参与开发的试用者。获得匿名记录后，再整理七类问题并判断阶段 18/19；在此之前不能宣称第四期真人试用收口。
-
-留存：阶段 20–24、26–31、第五期阶段 32–37 与第六期阶段 38–42 已完成；阶段 25 继续等待外部。第六期技术主线已收口，不进入部署、OCR、模型调参或阶段 18/19；下一步只等待阶段 25 的非开发者独立试用反馈。
+P5直接后端回归84 passed、Ruff及pip check通过。命令/边界见 [最近检查](validation.md#p5-check)。该项无UI变更，未构建前端或启动浏览器/服务/数据库，无.env/真资料读取或云调用。随后用户明确授权提交累计成果作为新对话检查点；提交交接只核对路径/敏感产物与diff，不重跑产品测试。真实阈值/语义效果、迁移、课程效果和独立试用仍待验。

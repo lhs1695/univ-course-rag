@@ -20,9 +20,14 @@ from app.config import Settings, get_settings
 from app.db import SessionLocal
 from app.models.document import Document
 from app.services.embedder import build_embedder
-from app.services.generate import generate_answer
+from app.services.generate import GENERATION_CONTRACT, generate_answer
 from app.services.llm import build_llm
-from app.services.retrieve import has_incompatible_chunks, retrieve_chunks
+from app.services.rerank import build_reranker
+from app.services.retrieve import (
+    HYBRID_CANDIDATE_K,
+    has_incompatible_chunks,
+    retrieve_chunks,
+)
 
 CASE_COUNT_MIN = 20
 CASE_COUNT_MAX = 30
@@ -174,6 +179,24 @@ def _metadata(case_file: Path, course_id: UUID, settings: Settings) -> dict:
         "embedding_model": settings.embedding_model,
         "llm_backend": settings.llm_backend,
         "llm_model": settings.deepseek_model,
+        "generation_contract": GENERATION_CONTRACT,
+        "retrieval_strategy": settings.retrieval_strategy,
+        "rrf_k": settings.rrf_k,
+        # Reject checkpoints from the old dense-top-k-only hybrid semantics.
+        "retrieval_contract": (
+            "r3a-conservative-v1" if settings.retrieval_strategy == "hybrid" else "dense-v1"
+        ),
+        "hybrid_candidate_k": HYBRID_CANDIDATE_K if settings.retrieval_strategy == "hybrid" else None,
+        "reranking": {
+            "backend": settings.reranker_backend,
+            "model": settings.reranker_model if settings.reranker_backend != "disabled" else None,
+            "contract": "r4-order-only-v1",
+            # Hash the endpoint identity to distinguish services without exposing URLs.
+            "endpoint_sha256": (
+                hashlib.sha256(settings.reranker_base_url.rstrip("/").encode()).hexdigest()
+                if settings.reranker_backend != "disabled" else None
+            ),
+        },
     }
 
 
@@ -249,6 +272,7 @@ def run_evaluation(
     settings = get_settings()
     embedder = build_embedder(settings)
     llm = build_llm(settings)
+    reranker = build_reranker(settings)
     document_names = {
         document.id: document.filename
         for document in db.execute(
@@ -281,6 +305,9 @@ def run_evaluation(
                 case.query,
                 embedder,
                 excluded_document_ids=excluded_document_ids,
+                strategy=settings.retrieval_strategy,
+                rrf_k=settings.rrf_k,
+                reranker=reranker,
             )
         )
         cited_ids = []

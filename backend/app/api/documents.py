@@ -28,7 +28,12 @@ from app.security.deps import (
     require_course_teacher,
 )
 from app.services.embedder import Embedder, get_embedder
-from app.services.ingest import latest_job, process_ingest_job, retry_ingest_job
+from app.services.ingest import (
+    SAFE_INGEST_ERRORS,
+    latest_job,
+    process_ingest_job,
+    retry_ingest_job,
+)
 from app.services.parse import ParseLimits, parse_limits_from_settings
 from app.services.storage import (
     StorageError,
@@ -56,15 +61,17 @@ _CONTENT_TYPES = {
 
 
 def _document_out(document: Document, job: IngestJob | None) -> DocumentOut:
+    error = job.error_message if job is not None else None
     return DocumentOut(
         id=str(document.id),
         filename=document.filename,
         job_status=job.status if job is not None else IngestJobStatus.pending.value,
-        error_message=job.error_message if job is not None else None,
+        error_message=error if error is None or error in SAFE_INGEST_ERRORS else "INGEST_FAILED",
         source_unit_count=document.source_unit_count,
         extracted_char_count=document.extracted_char_count,
         chunk_count=document.chunk_count,
         quality_warning=document.quality_warning,
+        chunking_version=document.chunking_version,
     )
 
 
@@ -114,13 +121,19 @@ def upload_document(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="empty file")
 
     document_id = uuid4()
-    dest = store_upload(
-        settings.upload_dir,
-        access.course.id,
-        document_id,
-        original,
-        data,
-    )
+    try:
+        dest = store_upload(
+            settings.upload_dir,
+            access.course.id,
+            document_id,
+            original,
+            data,
+        )
+    except (StorageError, OSError):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Upload storage unavailable",
+        ) from None
 
     document = Document(
         id=document_id,

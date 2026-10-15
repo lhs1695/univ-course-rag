@@ -1,4 +1,10 @@
+# dotenv must be disabled before app.db constructs its engine during import.
+
 import pytest
+from app.config import Settings
+
+Settings.model_config["env_file"] = None
+
 from app.db import Base, get_db, get_session_maker
 from app.main import app
 from app.models import (  # noqa: F401
@@ -13,6 +19,8 @@ from app.models.user import User, UserRole
 from app.security.passwords import hash_password
 from app.services.embedder import FakeEmbedder, get_embedder
 from app.services.llm import FakeLLM, get_llm
+from app.services.question_groups import get_question_embedder
+from app.services.rerank import get_reranker
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -59,6 +67,8 @@ def client(db: Session, tmp_path, monkeypatch: pytest.MonkeyPatch) -> TestClient
     app.dependency_overrides[get_session_maker] = override_maker
     app.dependency_overrides[get_embedder] = override_embedder
     app.dependency_overrides[get_llm] = override_llm
+    app.dependency_overrides[get_reranker] = lambda: None
+    app.dependency_overrides[get_question_embedder] = lambda: None
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()

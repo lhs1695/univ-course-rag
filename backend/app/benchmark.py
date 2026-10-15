@@ -25,6 +25,7 @@ from app.models.course import Course
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.models.user import User, UserRole
 from app.services.embedder import FakeEmbedder
+from app.services.fusion import RRF_K
 from app.services.ingest import process_ingest_job
 from app.services.retrieve import SEARCH_MIN_SCORE, SEARCH_TOP_K, retrieve_chunks
 
@@ -249,6 +250,8 @@ def run_benchmark(
             "retrieval_runs_per_scale": config.retrieval_runs,
             "top_k": SEARCH_TOP_K,
             "min_score": SEARCH_MIN_SCORE,
+            "retrieval_strategy": "dense",
+            "rrf_k": RRF_K,
         },
         "results": results,
         "correctness": {

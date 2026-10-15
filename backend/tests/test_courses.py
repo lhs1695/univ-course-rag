@@ -121,3 +121,144 @@ def test_unauthenticated_course_is_401(client: TestClient, db: Session) -> None:
     course = add_course(db, "Course 1")
     assert client.get(f"/courses/{course.id}").status_code == 401
     assert client.get("/courses").status_code == 401
+from uuid import uuid4
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "global_role, course_role",
+    [
+        (UserRole.student, CourseMemberRole.student),
+        (UserRole.teacher, CourseMemberRole.teacher),
+        (UserRole.teacher, CourseMemberRole.student),
+        (UserRole.teacher, None),
+        (UserRole.admin, None),
+        (UserRole.admin, CourseMemberRole.student),
+        (UserRole.admin, CourseMemberRole.teacher),
+    ],
+)
+def test_course_permissions_follow_membership_not_global_identity(
+    client: TestClient, db: Session, global_role: UserRole, course_role: CourseMemberRole | None
+) -> None:
+    owner = add_user(db, "owner", "pass", UserRole.teacher)
+    subject = add_user(db, "subject", "pass", global_role)
+    course = add_course(db, "Permission matrix")
+    add_member(db, course, owner, CourseMemberRole.teacher)
+    if course_role is not None:
+        add_member(db, course, subject, course_role)
+    login_as(client, "owner", "pass")
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("evidence.txt", b"alpha beta course evidence", "text/plain")},
+    )
+    assert uploaded.status_code == 201
+    document_id = uploaded.json()["id"]
+    login_as(client, "subject", "pass")
+    prefix = f"/courses/{course.id}"
+    member_status = 200 if course_role is not None else 403
+    teacher_status = 200 if course_role == CourseMemberRole.teacher else 403
+
+    assert client.get("/auth/me").json()["role"] == global_role.value
+    detail = client.get(prefix)
+    assert detail.status_code == member_status
+    listed = client.get("/courses").json()
+    if course_role is not None:
+        assert detail.json() == listed[0]
+        assert detail.json()["membership_role"] == course_role.value
+        assert all(
+            value is (course_role == CourseMemberRole.teacher)
+            for value in detail.json()["capabilities"].values()
+        )
+    else:
+        assert listed == []
+    assert client.get(prefix + "/members").status_code == teacher_status
+    assert client.get(prefix + "/insights").status_code == teacher_status
+    assert client.get(prefix + "/documents").status_code == member_status
+    assert client.get(prefix + f"/documents/{document_id}").status_code == member_status
+    assert client.get(prefix + f"/documents/{document_id}/content").status_code == member_status
+    assert client.post(prefix + "/search", json={"query": "alpha"}).status_code == member_status
+    assert client.post(prefix + "/ask", json={"query": "alpha"}).status_code == member_status
+    uploaded = client.post(
+        prefix + "/documents",
+        files={"file": ("second.txt", b"more synthetic evidence", "text/plain")},
+    )
+    assert uploaded.status_code == (201 if teacher_status == 200 else 403)
+    # A teacher reaches document lookup; everyone else is rejected before it.
+    assert client.post(prefix + f"/documents/{uuid4()}/retry").status_code == (
+        404 if teacher_status == 200 else 403
+    )
+    assert client.delete(prefix + f"/documents/{document_id}").status_code == (
+        204 if teacher_status == 200 else 403
+    )
+
+
+@pytest.mark.parametrize("role", ["student", "teacher"])
+def test_admin_explicit_enrollment_and_removal_take_effect_in_same_session(
+    client: TestClient, db: Session, role: str
+) -> None:
+    admin = add_user(db, "admin", "pass", UserRole.admin)
+    course = add_course(db, "Explicit enrollment")
+    login_as(client, "admin", "pass")
+    cookie = client.cookies.get("session_id")
+    prefix = f"/courses/{course.id}"
+    assert client.get(prefix).status_code == 403
+    added = client.post(
+        f"/admin/courses/{course.id}/members", json={"user_id": str(admin.id), "role": role}
+    )
+    assert added.status_code == 201
+    assert client.get(prefix).json()["membership_role"] == role
+    assert client.get(prefix + "/members").status_code == (200 if role == "teacher" else 403)
+    duplicate = client.post(
+        f"/admin/courses/{course.id}/members", json={"user_id": str(admin.id), "role": role}
+    )
+    assert duplicate.status_code == 409
+    assert client.delete(f"/admin/courses/{course.id}/members/{admin.id}").status_code == 204
+    assert client.cookies.get("session_id") == cookie
+    assert client.get(prefix).status_code == 403
+    assert client.get(prefix + "/insights").status_code == 403
+    assert client.get("/courses").json() == []
+    assert client.get("/admin/courses").status_code == 200
+
+
+def test_removal_and_demotion_recheck_existing_cookie(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "teacher", "pass", UserRole.teacher)
+    course = add_course(db, "Role changes")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "teacher", "pass")
+    prefix = f"/courses/{course.id}"
+    assert client.get(prefix + "/members").status_code == 200
+    member = db.query(CourseMember).filter_by(course_id=course.id, user_id=teacher.id).one()
+    member.role = CourseMemberRole.student.value
+    db.commit()
+    detail = client.get(prefix).json()
+    assert detail["membership_role"] == "student"
+    assert not any(detail["capabilities"].values())
+    assert client.get(prefix + "/members").status_code == 403
+    assert client.get(prefix + "/insights").status_code == 403
+    db.delete(member)
+    db.commit()
+    for suffix in ("", "/members", "/documents", "/insights", f"/documents/{uuid4()}/content"):
+        assert client.get(prefix + suffix).status_code == 403
+    for suffix in ("/ask", "/search"):
+        assert client.post(prefix + suffix, json={"query": "alpha"}).status_code == 403
+
+
+def test_regular_accounts_cannot_assign_members_or_override_account_roles(
+    client: TestClient, db: Session
+) -> None:
+    teacher = add_user(db, "teacher", "pass", UserRole.teacher)
+    student = add_user(db, "student", "pass", UserRole.student)
+    add_user(db, "admin", "pass", UserRole.admin)
+    course = add_course(db, "Assignment rules")
+    login_as(client, "teacher", "pass")
+    assert client.post(
+        f"/admin/courses/{course.id}/members",
+        json={"user_id": str(teacher.id), "role": "teacher"},
+    ).status_code == 403
+    login_as(client, "admin", "pass")
+    for user, role in ((student, "teacher"), (teacher, "student")):
+        assert client.post(
+            f"/admin/courses/{course.id}/members",
+            json={"user_id": str(user.id), "role": role},
+        ).status_code == 400

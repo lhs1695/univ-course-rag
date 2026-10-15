@@ -1,8 +1,6 @@
 <template>
   <div class="page">
-    <el-page-header @back="router.push('/courses')">
-      <template #content>{{ courseTitle ? `本课学生 · ${courseTitle}` : "本课学生" }}</template>
-    </el-page-header>
+    <header class="page-heading"><p class="eyebrow">课程管理</p><h1>本课学生</h1><p class="page-description">{{ courseTitle }} · 维护学生的课程访问权限，移出后下一次请求即失权。</p></header>
     <p class="hint">只能加入已有学生账号，不能在这里创建用户。不改教师成员。</p>
 
     <el-form class="add-form" :inline="true" @submit.prevent="onAdd">
@@ -27,12 +25,11 @@
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 
 const route = useRoute();
-const router = useRouter();
 const courseId = computed(() => String(route.params.courseId));
 const courseTitle = ref("");
 const members = ref([]);
@@ -59,6 +56,7 @@ onMounted(async () => {
 });
 
 async function onAdd() {
+  if (adding.value) return;
   const name = username.value.trim();
   if (!name) {
     ElMessage.warning("请输入已有学生账号");

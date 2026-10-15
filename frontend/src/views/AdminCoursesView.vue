@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <h2>课程</h2>
+    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建课程，选择课程行查看并管理成员。管理员访问课程内容也需显式加入。</p></header>
     <el-form :inline="true" @submit.prevent="onCreateCourse">
       <el-form-item label="标题">
         <el-input v-model="newTitle" />
@@ -13,6 +13,7 @@
     <el-table
       :data="courses"
       v-loading="loading"
+      empty-text="暂无课程，可先创建一门课程"
       highlight-current-row
       @current-change="onSelectCourse"
     >
@@ -27,7 +28,7 @@
             <el-option
               v-for="user in bindableUsers"
               :key="user.id"
-              :label="`${user.username}（${user.role}）`"
+              :label="`${user.username}（${{ student: '学生', teacher: '教师', admin: '管理员' }[user.role] || user.role}）`"
               :value="user.id"
             />
           </el-select>
@@ -44,7 +45,12 @@
       </el-form>
       <el-table :data="members">
         <el-table-column prop="username" label="用户名" />
-        <el-table-column prop="role" label="课内角色" width="120" />
+        <el-table-column label="课内角色" width="120"><template #default="{ row }">{{ row.role === 'teacher' ? '教师' : '学生' }}</template></el-table-column>
+        <el-table-column label="操作" width="100">
+          <template #default="{ row }">
+            <el-button type="danger" link @click="onRemoveMember(row)">移出</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </template>
   </div>
@@ -52,7 +58,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 
 const courses = ref([]);
@@ -68,9 +74,9 @@ const memberRole = ref("student");
 
 const bindableUsers = computed(() => {
   if (memberRole.value === "teacher") {
-    return users.value.filter((user) => user.role === "teacher");
+    return users.value.filter((user) => ["teacher", "admin"].includes(user.role));
   }
-  return users.value.filter((user) => user.role === "student");
+  return users.value.filter((user) => ["student", "admin"].includes(user.role));
 });
 
 async function loadCourses() {
@@ -82,7 +88,8 @@ async function loadUsers() {
 }
 
 async function loadMembers(courseId) {
-  members.value = await api(`/admin/courses/${courseId}/members`);
+  const rows = await api(`/admin/courses/${courseId}/members`);
+  if (selected.value?.id === courseId) members.value = rows;
 }
 
 onMounted(async () => {
@@ -97,6 +104,7 @@ onMounted(async () => {
 
 async function onSelectCourse(row) {
   selected.value = row;
+  members.value = [];
   memberUserId.value = "";
   if (!row) {
     members.value = [];
@@ -110,6 +118,7 @@ async function onSelectCourse(row) {
 }
 
 async function onCreateCourse() {
+  if (creating.value) return;
   const title = newTitle.value.trim();
   if (!title) {
     return;
@@ -130,23 +139,44 @@ async function onCreateCourse() {
 }
 
 async function onAddMember() {
+  if (adding.value) return;
   if (!selected.value || !memberUserId.value) {
     ElMessage.warning("请选择课程和用户");
     return;
   }
   adding.value = true;
+  const courseId = selected.value.id;
   try {
-    await api(`/admin/courses/${selected.value.id}/members`, {
+    await api(`/admin/courses/${courseId}/members`, {
       method: "POST",
       json: { user_id: memberUserId.value, role: memberRole.value },
     });
     ElMessage.success("已加入课程");
     memberUserId.value = "";
-    await loadMembers(selected.value.id);
+    await loadMembers(courseId);
   } catch (error) {
     ElMessage.error(error.message);
   } finally {
     adding.value = false;
+  }
+}
+
+async function onRemoveMember(row) {
+  const courseId = selected.value?.id;
+  if (!courseId) return;
+  try {
+    await ElMessageBox.confirm(`将「${row.username}」移出本课？`, "确认移出", {
+      confirmButtonText: "移出", cancelButtonText: "取消", type: "warning",
+    });
+  } catch {
+    return;
+  }
+  try {
+    await api(`/admin/courses/${courseId}/members/${row.user_id}`, { method: "DELETE" });
+    if (selected.value?.id === courseId) await loadMembers(courseId);
+    ElMessage.success("已移出课程");
+  } catch (error) {
+    ElMessage.error(error.message);
   }
 }
 </script>

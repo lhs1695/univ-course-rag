@@ -136,3 +136,14 @@ def test_only_admin_creates_users(client: TestClient, db: Session) -> None:
     assert created.json()["username"] == "newone"
     assert created.json()["role"] == "teacher"
     assert "password" not in created.json()
+
+
+def test_global_role_is_rechecked_without_relogin(client: TestClient, db: Session) -> None:
+    admin = add_user(db, "admin", "pass", UserRole.admin)
+    client.post("/auth/login", json={"username": "admin", "password": "pass"})
+    assert client.get("/admin/users").status_code == 200
+    admin.role = UserRole.student.value
+    db.commit()
+    assert client.get("/auth/me").json()["role"] == "student"
+    assert client.get("/admin/users").status_code == 403
+    assert client.get("/admin/courses").status_code == 403

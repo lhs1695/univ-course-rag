@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 from app.models.course import CourseMemberRole
 from app.models.user import UserRole
@@ -32,9 +32,17 @@ class CourseUpdateRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
 
 
+class CourseCapabilities(BaseModel):
+    can_manage_documents: bool = False
+    can_manage_members: bool = False
+    can_view_insights: bool = False
+
+
 class CourseOut(BaseModel):
     id: str
     title: str
+    membership_role: CourseMemberRole | None = None
+    capabilities: CourseCapabilities = Field(default_factory=CourseCapabilities)
 
 
 class AdminAddMemberRequest(BaseModel):
@@ -70,6 +78,7 @@ class DocumentOut(BaseModel):
     extracted_char_count: int | None = None
     chunk_count: int | None = None
     quality_warning: str | None = None
+    chunking_version: str | None = None
 
 
 class SearchRequest(BaseModel):
@@ -96,7 +105,7 @@ class CitationOut(BaseModel):
     chunk_id: str
     document_id: str
     page: int | None
-    snippet: str
+    snippet: str  # Exact bounded body supplied in this generation, not a search excerpt.
     content_url: str
 
 
@@ -118,10 +127,69 @@ class NoEvidenceQuestionOut(BaseModel):
     last_asked_at: datetime
 
 
+class InsightsSummary(BaseModel):
+    recorded_attempts: int
+    student_attempts: int
+    cited_answer: int
+    no_evidence: int
+    failure: int
+    unknown_outcome: int
+    non_student_attempts: int
+    unknown_role_attempts: int
+    knowledge_attempts: int
+    no_evidence_rate: float | None
+
+
 class InsightsResponse(BaseModel):
     retention_days: int
+    window_start: datetime
+    window_end: datetime
+    summary: InsightsSummary
     frequent: list[FrequentQuestionOut]
     no_evidence: list[NoEvidenceQuestionOut]
+
+
+class QuestionGroupingRequest(BaseModel):
+    min_similarity: float = Field(gt=0, le=1, allow_inf_nan=False)
+    start_at: AwareDatetime | None = None
+    end_at: AwareDatetime | None = None
+    confirm_external_processing: bool = False
+
+
+class GroupQuestionOut(BaseModel):
+    query: str
+    count: int
+    cited_answer: int
+    no_evidence: int
+    similarity_to_representative: float
+    last_asked_at: datetime
+
+
+class QuestionGroupOut(BaseModel):
+    kind: Literal["candidate", "singleton"]
+    representative: str
+    count: int
+    distinct_questions: int
+    min_pair_similarity: float | None
+    members: list[GroupQuestionOut]
+
+
+class QuestionGroupingResponse(BaseModel):
+    window_start: datetime
+    window_end: datetime
+    grouping_contract: str
+    min_similarity: float
+    threshold_calibrated: Literal[False]
+    embedding_called: bool
+    embedding_model: str
+    embedding_identity: str
+    eligible_attempts: int
+    excluded_attempts: int
+    distinct_questions: int
+    grouped_questions: int
+    singleton_questions: int
+    singleton_attempts: int
+    groups: list[QuestionGroupOut]
 
 
 class QueryLogRetentionRequest(BaseModel):

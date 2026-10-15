@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <h2>用户</h2>
+    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>账号管理</h1><p class="page-description">创建教师、学生与管理员账号。账号身份与课程内授权分别管理。</p></header>
     <el-form :inline="true" :model="form" @submit.prevent="onCreate">
       <el-form-item label="用户名">
         <el-input v-model="form.username" />
@@ -19,9 +19,9 @@
         <el-button type="primary" native-type="submit" :loading="creating">创建</el-button>
       </el-form-item>
     </el-form>
-    <el-table :data="users" v-loading="loading">
+    <el-table :data="users" v-loading="loading" empty-text="暂无账号">
       <el-table-column prop="username" label="用户名" />
-      <el-table-column prop="role" label="角色" width="120" />
+      <el-table-column label="全局身份" width="120"><template #default="{ row }">{{ { student: '学生', teacher: '教师', admin: '管理员' }[row.role] || row.role }}</template></el-table-column>
     </el-table>
   </div>
 </template>
@@ -51,6 +51,7 @@ onMounted(async () => {
 });
 
 async function onCreate() {
+  if (creating.value) return;
   const username = form.username.trim();
   if (!username || !form.password) {
     ElMessage.warning("请填写用户名和密码");

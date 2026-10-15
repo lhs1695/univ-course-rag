@@ -118,9 +118,13 @@ def add_member(
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    if body.role == CourseMemberRole.teacher and user.role != UserRole.teacher.value:
+    if body.role == CourseMemberRole.teacher and user.role not in (
+        UserRole.teacher.value, UserRole.admin.value
+    ):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is not a teacher")
-    if body.role == CourseMemberRole.student and user.role != UserRole.student.value:
+    if body.role == CourseMemberRole.student and user.role not in (
+        UserRole.student.value, UserRole.admin.value
+    ):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is not a student")
     if get_membership(db, course.id, user.id) is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already a member")

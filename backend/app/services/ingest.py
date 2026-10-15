@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -9,7 +8,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session as DbSession
 
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
-from app.services.chunk import chunk_pages
+from app.services.chunk import CHUNKING_VERSION, chunk_pages
 from app.services.embedder import Embedder
 from app.services.parse import (
     DEFAULT_PARSE_LIMITS,
@@ -17,10 +16,18 @@ from app.services.parse import (
     ParseLimits,
     parse_document,
 )
-from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
+from app.services.upstream import UpstreamUnavailable
 
-_SECRET = re.compile(r"sk-[A-Za-z0-9]+")
 LOW_EXTRACTED_TEXT = "LOW_EXTRACTED_TEXT"
+_POSTGRES_NUL = "\x00"
+SAFE_INGEST_ERRORS = frozenset({
+    "UPSTREAM_UNAVAILABLE", "UPSTREAM_TIMEOUT", "INGEST_FAILED",
+    "no extractable text", "text file is not valid UTF-8",
+    "PDF parser is not installed", "unreadable PDF",
+    "PPT parser is not installed", "unreadable PPT",
+    "Word parser is not installed", "unreadable Word", "unreadable OOXML",
+    "OOXML resource limit exceeded", "extracted text exceeds resource limit",
+})
 
 
 class IngestError(Exception):
@@ -33,12 +40,21 @@ class IngestLeaseLost(IngestError):
 
 def safe_error(exc: BaseException) -> str:
     if isinstance(exc, UpstreamUnavailable):
-        return UPSTREAM_UNAVAILABLE
-    if isinstance(exc, ParseError):
+        return exc.error_code
+    if isinstance(exc, ParseError) and str(exc) in SAFE_INGEST_ERRORS:
         return str(exc)
-    message = f"{type(exc).__name__}: {exc}"
-    message = _SECRET.sub("[redacted]", message)
-    return message[:400]
+    return "INGEST_FAILED"
+
+
+def _sanitize_extracted_pages(
+    pages: list[tuple[int | None, str]],
+) -> list[tuple[int | None, str]]:
+    """Remove the one code point PostgreSQL text fields cannot store.
+
+    Apply this before chunking and embedding so the indexed text, metadata count,
+    and persisted text describe the same extract on every supported database.
+    """
+    return [(page, text.replace(_POSTGRES_NUL, "")) for page, text in pages]
 
 
 def _claim_pending_job(db: DbSession, job_id: UUID) -> UUID | None:
@@ -103,15 +119,17 @@ def process_ingest_job(
 
     try:
         data = Path(document.storage_path).read_bytes()
-        pages = parse_document(document.filename, data, limits=parse_limits)
+        pages = _sanitize_extracted_pages(
+            parse_document(document.filename, data, limits=parse_limits)
+        )
         extracted_char_count = sum(len(text) for _, text in pages)
-        pieces = chunk_pages(pages)
+        pieces = chunk_pages(pages, filename=document.filename)
         if not pieces:
             raise IngestError("no chunks produced")
         vectors: list[list[float]] = []
         for start in range(0, len(pieces), batch_size):
             batch = pieces[start : start + batch_size]
-            batch_vectors = embedder.embed([text for _, text in batch])
+            batch_vectors = embedder.embed([piece.text for piece in batch])
             if len(batch_vectors) != len(batch):
                 raise IngestError("embedder returned wrong batch size")
             if any(len(vector) != 1024 for vector in batch_vectors):
@@ -120,13 +138,14 @@ def process_ingest_job(
             _touch_running_job(db, job_id, run_token)
 
         db.execute(delete(Chunk).where(Chunk.document_id == document.id))
-        for (page, text), vector in zip(pieces, vectors, strict=True):
+        for piece, vector in zip(pieces, vectors, strict=True):
             db.add(
                 Chunk(
                     course_id=document.course_id,
                     document_id=document.id,
-                    page=page,
-                    text=text,
+                    page=piece.page,
+                    text=piece.text,
+                    source_metadata=piece.source_metadata,
                     embedding=vector,
                     embedding_model=embedder.index_identity,
                 )
@@ -138,6 +157,7 @@ def process_ingest_job(
         document.quality_warning = (
             LOW_EXTRACTED_TEXT if extracted_char_count < low_text_chars else None
         )
+        document.chunking_version = CHUNKING_VERSION
         completed = db.execute(
             update(IngestJob)
             .where(

@@ -4,9 +4,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session as DbSession
 
 from app.api.schemas import SearchHitOut, SearchRequest, SearchResponse
+from app.config import get_settings
 from app.db import get_db
 from app.security.deps import CourseAccess, require_course_member
 from app.services.embedder import Embedder, get_embedder
+from app.services.rerank import Reranker, get_reranker
 from app.services.retrieve import retrieve_chunks
 
 router = APIRouter(prefix="/courses", tags=["search"])
@@ -18,8 +20,18 @@ def search_course(
     access: Annotated[CourseAccess, Depends(require_course_member)],
     db: Annotated[DbSession, Depends(get_db)],
     embedder: Annotated[Embedder, Depends(get_embedder)],
+    reranker: Annotated[Reranker | None, Depends(get_reranker)],
 ) -> SearchResponse:
-    hits = retrieve_chunks(db, access.course.id, body.query, embedder)
+    settings = get_settings()
+    hits = retrieve_chunks(
+        db,
+        access.course.id,
+        body.query,
+        embedder,
+        strategy=settings.retrieval_strategy,
+        rrf_k=settings.rrf_k,
+        reranker=reranker,
+    )
     return SearchResponse(
         hits=[
             SearchHitOut(

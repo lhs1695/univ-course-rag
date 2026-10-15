@@ -152,6 +152,7 @@ def _ppt_shape_text(shape: object, mso_shape_type: object) -> list[str]:
 def _parse_word(data: bytes, limits: ParseLimits) -> list[tuple[int | None, str]]:
     try:
         from docx import Document
+        from docx.text.paragraph import Paragraph
     except ImportError as exc:
         raise ParseError("Word parser is not installed") from exc
     try:
@@ -160,17 +161,22 @@ def _parse_word(data: bytes, limits: ParseLimits) -> list[tuple[int | None, str]
         raise ParseError("unreadable Word") from exc
 
     parts: list[str] = []
-    for paragraph in document.paragraphs:
-        text = paragraph.text.replace("\r\n", "\n").strip()
-        if text:
-            parts.append(text)
-    for table in document.tables:
-        for row in table.rows:
-            cells = [cell.text.replace("\r\n", "\n").strip() for cell in row.cells]
-            line = "\t".join(cell for cell in cells if cell)
-            if line:
-                parts.append(line)
-    page_text = "\n".join(parts).strip()
+    # Public python-docx 1.2.0 API preserves paragraph/table document order.
+    for block in document.iter_inner_content():
+        if isinstance(block, Paragraph):
+            text = block.text.replace("\r\n", "\n").strip()
+            if text:
+                parts.append(text)
+        else:
+            rows = []
+            for row in block.rows:
+                cells = [cell.text.replace("\r\n", "\n").strip() for cell in row.cells]
+                line = "\t".join(cells)
+                if line.strip():
+                    rows.append(line)
+            if rows:
+                parts.append("\n".join(rows))
+    page_text = "\n\n".join(parts).strip()
     _validate_text_size(len(page_text), limits)
     if not page_text:
         raise ParseError("no extractable text")

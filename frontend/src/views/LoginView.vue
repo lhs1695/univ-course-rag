@@ -1,7 +1,7 @@
 <template>
   <div class="login-page">
     <el-card class="login-card" shadow="never">
-      <template #header>登录</template>
+      <template #header><h1 class="login-title">课程知识库</h1><p class="login-subtitle">登录后，回到你的课程与资料。</p></template>
       <el-form :model="form" @submit.prevent="onSubmit">
         <el-form-item label="用户名">
           <el-input v-model="form.username" autocomplete="username" />
@@ -20,7 +20,7 @@
           </el-button>
         </el-form-item>
       </el-form>
-      <p class="hint">演示账号用户名见仓库 AGENTS.md；密码只在本机 .env。</p>
+      <p class="hint">使用管理员分配的账号登录。需要加入课程时，请联系本课教师或管理员。</p>
     </el-card>
   </div>
 </template>
@@ -37,11 +37,12 @@ const loading = ref(false);
 const form = reactive({ username: "", password: "" });
 
 async function onSubmit() {
+  if (loading.value) return;
   loading.value = true;
   try {
     await login(form.username.trim(), form.password);
     const next = typeof route.query.next === "string" ? route.query.next : "";
-    if (next.startsWith("/")) {
+    if (next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/login")) {
       await router.replace(next);
     } else if (session.user?.role === "admin") {
       await router.replace("/admin/users");
@@ -59,7 +60,9 @@ async function onSubmit() {
 <style scoped>
 .hint {
   margin: 0;
-  color: #909399;
+  color: #596779;
   font-size: 12px;
 }
+.login-title { font-size: 24px; margin: 0; }
+.login-subtitle { font-size: 13px; font-weight: 400; color: #596779; margin: 8px 0 0; }
 </style>

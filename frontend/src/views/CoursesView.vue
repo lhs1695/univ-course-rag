@@ -1,49 +1,54 @@
 <template>
-  <div class="page">
-    <h2>我的课程</h2>
-    <el-alert
-      v-if="loaded && courses.length === 0"
-      title="还没有加入任何课程"
-      type="info"
-      :closable="false"
-    />
-    <el-table v-else :data="courses" v-loading="loading" empty-text="加载中">
-      <el-table-column prop="title" label="课程" />
-      <el-table-column label="" :width="isTeacher ? 300 : 100">
-        <template #default="{ row }">
-          <el-button v-if="isTeacher" type="primary" link @click="openDocs(row)">资料</el-button>
-          <el-button v-if="isTeacher" type="primary" link @click="openMembers(row)">本课学生</el-button>
-          <el-button type="primary" link @click="openAsk(row)">提问</el-button>
-          <el-button v-if="isTeacher" type="primary" link @click="openInsights(row)">学情</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+  <div class="page courses-page">
+    <header class="page-heading"><p class="eyebrow">课程空间</p><h1>我的课程</h1><p class="page-description">选择一门已加入的课程，查看资料或开始提问。管理入口按你的课内权限显示。</p></header>
+    <template v-if="failure">
+      <el-alert :title="failure" type="error" :closable="false" show-icon />
+      <el-button :loading="loading" @click="loadCourses">重新加载课程</el-button>
+    </template>
+    <div v-else-if="loading" aria-busy="true"><p role="status" class="page-description">正在加载你的课程…</p><el-skeleton :rows="4" animated /></div>
+    <el-empty v-else-if="loaded && courses.length === 0" description="还没有加入任何课程"><p class="page-description">请联系本课教师或管理员加入已有课程。</p></el-empty>
+    <ul v-else class="course-grid">
+      <li v-for="row in courses" :key="row.id" class="course-card">
+        <span class="role-pill">课内{{ row.membership_role === 'teacher' ? '教师' : '学生' }}</span>
+        <h2>{{ row.title }}</h2>
+        <p>{{ row.capabilities.can_manage_documents ? '维护本课资料与成员，查看问答反馈。' : '阅读课内资料，在回答中逐条核对来源。' }}</p>
+        <div class="course-card-primary"><el-button type="primary" @click="openAsk(row)">进入问答</el-button><el-button @click="openDocs(row)">课程资料</el-button></div>
+        <div v-if="row.capabilities.can_manage_members || row.capabilities.can_view_insights" class="course-card-secondary">
+          <el-button v-if="row.capabilities.can_manage_members" type="primary" text @click="openMembers(row)">本课学生</el-button>
+          <el-button v-if="row.capabilities.can_view_insights" type="primary" text @click="openInsights(row)">问答反馈</el-button>
+        </div>
+      </li>
+    </ul>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { api } from "../api";
-import { session } from "../session";
 
 const router = useRouter();
 const courses = ref([]);
 const loading = ref(true);
 const loaded = ref(false);
-const isTeacher = computed(() => session.user?.role === "teacher");
+const failure = ref("");
 
-onMounted(async () => {
+async function loadCourses() {
+  if (loading.value && loaded.value) return;
+  loading.value = true;
   try {
     courses.value = await api("/courses");
+    failure.value = "";
   } catch (error) {
+    failure.value = error.message;
     ElMessage.error(error.message);
   } finally {
     loading.value = false;
     loaded.value = true;
   }
-});
+}
+onMounted(loadCourses);
 
 function openAsk(row) {
   router.push(`/courses/${row.id}`);
@@ -61,3 +66,15 @@ function openMembers(row) {
   router.push(`/courses/${row.id}/members`);
 }
 </script>
+
+<style scoped>
+.courses-page { background: transparent; border: 0; padding: 2px 0; }
+.course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 22px; padding: 0; margin: 0; list-style: none; }
+.course-card { display: flex; flex-direction: column; align-items: flex-start; padding: 26px; min-width: 0; background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; }
+.course-card h2 { font-size: 21px; margin: 18px 0 10px; overflow-wrap: anywhere; }
+.course-card p { font-size: 13px; color: #596779; margin: 0 0 24px; }
+.course-card-primary { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; }
+.course-card-primary .el-button + .el-button { margin-left: 0; }
+.course-card-secondary { width: 100%; padding-top: 14px; margin-top: 18px; border-top: 1px solid #e7ede9; }
+.course-card-secondary .el-button { padding-left: 0; padding-right: 0; }
+</style>

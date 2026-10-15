@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -32,6 +32,7 @@ class Document(Base):
     extracted_char_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     chunk_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     quality_warning: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    chunking_version: Mapped[str | None] = mapped_column(String(96), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -63,3 +64,4 @@ class Chunk(Base):
     text: Mapped[str] = mapped_column(Text)
     embedding: Mapped[list[float]] = mapped_column(EmbeddingVector(EMBEDDING_DIM))
     embedding_model: Mapped[str] = mapped_column(String(128))
+    source_metadata: Mapped[dict[str, str | int] | None] = mapped_column(JSON(none_as_null=True), nullable=True)

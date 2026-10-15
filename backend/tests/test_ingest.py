@@ -10,6 +10,7 @@ from app.main import app
 from app.models.course import Course, CourseMember, CourseMemberRole
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.models.user import User, UserRole
+from app.services.chunk import CHUNKING_VERSION
 from app.services.embedder import FakeEmbedder, get_embedder
 from app.services.ingest import (
     LOW_EXTRACTED_TEXT,
@@ -18,7 +19,7 @@ from app.services.ingest import (
     process_ingest_job,
     retry_ingest_job,
 )
-from app.services.parse import ParseLimits
+from app.services.parse import ParseLimits, parse_document
 from app.services.upstream import UPSTREAM_UNAVAILABLE, UpstreamUnavailable
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -96,6 +97,8 @@ def assert_safe_quality_metadata(payload: dict, chunks: list[Chunk]) -> None:
     assert payload["extracted_char_count"] >= 1
     assert payload["chunk_count"] == len(chunks)
     assert payload["quality_warning"] in {None, LOW_EXTRACTED_TEXT}
+    assert payload["chunking_version"] == CHUNKING_VERSION
+    assert all(chunk.source_metadata is not None for chunk in chunks)
     assert {"text", "snippet", "storage_path"}.isdisjoint(payload)
 
 
@@ -252,6 +255,7 @@ def test_short_text_succeeds_with_quality_warning(
         "extracted_char_count": 5,
         "chunk_count": 1,
         "quality_warning": LOW_EXTRACTED_TEXT,
+        "chunking_version": CHUNKING_VERSION,
     }
 
 
@@ -603,6 +607,41 @@ def test_mid_batch_failure_preserves_previous_complete_chunks(
     assert stored_document.quality_warning is None
 
 
+def test_ingest_strips_postgresql_nul_before_embedding_and_storage(
+    db: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    course = add_course(db, "Course 1")
+    source = tmp_path / "nul-source.pdf"
+    source.write_bytes(b"placeholder")
+    document = Document(
+        course_id=course.id,
+        uploaded_by=uuid4(),
+        filename=source.name,
+        storage_path=str(source),
+    )
+    db.add(document)
+    db.flush()
+    job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
+    db.add(job)
+    db.commit()
+    monkeypatch.setattr(
+        "app.services.ingest.parse_document",
+        lambda *_args, **_kwargs: [(1, "vector\x00database evidence")],
+    )
+
+    process_ingest_job(db, job.id, FakeEmbedder())
+
+    db.expire_all()
+    stored_job = db.get(IngestJob, job.id)
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == document.id)).scalars().all()
+    stored_document = db.get(Document, document.id)
+    assert stored_job is not None
+    assert stored_job.status == IngestJobStatus.succeeded.value
+    assert [chunk.text for chunk in chunks] == ["vectordatabase evidence"]
+    assert stored_document is not None
+    assert stored_document.extracted_char_count == len("vectordatabase evidence")
+
+
 def test_upstream_embedding_failure_is_safe_and_explicitly_retryable(
     db: Session, tmp_path: Path
 ) -> None:
@@ -790,3 +829,81 @@ def test_student_cannot_retry_ingest_job(client: TestClient, db: Session) -> Non
     response = client.post(f"/courses/{course.id}/documents/{document.id}/retry")
 
     assert response.status_code == 403
+
+
+@pytest.mark.parametrize("filename", ["synthetic.md", "synthetic.txt"])
+def test_ingest_source_spans_match_sanitized_extracted_text_and_embedding_input(
+    client, db, filename,
+) -> None:
+    body = " \r\n# 课程标题\r\n\r\n" + "中文🙂e\u0301重复正文\x00。" * 220
+
+    class CapturingEmbedder(FakeEmbedder):
+        def __init__(self):
+            super().__init__()
+            self.texts = []
+
+        def embed(self, texts):
+            self.texts.extend(texts)
+            return super().embed(texts)
+
+    embedder = CapturingEmbedder()
+    app.dependency_overrides[get_embedder] = lambda: embedder
+    doc_id = upload_as_teacher(client, db, filename, body.encode())
+    document = db.get(Document, doc_id)
+    units = parse_document(filename, body.encode())
+    sanitized = units[0][1].replace("\x00", "")
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == doc_id)).scalars().all()
+    chunks.sort(key=lambda chunk: chunk.source_metadata["chunk_index"])
+    assert document.chunking_version == CHUNKING_VERSION
+    assert document.chunk_count == len(chunks) > 1
+    assert [chunk.text for chunk in chunks] == embedder.texts
+    for chunk in chunks:
+        meta = chunk.source_metadata
+        assert sanitized[meta["char_start"]:meta["char_end"]] == chunk.text
+        assert meta["unit_index"] == 1
+        assert chunk.page is None
+    assert document.extracted_char_count == len(sanitized)
+    detail = client.get(f"/courses/{document.course_id}/documents/{doc_id}").json()
+    assert detail["chunking_version"] == CHUNKING_VERSION
+    assert {"text", "source_metadata", "storage_path"}.isdisjoint(detail)
+
+
+@pytest.mark.parametrize("fail_on_call", [None, 2])
+def test_reingest_replaces_source_metadata_and_version_only_after_complete_success(
+    db, tmp_path, fail_on_call,
+) -> None:
+    course = add_course(db, "Reingest provenance")
+    source = tmp_path / "synthetic.txt"
+    source.write_text("new content " * 500, encoding="utf-8")
+    document = Document(
+        course_id=course.id, uploaded_by=uuid4(), filename=source.name, storage_path=str(source),
+        chunking_version="legacy-v0", chunk_count=1,
+    )
+    db.add(document)
+    db.flush()
+    old = Chunk(
+        course_id=course.id, document_id=document.id, page=1, text="old complete index",
+        embedding=FakeEmbedder().embed(["old complete index"])[0],
+        embedding_model=FakeEmbedder().index_identity, source_metadata=None,
+    )
+    job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
+    db.add_all([old, job])
+    db.commit()
+    old_id = old.id
+    process_ingest_job(db, job.id, RecordingEmbedder(fail_on_call=fail_on_call), batch_size=1)
+    db.expire_all()
+    chunks = db.execute(select(Chunk).where(Chunk.document_id == document.id)).scalars().all()
+    stored = db.get(Document, document.id)
+    if fail_on_call:
+        assert db.get(IngestJob, job.id).status == IngestJobStatus.failed.value
+        assert stored.chunking_version == "legacy-v0"
+        assert stored.chunk_count == 1
+        assert [chunk.id for chunk in chunks] == [old_id]
+        assert chunks[0].source_metadata is None
+    else:
+        assert db.get(IngestJob, job.id).status == IngestJobStatus.succeeded.value
+        assert stored.chunking_version == CHUNKING_VERSION
+        assert old_id not in {chunk.id for chunk in chunks}
+        assert stored.chunk_count == len(chunks) > 1
+        assert all(chunk.source_metadata is not None for chunk in chunks)
+        assert all(chunk.page is None for chunk in chunks)

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <h2>提问日志维护</h2>
+    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>提问日志维护</h1><p class="page-description">按留存窗口预览并处理到期记录，每次仅操作受限的一批。</p></header>
     <el-alert
       title="提问日志包含问题原文，只用于留存窗口内的课程学情。维护操作不会展示问题或提问者。"
       type="info"
@@ -59,6 +59,7 @@ const previewing = ref(false);
 const deleting = ref(false);
 
 async function previewExpired() {
+  if (previewing.value || deleting.value) return;
   previewing.value = true;
   try {
     result.value = await api("/admin/query-logs/retention", {
@@ -74,6 +75,7 @@ async function previewExpired() {
 }
 
 async function deleteExpired() {
+  if (deleting.value || previewing.value) return;
   const count = result.value?.matched_count || 0;
   if (!previewReady.value || !count) {
     return;

@@ -1,21 +1,55 @@
 from __future__ import annotations
 
-from collections.abc import Collection
-from dataclasses import dataclass
+from collections.abc import Collection, Sequence
+from dataclasses import dataclass, replace
 from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import exists, select, type_coerce
+from sqlalchemy import exists, func, select, type_coerce
 from sqlalchemy.orm import Session as DbSession
 
 from app.models.document import EMBEDDING_DIM, Chunk
 from app.services.embedder import Embedder
+from app.services.fusion import (
+    MAX_FUSED_CANDIDATES,
+    MAX_RRF_K,
+    RRF_K,
+    DenseCandidate,
+    FusedHit,
+    FusionError,
+    KeywordCandidate,
+    fuse_rrf,
+)
+from app.services.rerank import (
+    MAX_RERANK_CANDIDATES,
+    RERANK_PASSAGE_CHARS,
+    Reranker,
+    RerankError,
+    rerank_candidates,
+)
 
 SEARCH_TOP_K = 8
+# Recall budget per branch, independent of the final context count. This is a
+# bounded engineering default, not a calibrated relevance/admission parameter.
+HYBRID_CANDIDATE_K = 32
+# Fake vectors have their own golden-test calibration. SiliconFlow's 0.45
+# default is evidenced in docs/evaluation-results.md#stage49-threshold-results.
 SEARCH_MIN_SCORE = 0.15
+SILICONFLOW_SEARCH_MIN_SCORE = 0.45
 SNIPPET_CHARS = 240
 EMBEDDING_MISMATCH = "EMBEDDING_MISMATCH"
 EMBEDDING_MISMATCH_MESSAGE = "向量模型已切换，请从原文件重新入库。"
+KEYWORD_LIMIT = "KEYWORD_LIMIT"
+KEYWORD_LIMIT_MESSAGE = "关键词检索超出资源上限，本次未改用其他检索策略。"
+RETRIEVAL_STRATEGY = "RETRIEVAL_STRATEGY"
+RETRIEVAL_STRATEGY_MESSAGE = "检索策略无效，本次未执行检索。"
+RETRIEVAL_FAILED = "RETRIEVAL_FAILED"
+RETRIEVAL_FAILED_MESSAGE = "检索结果无法合并，本次未改为其他策略。"
+RETRIEVAL_STRATEGIES = frozenset({"dense", "hybrid"})
+
+
+class RetrievalStrategyError(ValueError):
+    """An unknown strategy must fail before either branch runs."""
 
 
 @dataclass
@@ -29,6 +63,13 @@ class SearchHit:
 
 def cosine_similarity(left: list[float], right: list[float]) -> float:
     return sum(a * b for a, b in zip(left, right, strict=True))
+
+
+def _default_min_score(embedder: Embedder) -> float:
+    """Keep Fake fixtures on their contract; calibrate the live vector space separately."""
+    if embedder.index_identity.startswith("siliconflow|"):
+        return SILICONFLOW_SEARCH_MIN_SCORE
+    return SEARCH_MIN_SCORE
 
 
 def _chunk_filters(
@@ -51,17 +92,17 @@ def _postgres_retrieval_statement(
     query_vec: list[float],
     *,
     top_k: int,
-    min_score: float,
+    min_score: float | None,
     excluded_document_ids: Collection[UUID],
 ):
     vector = type_coerce(Chunk.embedding, Vector(EMBEDDING_DIM))
     distance = vector.cosine_distance(query_vec).label("distance")
+    filters = _chunk_filters(course_id, embedder, excluded_document_ids)
+    if min_score is not None:
+        filters.append(distance <= 1.0 - min_score)
     return (
         select(Chunk.id, Chunk.document_id, Chunk.page, Chunk.text, distance)
-        .where(
-            *_chunk_filters(course_id, embedder, excluded_document_ids),
-            distance <= 1.0 - min_score,
-        )
+        .where(*filters)
         .order_by(distance)
         .limit(top_k)
     )
@@ -86,17 +127,17 @@ def _search_hit(
     )
 
 
-def retrieve_chunks(
+def _retrieve_dense(
     db: DbSession,
     course_id: UUID,
     query: str,
     embedder: Embedder,
     *,
     top_k: int = SEARCH_TOP_K,
-    min_score: float = SEARCH_MIN_SCORE,
+    min_score: float | None = None,
     excluded_document_ids: Collection[UUID] = (),
 ) -> list[SearchHit]:
-    """Course-scoped vector top-k. Below min_score → empty, never a guess."""
+    """Course-scoped vector recall; None leaves admission to a later selector."""
     query = query.strip()
     if not query:
         return []
@@ -126,12 +167,180 @@ def retrieve_chunks(
     ranked.sort(key=lambda item: item[0], reverse=True)
     hits: list[SearchHit] = []
     for score, chunk in ranked[:top_k]:
-        if score < min_score:
+        if min_score is not None and score < min_score:
             break
         hits.append(
             _search_hit(chunk.id, chunk.document_id, chunk.page, chunk.text, score)
         )
     return hits
+
+
+def retrieve_hybrid_candidates(
+    db: DbSession,
+    course_id: UUID,
+    query: str,
+    embedder: Embedder,
+    *,
+    candidate_k: int = HYBRID_CANDIDATE_K,
+    excluded_document_ids: Collection[UUID] = (),
+    rrf_k: int = RRF_K,
+) -> list[FusedHit]:
+    """Return the entire bounded union, including unadmitted lexical-only rows.
+
+    Callers own course authorization. Both branches scope before recall. No
+    final top-k or relevance threshold applies here; R4 can consume this list
+    before any evidence selection. Branch failures abort without fallback.
+    """
+    from app.services.keyword import retrieve_keyword_candidates
+
+    if type(candidate_k) is not int or not 0 <= candidate_k <= MAX_FUSED_CANDIDATES // 2:
+        raise FusionError("candidate_limit")
+    if type(rrf_k) is not int or not 1 <= rrf_k <= MAX_RRF_K:
+        raise FusionError("rank_constant")
+    query = query.strip()
+    if not query or candidate_k == 0:
+        return []
+    filters = _chunk_filters(course_id, embedder, excluded_document_ids)
+    if not db.scalar(select(exists().where(*filters))):
+        return []
+    dense_hits = _retrieve_dense(
+        db,
+        course_id,
+        query,
+        embedder,
+        top_k=candidate_k,
+        excluded_document_ids=excluded_document_ids,
+    )
+    keyword_hits = retrieve_keyword_candidates(
+        db,
+        course_id,
+        query,
+        index_identity=embedder.index_identity,
+        top_k=candidate_k,
+        excluded_document_ids=excluded_document_ids,
+    )
+    return fuse_rrf(
+        [
+            DenseCandidate(hit.chunk_id, hit.document_id, hit.page, hit.snippet, hit.score)
+            for hit in dense_hits
+        ],
+        [
+            KeywordCandidate(
+                hit.chunk_id, hit.document_id, hit.page, hit.snippet, hit.bm25_score
+            )
+            for hit in keyword_hits
+        ],
+        rrf_k=rrf_k,
+        limit=candidate_k * 2,
+    )
+
+
+def _select_conservative_evidence(
+    candidates: Sequence[FusedHit], *, top_k: int, min_score: float
+) -> list[SearchHit]:
+    """Temporary dense-score gate, not a semantic answer-support selector.
+
+    Lexical-only and low-cosine candidates remain available from the candidate
+    service, but cannot authorize generation until a validated selector exists.
+    Never threshold BM25/RRF or encode either as SearchHit.score.
+    """
+    return [
+        SearchHit(
+            chunk_id=hit.chunk_id,
+            document_id=hit.document_id,
+            page=hit.page,
+            snippet=hit.snippet,
+            score=hit.cosine_score,
+        )
+        for hit in candidates
+        if hit.cosine_score is not None and hit.cosine_score >= min_score
+    ][:top_k]
+
+
+def _rerank_hybrid_candidates(
+    db: DbSession, course_id: UUID, query: str, embedder: Embedder,
+    candidates: Sequence[FusedHit], reranker: Reranker,
+    excluded_document_ids: Collection[UUID],
+) -> list[FusedHit]:
+    if len(candidates) > MAX_RERANK_CANDIDATES:
+        raise RerankError() from None
+    if not candidates:
+        return []
+    # Re-check scope and current existence before sending any text upstream.
+    rows = db.execute(
+        select(
+            Chunk.id, Chunk.document_id, Chunk.page,
+            func.substr(Chunk.text, 1, RERANK_PASSAGE_CHARS).label("text"),
+        ).where(
+            *_chunk_filters(course_id, embedder, excluded_document_ids),
+            Chunk.id.in_([hit.chunk_id for hit in candidates]),
+        )
+    ).all()
+    by_id = {row.id: row for row in rows}
+    current = []
+    passages = []
+    for hit in candidates:
+        row = by_id.get(hit.chunk_id)
+        if row is None:
+            continue
+        if (row.document_id, row.page) != (hit.document_id, hit.page):
+            raise RerankError() from None
+        body = row.text.strip()
+        if not body:
+            continue
+        current.append(replace(hit, snippet=body[:SNIPPET_CHARS]))
+        passages.append(body)
+    return [hit.candidate for hit in rerank_candidates(query, current, passages, reranker)]
+
+
+def retrieve_chunks(
+    db: DbSession,
+    course_id: UUID,
+    query: str,
+    embedder: Embedder,
+    *,
+    top_k: int = SEARCH_TOP_K,
+    min_score: float | None = None,
+    excluded_document_ids: Collection[UUID] = (),
+    strategy: str = "dense",
+    rrf_k: int = RRF_K,
+    reranker: Reranker | None = None,
+) -> list[SearchHit]:
+    """Return final evidence. hybrid is a candidate union with a conservative gate."""
+    if type(strategy) is not str or strategy not in RETRIEVAL_STRATEGIES:
+        raise RetrievalStrategyError()
+    if strategy == "dense":
+        if reranker is not None:
+            raise RetrievalStrategyError()
+        return _retrieve_dense(
+            db,
+            course_id,
+            query,
+            embedder,
+            top_k=top_k,
+            min_score=_default_min_score(embedder) if min_score is None else min_score,
+            excluded_document_ids=excluded_document_ids,
+        )
+    if type(top_k) is not int or not 0 <= top_k <= MAX_FUSED_CANDIDATES // 2:
+        raise FusionError("candidate_limit")
+    candidates = retrieve_hybrid_candidates(
+        db,
+        course_id,
+        query,
+        embedder,
+        candidate_k=max(HYBRID_CANDIDATE_K, top_k) if top_k else 0,
+        excluded_document_ids=excluded_document_ids,
+        rrf_k=rrf_k,
+    )
+    if reranker is not None:
+        candidates = _rerank_hybrid_candidates(
+            db, course_id, query.strip(), embedder, candidates, reranker, excluded_document_ids,
+        )
+    return _select_conservative_evidence(
+        candidates,
+        top_k=top_k,
+        min_score=_default_min_score(embedder) if min_score is None else min_score,
+    )
 
 
 def has_incompatible_chunks(

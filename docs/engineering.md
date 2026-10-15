@@ -1,0 +1,254 @@
+# 现行工程合同
+
+更新：2026-10-15。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。旧阶段叙述与评测数字已清理，中期效果以改进版本的新运行重建。
+
+## 目录
+
+- [权限与产品](#product-contracts)
+- [复用与许可](#open-source-selection)
+- [检索与证据](#retrieval-contract)
+- [切分与来源](#chunk-source)
+- [入库恢复](#ingest-recovery)
+- [上传文件](#storage-lifecycle)
+- [日志留存](#query-log-retention)
+- [异常与恢复](#异常与恢复)
+
+<a id="product-contracts"></a>
+
+## 权限与产品
+
+登录使用 HTTP-only Cookie session_id 与服务端 Session，不使用 JWT/localStorage token。全局角色来自 /auth/me；课程内容按当前 CourseMember.role 鉴权，全局教师或管理员身份不自动获得课程内容权限。仅 admin 可 POST /admin/users、GET /admin/users。
+
+课程响应给出 membership_role 与 can_manage_documents/can_manage_members/can_view_insights。成员可读取本课资料、原文件、检索和问答；课内教师管理资料/学生并查看反馈。普通学生不能读课程成员名单；管理员可管理授权，查看正文仍须显式入课。普通账号绑定受全局 teacher/student 约束，admin 可显式指定其课内角色。改课内角色可移出后重新加入，不存在独立角色更新接口。
+
+后端逐请求查会话、用户与成员，撤权无需重新登录。前端导航、focus/重新可见时刷新身份/能力，401 或课程权限失效时卸载受保护视图，迟到响应不覆盖新状态。无服务端推送，静止且无请求页面不会即时获知远端撤权。
+
+界面为学生问答/证据双列工作台（900px及以下堆叠）与简洁后台；按能力显示入口。回答直接复用 markdown-it 15.0.2 显示 Markdown，禁用原始 HTML、普通链接/图片/自动链接；这些内容按文字显示，不发起生成文本指定的导航或图片请求。仅服务端返回引用列表内的 UUID 标记转换为编号，重复引用共用编号，未知编号显示“未登记引用”，代码中的标记保留文字。点击内联编号滚动并聚焦相应证据卡；资料名/正文仍以 Vue 插值显示，原资料入口保持鉴权。渲染器不启用额外插件或高亮器，只有受控 renderAnswer 输出可传给 v-html。基本键盘焦点、长内容换行不等于完整无障碍认证。
+
+回答保留“已返回回答·请核对证据”、依据不足、服务/索引失败三类显示，不新增“部分依据”或“完全支持”标签；当前没有经验证的逐主张支持判断。索引不兼容单独显示为异常，不提示成资料没有答案。引用合法只表示来源登记，不证明答案正确。
+
+教学反馈按最终事件结果和提问时课内角色计数，页面展示实际时间窗、样本量、分母、未知/排除数量与刷新失败；基础问句列表仍折叠空白并截断200字符，可能合并相同前缀，不是同义组。P5另提供默认关闭的后端候选分组入口，保留完整问句；看板接入、时间选择、趋势与主题评价留P6。聚合受课内教师权限、时间窗/留存与隐私约束，不建学生掌握度画像、不凭高频或依据不足断言教学缺失。
+
+<a id="open-source-selection"></a>
+
+## 复用与许可
+
+路线为开源组件复用与课程适配，不声称原创 BM25、RRF、模型或切分算法。实际使用方式如下；完整复用决策规则见 [workflow](workflow.md#reuse-gate)。
+
+| 对象与版本 | 实际采用方式/来源 | 许可与本地工作 |
+| --- | --- | --- |
+| SciPy 1.18.1 / 现有 NumPy 2.5.4 | P5 直接调用 scipy.spatial.distance.pdist/squareform 与 scipy.cluster.hierarchy.linkage(method=complete)/fcluster(criterion=distance)；[官方API](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html)、[发行版](https://pypi.org/project/scipy/1.18.1/) | SciPy主体BSD-3-Clause，二进制捆绑许可随wheel保留，不推断全部依赖同许可。只安装二进制包，不下载权重；相较 scikit-learn 1.9.1（BSD-3-Clause，AgglomerativeClustering），直接SciPy只新增一个包，避免额外joblib/threadpoolctl。未复制算法；本地仅做课程/窗口/角色筛选、计数、向量校验/上限、代表问句与解释字段。嵌入直接复用现有SiliconFlow API适配（默认关闭的新POST入口），Fake仅注入合成语义向量，不使用词项哈希冒充同义。阈值请求必填、未校准，不称已验证同义；验收语义对/负例、链式误合并、单例/代表问句、权限/留存及失败不回退 |
+| SQLAlchemy 2.0.52 / Alembic 1.19.1 | P4 直接复用已有 select/func.count/group_by、UTC范围过滤与 op.add_column；本机元数据均为MIT，[聚合API](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#aggregate-functions-with-group-by-having) | 无新依赖；本地只定义最终结果、课内角色快照、分母与旧数据未知规则。两个可空列迁移不回填，兼容现有响应字段。独立 PostHog 事件/分析服务仍需上述课程口径与鉴权/留存适配并增加部署或外发数据边界，[官方自托管说明](https://posthog.com/docs/self-host)不推荐生产自托管；本项未安装/调用/复制平台源码，直接调用现有数据库组件总成本更低。验收角色变化、拒答/失败、重试、时间边界、旧记录与迁移；不做语义分组/趋势 |
+| markdown-it 15.0.2 | R6 直接调用 MarkdownIt/render 与 inline ruler；npm registry 核对版本/MIT，固定 package 与 lock。[上游安全规则](https://github.com/markdown-it/markdown-it/blob/master/docs/safety.md) | 关闭 HTML、自动链接及图片/普通链接导航，仅受控来源引用可定位；本地只做 Source UUID→卡片编号/焦点。新增7个npm包，无Python依赖/模型或算法复制。对比 Marked 18.1.1（registry/MIT，[官方说明](https://github.com/markedjs/marked#warning--markdown-sanitizing)要求另行清洗 HTML），当前无需任意 HTML，采用 markdown-it 上游禁用 HTML 方案，减少清洗配置与DOM测试依赖，未安装Marked/DOMPurify。现有平台引用引擎仍不能代替课程鉴权与实际正文预算，保留短小白名单适配。验收为恶意 Markdown/伪引用/代码引用及实际卡片点击，不宣称自动事实核验 |
+| jieba 0.42.1 | 直接调用搜索分词，HMM=False；[版本来源](https://pypi.org/project/jieba/0.42.1/) | MIT；本地做统一预处理、术语与资源适配，不改算法 |
+| rank-bm25 0.2.2 | 直接调用 BM25Okapi/get_scores；[版本来源](https://pypi.org/project/rank-bm25/0.2.2/) | Apache-2.0；预分词输入、范围与候选合同适配 |
+| NumPy 2.5.4 | BM25 的实际依赖，pyproject 固定版本 | 元数据许可表达式 BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0；保留发行包捆绑声明 |
+| 本地 RRF / Haystack v2.18.1 | 本地 fuse_rrf；对比 [DocumentJoiner 固定源码](https://github.com/deepset-ai/haystack/blob/v2.18.1/haystack/components/joiners/document_joiner.py)，未安装/复制 Haystack | 上游 Apache-2.0，仅参考；现有同分名次、可配偏移、原分隔离与ID校验仍需本地适配，替换少量累加循环不足抵消迁移/重验 |
+| SiliconFlow v1 rerank / BAAI/bge-reranker-v2-m3 | 已写现成 API 薄适配，默认关闭；[固定规范](https://github.com/siliconflow/siliconcloud/blob/ab00eefcf075f0374165d47b8aad3d284f3a1a9a/openapi.yaml) | 规范1.0.0为MIT，模型卡为Apache-2.0；真实服务未调用，托管权重revision不可锁定 |
+| HTTPX 0.28.1 | 直接调用公开HTTP API，已有包补为固定运行时依赖 | BSD-3-Clause；请求/ID/上限/错误映射；未自写推理。对比 FlagEmbedding 1.4.2（MIT）本机方案需额外依赖/权重/硬件，当前未采用 |
+| semantic-text-splitter 0.33.0 | 直接调用 MarkdownSplitter/TextSplitter/chunk_indices；[版本来源](https://pypi.org/project/semantic-text-splitter/0.33.0/) | MIT；本地只做来源/页/范围/版本适配。对比 langchain-text-splitters 1.0.0（MIT）需额外core依赖与来源映射，未采用；没有复制算法 |
+| python-docx 1.2.0 | 直接调用 iter_inner_content 保持顶层段落/表格顺序；版本固定 | MIT；抽取与来源适配 |
+| PyMuPDF / python-pptx | 沿用当前解析依赖；本机核对版本为1.28.2/1.0.2 | 具体发行包声明随依赖保留，正式交付重新核对实际版本与发行方式；不由本表推断所有依赖同许可 |
+| LlamaIndex citation query engine | 仅作来源组织设计参考，未接入其数据库/鉴权/运行时 | 保留必要课程Source/实际上下文合同，不称已集成框架 |
+
+复杂布局/OCR/公式解析仍待专项选型，不预装平台或下载权重。组件、模型、托管服务的许可/费用分别核对；代码包许可不能代替模型或服务条款。对照对象仅说明当前保留/接入的成本理由，不视为其他平台性能或兼容性结论。
+
+SciPy安装为CPython3.12 Windows二进制wheel（36.7MB），仅新增SciPy包，元数据要求NumPy>=2.0,<2.8，与现有2.5.4兼容，pip check通过；原始许可位于scipy-1.18.1.dist-info/LICENSE.txt，包含实际捆绑声明，随依赖保留。没有复制其源码、安装scikit-learn/模型平台或下载权重。
+
+### 制品归属
+
+以下为仍使用的组件制品追溯，不是课程实验数据或全项目锁文件；其他平台wheel哈希不同。正式交付须随制品保留实际完整许可及捆绑依赖声明。
+
+| 制品 | SHA-256 |
+| --- | --- |
+| jieba 0.42.1源码包（本机构建wheel） | 055ca12f62674fafed09427f176506079bc135638a14e23e25be909131928db2 |
+| rank-bm25 0.2.2 | 7bd4a95571adadfc271746fa146a4bcfd89c0cf731e49c3d1ad863290adbe8ae |
+| NumPy 2.5.4 Windows CPython3.12 wheel | a7b1b6353e36a7e50de2973a38d705c88ee93adcf120673cee7f45a4a3fa223a |
+| semantic_text_splitter-0.33.0-cp310-abi3-win_amd64.whl | b74eb60519c0b012087184b4997f6ab599c055cca98b194f5bb44b4c5ba2bc7e |
+
+splitter默认无额外Python运行时依赖，不启用tokenizer/docs/test extras或模型。其0.33.0源码包哈希为6d5db802af52ce6a2a2035f4e72f22b46d346bd0850fd9ca97011f8841aa7826，只在内存核对制品，未执行源码。jieba本机构建wheel与splitter wheel未附完整LICENSE文本，故在本文保留归属与许可；splitter类型以版本元数据MIT为据，完整文本来自上游公开LICENSE.txt，不把main称作固定版本源码核验。已有依赖的dist-info/SBOM与许可不删除。
+
+jieba [上游许可](https://github.com/fxsjy/jieba/blob/v0.42.1/LICENSE)：
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2013 Sun Junyi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+semantic-text-splitter [上游许可](https://github.com/benbrandt/text-splitter/blob/main/LICENSE.txt)：
+
+```text
+MIT License
+
+Copyright (c) 2023 Benjamin Brandt
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+<a id="retrieval-contract"></a>
+
+## 检索与证据
+
+### 候选与排序
+
+retrieval_strategy 仅接受 dense/hybrid，默认dense；默认最终top_k=8。Fake最低余弦0.15、SiliconFlow最低余弦0.45是当前配置，均须在新版实验中独立重验，不当作新版本已校准结果；清理文档不修改代码参数。两种向量空间不得混用。
+
+两路召回先限制当前授权课程、相容embedding索引身份、排除文档。dense保持原向量排序/阈值；hybrid通过 retrieve_hybrid_candidates 返回完整有界并集：dense召回阶段不使用最终min_score，lexical依词项交集产生候选。每路candidate_k默认32、上限100；HTTP使用max(32, top_k)，最终0不查库。Postgres范围过滤、距离排序和LIMIT在SQL执行；SQLite/Fake沿用点积测试约定。
+
+词项预处理统一NFKC/casefold；中文jieba搜索分词，ASCII标识符/数字/连字符/C++/C#保留。查询去重、正文保留词频，不额外停用词/词干化。BM25Okapi参数k1=1.5、b=0.75、epsilon=0.25；有交集可保留零/负BM25分，无交集不固定填数。语料只在请求内构建，不缓存课程正文/token/排名；SQL读取正文前先过滤、只投影有限正文及元数据，不取向量，超限整次失败。
+
+| lexical资源上限 | 值 |
+| --- | --- |
+| 切片数/每片字符/总字符 | 2000 / 8000 / 2,000,000 |
+| 每片token/总token | 2048 / 200,000 |
+| 查询字符/token | 2000 / 256 |
+| Top-K/排除文档数 | 0–100 / 1000 |
+
+KeywordLimits只可收紧。RRF按chunk ID去重，分支内同分共享竞争名次，默认k=60、可配1–10000；同融合分按UUID稳定排序。融合上限为两路预算之和，最大200；cosine_score、bm25_score、rrf_score与两路名次分别保留。身份冲突、分支内重复ID、非有限分拒绝合并，失败不返回部分分支。
+
+### 可选重排
+
+RERANKER_BACKEND默认disabled，不创建HTTP客户端；只接受siliconflow与hybrid组合，使用SILICONFLOW_API_KEY，model/base_url控制模型与发送目的地。未知后端、fake、dense+启用、缺配置明确失败；FakeReranker只供测试注入，不按词项交集伪装模型。
+
+重排在完整并集上重新核验当前课、索引、排除、存在性与文档/页身份，只读取正文前1200字符。空前缀跳过；最多64候选、查询2000字符，超过候选上限整次失败，不只取前64。请求top_n等于全部发送候选数，return_documents=false；按严格整数index和有限relevance_score验证完整覆盖、无重复/越界/遗漏，按输入位置映回ID。上游回显正文不用作来源。
+
+每次单POST，以with关闭客户端；无自动重试、重定向或环境代理。复用UPSTREAM_TIMEOUT_SECONDS作为HTTPX各IO阶段超时，不承诺总时长。rerank_score独立保存，按分数降序，同分保留RRF顺序；它不是答案支持概率。
+
+### 最终准入与引用
+
+retrieve_chunks仅返回最终SearchHit。hybrid在完整候选（可选重排之后）先检查已有dense余弦分与该空间min_score，再按当前顺序取最终Top-K。无余弦/低余弦的keyword-only支持片段也仍会被拒绝，等待经验证的充分性选择；不能仅凭词项交集、RRF或重排高分放行。SearchHit.score只承载余弦，不覆盖为其他分数。默认dense不调用关键词或重排。
+
+assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。只有仍存在、正文非空且实际装入预算的块才登记ID；不以摘要兜底。每片正文strip后最多1200字符，来源块累计6000字符（含Source标头和块内换行，不含说明/问题/块间分隔），首个超预算块停止装配。全部不可用不调用LLM；生成后仅登记同一白名单中的引用。问答 CitationOut.snippet 改为该次生成中对应正文的完整快照（最多1200字符），不再使用检索摘要；搜索 API 摘要合同不变。只返回被引用来源；卡片不表示全部上下文，也不回读或补足裁剪尾部。
+
+系统提示和上下文要求只回答正文支持内容，不足时仅输出 NO_EVIDENCE；精确匹配该信号（忽略首尾空白）、空回答或无合法引用均保持现有 NO_EVIDENCE/answer=null/空引用。响应结构不变，generate_answer 保留 tuple 接口，问答路径使用同次生成结果中的正文快照。现有正则引用白名单是结构检查，不解析每个事实、引号/代码的语义，也不自动识别“相关但没答案”；Fake 负例是 scripted 拒答合同测试，不冒充语义模型。即使模型引用合法 ID，仍可能误答；未做额外计费判定调用。服务超时/失败维持原503/504与错误码，不归为知识不足；QueryLog.hit 仍为检索是否有证据，不再用来判断教学反馈的最终结果。
+
+评测recall_at_k仍统计最终证据文档覆盖，不冒充候选覆盖；元数据区分检索合同、重排开关/模型/端点哈希，并增加 generation_contract=r6-context-citations-refusal-v1，拒绝续跑旧生成合同 checkpoint。合法引用指标不等于人工支持评价；完整混合问答、真实拒答与事实质量仍未验收。
+
+<a id="chunk-source"></a>
+
+## 切分与来源
+
+逐页/幻灯片调用现成切分器，800字符容量、120最大重叠；MarkdownSplitter处理Markdown，其余TextSplitter处理抽取文本。实际重叠由结构决定；可容纳块优先保留，小章节可合并，超长代码/表格/段落仍会拆分，不保证围栏闭合或完整标题树。
+
+DOCX通过iter_inner_content保持顶层段落/表格顺序；块间空行、表格行换行、单元格制表符，保留空单元格位置。不还原Word物理分页、合并/嵌套表、图片/公式或布局。PDF/PPTX空单位可跳过但真实编号不重排。
+
+| 字段 | 当前含义 |
+| --- | --- |
+| Document.chunking_version | 成功入库后sts-0.33.0-char800-overlap120-r5-v1；资料列表/详情提供同名可空字段 |
+| Chunk.source_metadata | 可空JSON，含kind/unit_index/char_start/char_end/chunk_index/splitter，无路径/账号或正文副本 |
+| kind/unit_index | pdf_page或pptx_slide使用实际1-based页/幻灯片；markdown/plain_text/docx_text为抽取单位（当前1），不表示物理页 |
+| char_start/char_end | 清洗后当前单位内0-based半开Python Unicode字符范围，必须unit[start:end]==chunk.text；不是文件字节/屏幕坐标 |
+| chunk_index/splitter | 文档内0-based连续序号；markdown或text；重复正文直接使用上游偏移，不用find猜位置 |
+| Chunk.page | 新PDF/PPTX保留真实号；新DOCX/Markdown/纯文本为null；旧行不回写 |
+
+切片前移除Postgres不接受的NUL；抽取计数、嵌入输入、落库正文与范围针对同一清洗文本。0010只增加可空版本/JSON列，无回填、不触发重嵌入。旧行null不能冒充新算法；迁移和原子重入库要求见 [workflow](workflow.md)。
+
+<a id="ingest-recovery"></a>
+
+## 入库恢复
+
+任务pending→running→succeeded/failed；通过条件更新认领、分配唯一run_token。心跳/最终成功/失败必须匹配当前token，旧worker失去租约后不能覆盖状态或提交片段。EMBEDDING_BATCH_SIZE默认32、允许1–256；每批校验数量与1024维并刷新心跳，全部成功后才在同一事务替换片段/向量/来源/版本/质量计数并成功落库。失败回滚，保留旧完整索引。
+
+课内教师POST /courses/{course_id}/documents/{document_id}/retry，接受返回202；failed可立即重试，pending/running默认900秒后可恢复，活跃或succeeded返回409，学生403、跨课/不存在404。恢复撤销旧token；当前为进程内后台任务，不是持久队列，不自动恢复所有崩溃任务。抽取为空失败，偏短可成功并给质量提示，计数不等于抽取质量/事实评分。
+
+<a id="storage-lifecycle"></a>
+
+## 上传文件
+
+存储路径固定为 upload_dir/course_uuid/document_uuid/safe_filename，根/课程/资料/文件先resolve；文件名须等于basename，拒绝穿越、串课、越界或非文件读取。单资料删除限本课本资料目录，课程删除限该课程树，其他课程不受影响。
+
+GET /courses/{course_id}/documents/{document_id}/content先做Session/成员鉴权，再验证存储范围与文件存在；不公开挂载上传目录。PDF/Markdown/纯文本inline，PPTX/DOCX attachment；MIME白名单与nosniff，不承诺Office页内预览。PDF可使用可信页码附加#page=。
+
+上传先落盘后提交数据库，失败回滚并补偿刚写入文件；删除先提交数据库后清理文件。清理失败保留删除成功语义，记录storage_cleanup_failed的scope/对象ID/error_type，不记录正文或完整路径；当前需人工补偿，不在请求内无限重试。
+
+<a id="query-log-retention"></a>
+
+## 日志留存
+
+QueryLog含问题原文，仅用于课内描述性反馈；统计只读当前留存窗口，即使尚未物理清理也排除到期记录。QUERY_LOG_RETENTION_DAYS默认90（1–3650），QUERY_LOG_CLEANUP_BATCH_SIZE默认100（1–1000）。
+
+### 问答事件与统计口径（P4）
+
+0011增加可空 QueryLog.outcome/member_role_at_ask，无默认值/回填；旧 hit/error_code 不能证明曾有合法引用或历史课内角色。新问答在处理函数入口快照UTC时间和课内角色，以入口时间写 created_at，按最终结果写 outcome：
+
+| outcome | 含义 |
+| --- | --- |
+| cited_answer | 返回有合法上下文引用的回答，不等于事实正确或完全支持 |
+| no_evidence | 无证据、明确拒答或无合法引用；即使hit=true也可能发生 |
+| failure | 已捕获的检索/上游错误、超时或索引不兼容；不进入依据不足列表 |
+| null/未知值 | 历史或未知结果，不从旧字段推断为成功 |
+
+每个进入处理函数并成功提交日志的HTTP提问记一次，显式重试/相同问句各记一次，不去重、不表示人数；SDK内部重试不另记事件。401/403/422、依赖构造阶段的配置失败、未捕获异常/进程中断与数据库无法提交可能没有事件，因此记录数不是所有请求数或完整可用率分母。鉴权仍逐请求执行，失败不伪造事件，暂不新增通用事件中间件。统计不能证明客户端已收到回答。
+
+GET /courses/{course_id}/insights 保留 retention_days/frequent/no_evidence，新增 window_start/window_end/summary；可选 start_at/end_at 必须含时区，转UTC，实际范围为请求与[当前时间-留存天数,当前时间)交集。默认完整留存窗，左闭右开；无交集/倒置/无时区返回422。不会读到期或未来记录。页面本阶段只显示默认窗和刷新，时间选择留P6。
+
+按 member_role_at_ask=student 统计，无当前成员表或用户身份join，改角色/移出课程不重写历史；teacher单列排除，其余角色/null为未知角色，不进入学生结果或问句列表。只查询本课，访问者仍须当前课内教师。单条SQL直接复用case/count/max/group_by，同时得总量与列表，避免两次查询观察到不同提交；不读取非学生/未知事件的问句，也不返回用户标识。
+
+summary中 recorded_attempts = student_attempts + non_student_attempts + unknown_role_attempts；student_attempts = cited_answer + no_evidence + failure + unknown_outcome。knowledge_attempts = cited_answer + no_evidence；no_evidence_rate仅为 no_evidence/knowledge_attempts，分母0返回null，失败/未知不进入分母，不能称正确率或教学缺口率。frequent仅列有引用回答，no_evidence仅列依据不足，空规范化问句只计总量不入列表；失败不混入二者。旧记录可全部为未知，绝不使用当前角色补造新基线。新增列后真实目标库须先迁移0011；尚未实际应用。
+
+仅admin可POST /admin/query-logs/retention，先dry_run查看一批，再显式delete；按created_at,id处理最旧一批，has_more表示仍可继续。维护日志只写模式/数量/是否更多，不写提问/用户/Cookie/Session。当前库删除不能立即抹除外部备份；聚合、未来向量与缓存也须继承权限和留存。
+
+### 候选同义问题组（P5）
+
+POST /courses/{course_id}/insights/groups仅当前课内教师可用，与普通统计GET分离。QUESTION_GROUPING_BACKEND默认disabled，POST返回QUESTION_GROUPING_DISABLED/503；显式embedding仅复用已配置SiliconFlow嵌入，fake/未知后端不得冒充语义。请求必填min_similarity（0<值<=1，有限），可选含时区start_at/end_at与P4共用留存裁剪/左闭右开合同，并须confirm_external_processing=true确认本次外发问句。未确认/无效窗口为422；普通统计无嵌入调用。真实调用仍需当次数据/费用授权，本轮未调用。
+
+单SQL只筛本课/本窗口/member_role_at_ask=student，只有cited_answer/no_evidence的非空问句可入组；学生失败/未知/空问句计excluded_attempts，其余角色与课外/窗外不在该样本域。折叠空白但不做200字符截断、词项强合并或问题改写，重复问句合并计数，保留两种最终结果和最近时间。按全文排序保证输入稳定，不连接身份表、不返回用户ID，不写回原日志、向量、缓存或持久组表；无历史回填或新迁移。
+
+最多200个不同规范化问句、每句2000字符、总计200000字符；SQL原始聚合读取最多405行，触顶或其他超限整次QUESTION_GROUPING_LIMIT/413，缩窗重试，不静默抽样或返回部分组。0/1种问句不嵌入；大于1种一次调用现有embed适配（SDK超时/重试沿用现行配置），请求依赖finally关闭新增客户端，重复POST可能重复计费。服务错误/超时保持503/504，无词项回退。
+
+向量数量/矩形维度/有限实数/非零校验，维度最多4096，归一化避免巨大幅值溢出；无效输出QUESTION_GROUPING_FAILED/503。直接调用SciPy余弦距离与complete-linkage/fcluster，按请求阈值裁剪；complete约束组内最差成对相似度，不使用单链接传递链合并。高嵌入相似度依然可能混淆同主题不同任务，真实误合并/误拆分尚未验收，不把它当回答依据、掌握度或确定知识点。
+
+响应包含grouping_contract=p5-complete-cosine-v1、模型/索引身份、实际窗口、阈值、threshold_calibrated=false和embedding_called。eligible_attempts为入组事件数，distinct_questions为不同全文问句数，grouped_questions/singleton_questions及singleton_attempts明确未成组数量；所有组count之和等于eligible_attempts。kind=candidate表示至少两种表达，singleton保留单例（即使该问句重复多次）；成员提供计数、cited_answer/no_evidence、与代表的余弦相似度及最近时间，组提供min_pair_similarity（单例null）。代表从真实成员选组内无频次权重的距离和最小者，同分按全文排序，不由LLM生成名称。相似度不是同义概率；阈值没有已验证默认值，真实开发集题对校准与人工复核后才能评价效果。P5只交付后端候选合同，未改页面。
+
+## 异常与恢复
+
+当前真实向量为BAAI/bge-m3/1024，生成模板deepseek-flash，显式关闭thinking；这些配置不代表供应商已连通或效果已验收。未知/缺key/空模型/非法URL等真实配置不静默转Fake。/health仅进程，/ready仅SELECT 1，/runtime仅安全本地状态；含reranking disabled/configured/unavailable，connectivity/migration/index仍not_checked，不发计费探测。
+
+| 场景 | 当前处理 |
+| --- | --- |
+| 配置/上游/数据库不可用 | MODEL_NOT_CONFIGURED、UPSTREAM_UNAVAILABLE、DATABASE_UNAVAILABLE为503；UPSTREAM_TIMEOUT为504 |
+| 关键词/融合/策略失败 | KEYWORD_LIMIT、RETRIEVAL_FAILED、RETRIEVAL_STRATEGY为503，不改跑其他策略 |
+| 重排失败/超时 | RERANK_FAILED 503 / RERANK_TIMEOUT 504；不返回部分排序或调用生成，问答记系统失败 |
+| 不兼容索引 | EMBEDDING_MISMATCH，要求受控重新入库，不混空间 |
+| 无证据或无合法引用 | NO_EVIDENCE，不记作上游故障 |
+| 未知入库异常 | INGEST_FAILED，保留安全解析原因；不回显原始错误或凭据 |
+
+前端按安全白名单/HTTP类别显示文案；未列入白名单的新错误可能仍显示通用503提示。问题草稿仅模块内存、按账号/课程隔离；同账号重新登录可恢复，换账号/退出/整页刷新关闭丢弃，不落localStorage。某资料404不撤整课能力，课程自身拒绝才清理课程视图。
+
+上传结果不确定时先刷新列表核对，再显式重传；同名阻止该重传入口，已接收入库但列表失败不冒充上传失败。按method/path与表单状态阻止在途重复写，不提供跨页面/重试的服务端幂等保证。通用等待90秒、问答300秒；等待取消不保证后端/计费停止，轮询不重叠，迟到响应不重启已离开的视图。
+
+## 当前待验证边界
+
+真实库迁移/pgvector执行与性能、真实供应商可用性/费用、改进后课程效果和拒答校准、关键词独有证据的充分性、复杂资料解析及独立试用均需重新验证。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。

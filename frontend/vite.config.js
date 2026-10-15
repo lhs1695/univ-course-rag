@@ -7,7 +7,14 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/auth": { target: "http://127.0.0.1:8000", changeOrigin: true },
-      "/admin": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/admin": {
+        target: "http://127.0.0.1:8000", changeOrigin: true,
+        bypass(req) {
+          if (req.method === "GET" && String(req.headers.accept || "").includes("text/html")) {
+            return "/index.html";
+          }
+        },
+      },
       "/courses": {
         target: "http://127.0.0.1:8000",
         changeOrigin: true,
@@ -23,6 +30,8 @@ export default defineConfig({
         },
       },
       "/health": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/ready": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/runtime": { target: "http://127.0.0.1:8000", changeOrigin: true },
     },
   },
 });

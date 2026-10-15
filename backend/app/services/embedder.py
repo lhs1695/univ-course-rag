@@ -5,9 +5,11 @@ import math
 import re
 from typing import Protocol
 
-from app.config import Settings, get_settings
+from openai import APITimeoutError
+
+from app.config import Settings, get_settings, require_provider_configuration
 from app.models.document import EMBEDDING_DIM
-from app.services.upstream import UpstreamUnavailable
+from app.services.upstream import UpstreamTimeout, UpstreamUnavailable
 
 # Token / CJK-bigram hashing so shared terms sit closer than unrelated text.
 # Exact-string SHA was too jumpy for retrieval tests. Same model for ingest and query.
@@ -85,6 +87,9 @@ class SiliconFlowEmbedder:
             max_retries=max_retries,
         )
 
+    def close(self) -> None:
+        self._client.close()
+
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
@@ -92,13 +97,16 @@ class SiliconFlowEmbedder:
             response = self._client.embeddings.create(model=self.model_name, input=texts)
             by_index = {item.index: item.embedding for item in response.data}
             return [list(by_index[i]) for i in range(len(texts))]
+        except APITimeoutError:
+            raise UpstreamTimeout() from None
         except Exception:  # noqa: BLE001 - provider client exception hierarchy is external.
             raise UpstreamUnavailable() from None
 
 
 def build_embedder(settings: Settings | None = None) -> Embedder:
     settings = settings or get_settings()
-    if settings.embedder_backend == "siliconflow" and settings.siliconflow_api_key:
+    require_provider_configuration(settings, "embedding")
+    if settings.embedder_backend == "siliconflow":
         return SiliconFlowEmbedder(
             api_key=settings.siliconflow_api_key,
             base_url=settings.embedding_base_url,

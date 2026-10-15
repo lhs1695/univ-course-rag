@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, Path, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
+from app.api.schemas import CourseCapabilities
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.models.course import Course, CourseMember, CourseMemberRole
@@ -18,6 +19,18 @@ class CourseAccess:
     course: Course
     member: CourseMember
     user: User
+
+    @property
+    def is_teacher(self) -> bool:
+        return self.member.role == CourseMemberRole.teacher.value
+
+    @property
+    def capabilities(self) -> CourseCapabilities:
+        return CourseCapabilities(
+            can_manage_documents=self.is_teacher,
+            can_manage_members=self.is_teacher,
+            can_view_insights=self.is_teacher,
+        )
 
 
 def get_current_user(
@@ -72,6 +85,6 @@ def require_course_member(
 def require_course_teacher(
     access: Annotated[CourseAccess, Depends(require_course_member)],
 ) -> CourseAccess:
-    if access.member.role != CourseMemberRole.teacher.value:
+    if not access.is_teacher:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Course teacher only")
     return access
