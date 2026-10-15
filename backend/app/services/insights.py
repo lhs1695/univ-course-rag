@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import and_, case, func, select
@@ -23,6 +23,35 @@ def _utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
+def _utc_day(column, dialect: str):
+    # One expression is reused in SELECT and GROUP BY so list totals and the
+    # daily series come from the same statement.
+    if dialect == "postgresql":
+        return func.date_trunc("day", func.timezone("UTC", column))
+    if dialect == "sqlite":
+        return func.substr(column, 1, 10)
+    raise RuntimeError(f"Unsupported insights day bucket dialect: {dialect}")
+
+
+def _bucket_start(value: datetime | str) -> datetime:
+    if isinstance(value, str):
+        year, month, day = (int(part) for part in value[:10].split("-"))
+        return datetime(year, month, day, tzinfo=UTC)
+    moment = _utc(value)
+    return datetime(moment.year, moment.month, moment.day, tzinfo=UTC)
+
+
+def _utc_days(window_start: datetime, window_end: datetime):
+    start = _utc(window_start)
+    end = _utc(window_end)
+    day = datetime(start.year, start.month, start.day, tzinfo=UTC)
+    last_instant = end - timedelta(microseconds=1)
+    last = datetime(last_instant.year, last_instant.month, last_instant.day, tzinfo=UTC)
+    while day <= last:
+        yield day
+        day += timedelta(days=1)
+
+
 def aggregate_course_insights(
     db: DbSession,
     course_id: UUID,
@@ -41,13 +70,14 @@ def aggregate_course_insights(
     ), QueryLog.query), else_=None)
     # One statement keeps totals and lists consistent if another attempt commits meanwhile.
     # Do not load identities or non-student/unknown question text.
+    bucket = _utc_day(QueryLog.created_at, db.get_bind().dialect.name)
     counts = db.execute(
         select(
-            QueryLog.member_role_at_ask, QueryLog.outcome, listed_query,
+            QueryLog.member_role_at_ask, QueryLog.outcome, listed_query, bucket,
             func.count(), func.max(QueryLog.created_at),
         )
         .where(*scope)
-        .group_by(QueryLog.member_role_at_ask, QueryLog.outcome, listed_query)
+        .group_by(QueryLog.member_role_at_ask, QueryLog.outcome, listed_query, bucket)
     ).all()
     summary = dict.fromkeys((
         "recorded_attempts", "student_attempts", "cited_answer", "no_evidence", "failure",
@@ -55,12 +85,16 @@ def aggregate_course_insights(
     ), 0)
     frequent_counts: dict[str, int] = defaultdict(int)
     no_evidence_groups: dict[str, dict] = {}
-    for role, outcome, query, count, last_at in counts:
+    trend_counts: dict[datetime, dict[str, int]] = defaultdict(
+        lambda: dict.fromkeys(("cited_answer", "no_evidence", "failure", "unknown_outcome"), 0)
+    )
+    for role, outcome, query, day_value, count, last_at in counts:
         summary["recorded_attempts"] += count
         if role == CourseMemberRole.student.value:
             summary["student_attempts"] += count
-            key = outcome if outcome in QueryOutcome else "unknown_outcome"
-            summary[key] += count
+            outcome_key = outcome if outcome in QueryOutcome else "unknown_outcome"
+            summary[outcome_key] += count
+            trend_counts[_bucket_start(day_value)][outcome_key] += count
         elif role == CourseMemberRole.teacher.value:
             summary["non_student_attempts"] += count
         else:
@@ -97,10 +131,16 @@ def aggregate_course_insights(
         for query, group in no_evidence_groups.items()
     ]
     no_evidence.sort(key=lambda row: (-row["last_asked_at"].timestamp(), -row["count"], row["query"]))
+    covered = set(_utc_days(window_start, window_end))
+    trend = [
+        {"bucket_start": day, **trend_counts[day]}
+        for day in sorted(covered | set(trend_counts))
+    ]
     return {
         "window_start": window_start,
         "window_end": window_end,
         "summary": summary,
+        "trend": trend,
         "frequent": frequent,
         "no_evidence": no_evidence,
     }

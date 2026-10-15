@@ -344,3 +344,59 @@ def test_requested_window_is_clipped_to_retention_and_now(client, db, monkeypatc
     assert now <= end <= datetime.now(UTC)
     assert body["summary"]["recorded_attempts"] == 1
     assert body["frequent"] == [{"query": "保留", "count": 1}]
+
+
+def _utc_days(start: datetime, end: datetime):
+    day = datetime(start.year, start.month, start.day, tzinfo=UTC)
+    last = end - timedelta(microseconds=1)
+    last_day = datetime(last.year, last.month, last.day, tzinfo=UTC)
+    days = []
+    while day <= last_day:
+        days.append(day)
+        day += timedelta(days=1)
+    return days
+
+
+def test_trend_buckets_student_outcomes_on_utc_days(client, db) -> None:
+    teacher = add_user(db, "trend", "pass", UserRole.teacher)
+    course = add_course(db, "Trend Course")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    now = datetime.now(UTC)
+    start = now - timedelta(hours=50)
+    cited_at = start
+    failure_at = start + timedelta(seconds=1)
+    unknown_at = start + timedelta(seconds=2)
+    for when, role, outcome, query in [
+        (cited_at, "student", "cited_answer", "学生有引用"),
+        (failure_at, "student", "failure", "学生失败"),
+        (unknown_at, "student", None, "学生未知"),
+        (start + timedelta(seconds=3), "teacher", "cited_answer", "教师不进趋势"),
+        (start + timedelta(seconds=4), None, "cited_answer", "未知角色不进趋势"),
+    ]:
+        _add_log(db, course_id=course.id, user_id=teacher.id, query=query, hit=True,
+                 error_code=None, created_at=when, role=role, outcome=outcome)
+    db.commit()
+    login_as(client, teacher.username, "pass")
+
+    body = client.get(f"/courses/{course.id}/insights", params={
+        "start_at": start.isoformat(), "end_at": now.isoformat(),
+    }).json()
+
+    window_start = datetime.fromisoformat(body["window_start"])
+    window_end = datetime.fromisoformat(body["window_end"])
+    buckets = [datetime.fromisoformat(row["bucket_start"]) for row in body["trend"]]
+    assert buckets == _utc_days(window_start, window_end)
+    assert buckets[0] == datetime(cited_at.year, cited_at.month, cited_at.day, tzinfo=UTC)
+    first = body["trend"][0]
+    assert first["cited_answer"] == 1
+    assert first["failure"] == 1
+    assert first["unknown_outcome"] == 1
+    assert first["no_evidence"] == 0
+    assert any(not any(row[key] for key in ("cited_answer", "no_evidence", "failure", "unknown_outcome"))
+               for row in body["trend"])
+    assert sum(sum(row[key] for key in ("cited_answer", "no_evidence", "failure", "unknown_outcome"))
+               for row in body["trend"]) == body["summary"]["student_attempts"] == 3
+    assert body["summary"]["non_student_attempts"] == 1
+    assert body["summary"]["unknown_role_attempts"] == 1
+    assert body["frequent"] == [{"query": "学生有引用", "count": 1}]
+    assert body["no_evidence"] == []

@@ -27,7 +27,7 @@
 
 回答保留“已返回回答·请核对证据”、依据不足、服务/索引失败三类显示，不新增“部分依据”或“完全支持”标签；当前没有经验证的逐主张支持判断。索引不兼容单独显示为异常，不提示成资料没有答案。引用合法只表示来源登记，不证明答案正确。
 
-教学反馈按最终事件结果和提问时课内角色计数，页面展示实际时间窗、样本量、分母、未知/排除数量与刷新失败；基础问句列表仍折叠空白并截断200字符，可能合并相同前缀，不是同义组。P5另提供默认关闭的后端候选分组入口，保留完整问句；看板接入、时间选择、趋势与主题评价留P6。聚合受课内教师权限、时间窗/留存与隐私约束，不建学生掌握度画像、不凭高频或依据不足断言教学缺失。
+教学反馈按最终事件结果和提问时课内角色计数。页面用已安装的 Element Plus 时间选择器提交可选窗口，并展示服务端返回的实际窗口、样本量、分母、失败/未知/非学生/角色未知与刷新失败。趋势是同一次统计里的学生 UTC 日计数，直接用 Chart.js 堆叠柱，空日为 0。基础问句列表仍折叠空白并截断 200 字符，可能合并相同前缀，不是同义组。候选分组仍是默认关闭的独立 POST：加载、刷新或改时间都不调用；教师须自行填写未校准阈值并勾选本次外发确认。候选、单例、排除量以及未启用/超限/失败分开显示，分组超限不能显示成上传文件过大。聚合受课内教师权限、时间窗/留存与隐私约束，不建学生掌握度画像，不凭高频、依据不足或候选相似度断言教学缺失或已验证同义。
 
 <a id="open-source-selection"></a>
 
@@ -38,7 +38,9 @@
 | 对象与版本 | 实际采用方式/来源 | 许可与本地工作 |
 | --- | --- | --- |
 | SciPy 1.18.1 / 现有 NumPy 2.5.4 | P5 直接调用 scipy.spatial.distance.pdist/squareform 与 scipy.cluster.hierarchy.linkage(method=complete)/fcluster(criterion=distance)；[官方API](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html)、[发行版](https://pypi.org/project/scipy/1.18.1/) | SciPy主体BSD-3-Clause，二进制捆绑许可随wheel保留，不推断全部依赖同许可。只安装二进制包，不下载权重；相较 scikit-learn 1.9.1（BSD-3-Clause，AgglomerativeClustering），直接SciPy只新增一个包，避免额外joblib/threadpoolctl。未复制算法；本地仅做课程/窗口/角色筛选、计数、向量校验/上限、代表问句与解释字段。嵌入直接复用现有SiliconFlow API适配（默认关闭的新POST入口），Fake仅注入合成语义向量，不使用词项哈希冒充同义。阈值请求必填、未校准，不称已验证同义；验收语义对/负例、链式误合并、单例/代表问句、权限/留存及失败不回退 |
-| SQLAlchemy 2.0.52 / Alembic 1.19.1 | P4 直接复用已有 select/func.count/group_by、UTC范围过滤与 op.add_column；本机元数据均为MIT，[聚合API](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#aggregate-functions-with-group-by-having) | 无新依赖；本地只定义最终结果、课内角色快照、分母与旧数据未知规则。两个可空列迁移不回填，兼容现有响应字段。独立 PostHog 事件/分析服务仍需上述课程口径与鉴权/留存适配并增加部署或外发数据边界，[官方自托管说明](https://posthog.com/docs/self-host)不推荐生产自托管；本项未安装/调用/复制平台源码，直接调用现有数据库组件总成本更低。验收角色变化、拒答/失败、重试、时间边界、旧记录与迁移；不做语义分组/趋势 |
+| SQLAlchemy 2.0.52 / Alembic 1.19.1 | P4 直接复用已有 select/func.count/group_by、UTC范围过滤与 op.add_column；本机元数据均为MIT，[聚合API](https://docs.sqlalchemy.org/en/20/tutorial/data_select.html#aggregate-functions-with-group-by-having) | 无新依赖；本地只定义最终结果、课内角色快照、分母与旧数据未知规则。两个可空列迁移不回填，兼容现有响应字段。独立 PostHog 事件/分析服务仍需上述课程口径与鉴权/留存适配并增加部署或外发数据边界，[官方自托管说明](https://posthog.com/docs/self-host)不推荐生产自托管；本项未安装/调用/复制平台源码，直接调用现有数据库组件总成本更低。验收角色变化、拒答/失败、重试、时间边界、旧记录与迁移 |
+| Chart.js 4.5.1 | P6 直接调用 tree-shake 入口 BarController、BarElement、CategoryScale、LinearScale、Legend、Tooltip 和 `new Chart`；[npm 发行版](https://www.npmjs.com/package/chart.js) 核对 4.5.1/MIT，固定 package 与 lock。随包安装 @kurkle/color 0.3.4/MIT，未复制源码 | 对比 Apache ECharts 6.1.0（Apache-2.0，发行包解压约 60MB，含地图和多图表平台）及 vue-echarts 8.3.2/MIT（还需 peer echarts ^6）；对比 uPlot 1.6.32/MIT（解压约 0.5MB，但堆叠分类图例要补更多本地坐标代码）；对比 vue-chartjs 5.3.4/MIT（额外包装层）。Element Plus 2.14.5 没有图表组件。本地只把同一次 GET 的 UTC 日计数交给堆叠柱，不在前端补零或改口径 |
+| Element Plus 2.14.5 DatePicker | 直接调用已安装的 el-date-picker `datetimerange` 与 shortcuts；lock 为 2.14.5/MIT，未升到核对时的 2.14.7。组件自带 dayjs 锁定 1.11.23/MIT，不另加日期库 | 时间筛选无新依赖。页面把选择转成带时区的 ISO，只在点击后 GET；服务端仍裁剪留存窗口。快捷项不是已校准的统计周期 |
 | markdown-it 15.0.2 | R6 直接调用 MarkdownIt/render 与 inline ruler；npm registry 核对版本/MIT，固定 package 与 lock。[上游安全规则](https://github.com/markdown-it/markdown-it/blob/master/docs/safety.md) | 关闭 HTML、自动链接及图片/普通链接导航，仅受控来源引用可定位；本地只做 Source UUID→卡片编号/焦点。新增7个npm包，无Python依赖/模型或算法复制。对比 Marked 18.1.1（registry/MIT，[官方说明](https://github.com/markedjs/marked#warning--markdown-sanitizing)要求另行清洗 HTML），当前无需任意 HTML，采用 markdown-it 上游禁用 HTML 方案，减少清洗配置与DOM测试依赖，未安装Marked/DOMPurify。现有平台引用引擎仍不能代替课程鉴权与实际正文预算，保留短小白名单适配。验收为恶意 Markdown/伪引用/代码引用及实际卡片点击，不宣称自动事实核验 |
 | jieba 0.42.1 | 直接调用搜索分词，HMM=False；[版本来源](https://pypi.org/project/jieba/0.42.1/) | MIT；本地做统一预处理、术语与资源适配，不改算法 |
 | rank-bm25 0.2.2 | 直接调用 BM25Okapi/get_scores；[版本来源](https://pypi.org/project/rank-bm25/0.2.2/) | Apache-2.0；预分词输入、范围与候选合同适配 |
@@ -212,7 +214,7 @@ QueryLog含问题原文，仅用于课内描述性反馈；统计只读当前留
 
 每个进入处理函数并成功提交日志的HTTP提问记一次，显式重试/相同问句各记一次，不去重、不表示人数；SDK内部重试不另记事件。401/403/422、依赖构造阶段的配置失败、未捕获异常/进程中断与数据库无法提交可能没有事件，因此记录数不是所有请求数或完整可用率分母。鉴权仍逐请求执行，失败不伪造事件，暂不新增通用事件中间件。统计不能证明客户端已收到回答。
 
-GET /courses/{course_id}/insights 保留 retention_days/frequent/no_evidence，新增 window_start/window_end/summary；可选 start_at/end_at 必须含时区，转UTC，实际范围为请求与[当前时间-留存天数,当前时间)交集。默认完整留存窗，左闭右开；无交集/倒置/无时区返回422。不会读到期或未来记录。页面本阶段只显示默认窗和刷新，时间选择留P6。
+GET /courses/{course_id}/insights 保留 retention_days/frequent/no_evidence，并返回 window_start/window_end/summary/trend；可选 start_at/end_at 必须含时区，转UTC，实际范围为请求与[当前时间-留存天数,当前时间)交集。默认完整留存窗，左闭右开；无交集/倒置/无时区返回422。不会读到期或未来记录。页面可提交开始（含）与结束（不含），并显示服务端裁剪后的窗口；筛选和刷新只调用本 GET。
 
 按 member_role_at_ask=student 统计，无当前成员表或用户身份join，改角色/移出课程不重写历史；teacher单列排除，其余角色/null为未知角色，不进入学生结果或问句列表。只查询本课，访问者仍须当前课内教师。单条SQL直接复用case/count/max/group_by，同时得总量与列表，避免两次查询观察到不同提交；不读取非学生/未知事件的问句，也不返回用户标识。
 
@@ -230,7 +232,19 @@ POST /courses/{course_id}/insights/groups仅当前课内教师可用，与普通
 
 向量数量/矩形维度/有限实数/非零校验，维度最多4096，归一化避免巨大幅值溢出；无效输出QUESTION_GROUPING_FAILED/503。直接调用SciPy余弦距离与complete-linkage/fcluster，按请求阈值裁剪；complete约束组内最差成对相似度，不使用单链接传递链合并。高嵌入相似度依然可能混淆同主题不同任务，真实误合并/误拆分尚未验收，不把它当回答依据、掌握度或确定知识点。
 
-响应包含grouping_contract=p5-complete-cosine-v1、模型/索引身份、实际窗口、阈值、threshold_calibrated=false和embedding_called。eligible_attempts为入组事件数，distinct_questions为不同全文问句数，grouped_questions/singleton_questions及singleton_attempts明确未成组数量；所有组count之和等于eligible_attempts。kind=candidate表示至少两种表达，singleton保留单例（即使该问句重复多次）；成员提供计数、cited_answer/no_evidence、与代表的余弦相似度及最近时间，组提供min_pair_similarity（单例null）。代表从真实成员选组内无频次权重的距离和最小者，同分按全文排序，不由LLM生成名称。相似度不是同义概率；阈值没有已验证默认值，真实开发集题对校准与人工复核后才能评价效果。P5只交付后端候选合同，未改页面。
+响应包含grouping_contract=p5-complete-cosine-v1、模型/索引身份、实际窗口、阈值、threshold_calibrated=false和embedding_called。eligible_attempts为入组事件数，distinct_questions为不同全文问句数，grouped_questions/singleton_questions及singleton_attempts明确未成组数量；所有组count之和等于eligible_attempts。kind=candidate表示至少两种表达，singleton保留单例（即使该问句重复多次）；成员提供计数、cited_answer/no_evidence、与代表的余弦相似度及最近时间，组提供min_pair_similarity（单例null）。代表从真实成员选组内无频次权重的距离和最小者，同分按全文排序，不由LLM生成名称。相似度不是同义概率；阈值没有已验证默认值，真实开发集题对校准与人工复核后才能评价效果。分组算法与 POST 合同由 P5 保持；页面接入见下文，统计请求不会自动调用该接口。
+
+<a id="p6-dashboard"></a>
+
+### 教师反馈看板（P6）
+
+trend 与 summary、问句列表来自同一条 SQL：按课内角色、最终结果、可列出的问句和 UTC 日分组。PostgreSQL 使用 `date_trunc('day', timezone('UTC', created_at))`；当前测试库是 SQLite，按已存 UTC 文本取日期。序列覆盖实际窗口中的每个 UTC 日，无事件记 0，不抽样、不丢事件。只累计 `member_role_at_ask=student` 的 cited_answer、no_evidence、failure、unknown_outcome，四项之和等于 student_attempts。教师和未知角色不进入趋势或问句列表。旧结果与旧角色保持未知，不回填，也不按当前成员改写。
+
+页面时间控件只填本地范围。点击「按此时间统计」后发送带时区的 start_at/end_at；「使用留存窗口」和首次打开不带这两个参数。返回的窗口、分母和列表仍遵守 P4。候选组 POST 复用最近一次已应用的同一对时间。刷新或更换统计窗口会清掉上一次分组和外发勾选，避免沿用另一个窗口的确认。
+
+分组按钮在阈值合法（有限、大于 0 且不超过 1）且勾选外发确认前保持禁用。QUESTION_GROUPING_DISABLED、QUESTION_GROUPING_FAILED、QUESTION_GROUPING_LIMIT 使用前端固定文案，不回显服务端 message。LIMIT 的 HTTP 413 文案要求缩小时间范围，与资料上传的 15 MB 413 分开。结果写明 threshold_calibrated 为 false、本次是否调用嵌入、可分组/排除次数，以及候选问句数和单例问句/次数。candidate 与 singleton 分表；代表问句和成员相似度沿用 P5 字段，不改写成知识点名称、教学缺口或掌握度。
+
+没有新迁移、分组缓存或自动外发。真实 Postgres 的按日表达式、真实阈值和语义效果尚未在目标库验收。
 
 ## 异常与恢复
 
@@ -251,4 +265,4 @@ POST /courses/{course_id}/insights/groups仅当前课内教师可用，与普通
 
 ## 当前待验证边界
 
-真实库迁移/pgvector执行与性能、真实供应商可用性/费用、改进后课程效果和拒答校准、关键词独有证据的充分性、复杂资料解析及独立试用均需重新验证。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
+真实库迁移/pgvector执行与性能、真实供应商可用性/费用、改进后课程效果和拒答校准、关键词独有证据的充分性、复杂资料解析及独立试用均需重新验证。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。

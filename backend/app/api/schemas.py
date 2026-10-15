@@ -140,11 +140,20 @@ class InsightsSummary(BaseModel):
     no_evidence_rate: float | None
 
 
+class InsightsTrendPoint(BaseModel):
+    bucket_start: datetime
+    cited_answer: int
+    no_evidence: int
+    failure: int
+    unknown_outcome: int
+
+
 class InsightsResponse(BaseModel):
     retention_days: int
     window_start: datetime
     window_end: datetime
     summary: InsightsSummary
+    trend: list[InsightsTrendPoint]
     frequent: list[FrequentQuestionOut]
     no_evidence: list[NoEvidenceQuestionOut]
 

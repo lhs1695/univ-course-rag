@@ -2,32 +2,32 @@
 
 更新：2026-10-15。旧阶段结果和测试流水已清理。中期汇报采用改进版本的新数据；当前没有可直接沿用的新版真实效果基线。结果登记见 [evaluation-results](evaluation-results.md)，操作规则见 [workflow](workflow.md)。
 
-<a id="p5-check"></a>
+<a id="p6-check"></a>
 
-## 最近一次实现检查：P5（2026-10-15）
+## 最近一次实现检查：P6（2026-10-15）
 
-- backend/.venv/Scripts/python.exe -m pytest backend/tests/test_question_groups.py backend/tests/test_insights.py backend/tests/test_query_log_retention.py backend/tests/test_courses.py backend/tests/test_configuration.py -m "not integration and not postgres"：84 passed。backend/.venv/Scripts/python.exe -m ruff check 通过；独立临时目录、Fake/SQLite、dotenv禁用，分组依赖默认注入None，不发真实请求。
-- 合成向量覆盖：不同表达合组、同主题不同任务/无关问句留单例、complete-linkage阻止传递链、嵌入漏识别同义时明确保留未分组、代表为实际medoid且不随重复次数偏移、解释计数与最低相似度、全文差异不因200字符展示键丢失。合成预设向量只验证合同，不是模型同义质量评价。
-- 验证课/窗口/角色/留存隔离、失败/未知排除、0/1样本不调用模型、默认关闭、阈值/外发确认、401/403及撤权、资源超限在调用前拒绝、坏向量/超时无部分组和词项回退；请求结束/错误时释放客户端。基础统计/权限/留存/供应商Fake合同回归通过。
-- 项目虚拟环境安装唯一新增依赖SciPy 1.18.1二进制wheel，与NumPy2.5.4兼容，pip check通过；完整捆绑声明保留于发行包LICENSE.txt。未下载权重、安装语义平台或执行真实API。
-- 本项只改后端与配置/文档，不改UI，未运行前端构建/浏览器、启动服务或数据库。文档六份、引用/锚点与 git diff --check核对；无.env/真资料读取、提交或部署。真实阈值、语义质量与供应商批量行为仍待验。
+- backend/.venv/Scripts/python.exe -m pytest backend/tests/test_insights.py backend/tests/test_question_groups.py backend/tests/test_ask.py -m "not integration and not postgres"：95 passed。backend/.venv/Scripts/python.exe -m ruff check 通过。SQLite/Fake，未启动目标库；趋势断言覆盖学生 UTC 日、失败/未知、教师与未知角色排除、空日为 0，以及四项合计等于 student_attempts。
+- node --test frontend/tests/insightTrend.test.mjs frontend/tests/recovery.test.mjs：11 passed。UTC 日标签不随本地时区改写；QUESTION_GROUPING_LIMIT 的 413 要求缩小时间范围，上传 413 仍是 15 MB 文案，两者都不回显原始响应。
+- frontend npm run build 通过（Vite 7.3.6）。新增 Chart.js 后主包仍超过 500 kB 的既有警告，构建成功。
+- 浏览器使用 Vite http://localhost:5173 ，接口由合成响应代替，未连接数据库或云模型。实际点击「最近 7 天」「按此时间统计」「使用留存窗口」「刷新统计」、阈值输入、外发确认、生成候选组和成员展开。筛选 GET 带 start_at/end_at 且不 POST；恢复留存窗口的 GET 不带时间参数，并清除外发勾选、不 POST。确认前按钮禁用；POST 带已应用窗口、阈值和 confirm_external_processing。页面显示失败/未知、未校准、未调用嵌入、候选与单例、排除量。413 分组上限不显示 15 MB 或原始 message。浏览器把该 413 记为资源加载错误，页面文案仍是缩小时间范围。
+- 未读 .env 或真资料，无模型调用、迁移、提交或部署。此前 P5 的 84 项通过不是本项结果，也不能证明分组效果。真实阈值、语义质量和 Postgres 按日 SQL 仍待验。
 
 <a id="product-acceptance"></a>
 
 ## 当前验收范围
 
-已有Fake/合成合同测试可用于回归，本次 P5 检查见上文。中期前按实际diff和冻结范围重新验证，不能将局部通过数当整个产品或真实效果证明。
+已有Fake/合成合同测试可用于回归，本次 P6 检查见上文。中期前按实际diff和冻结范围重新验证，不能将局部通过数当整个产品或真实效果证明。
 
 | 范围 | 直接检查入口/要点 |
 | --- | --- |
 | 解析/切分/来源 | test_parse.py、test_chunk.py、test_source_metadata_migration.py、test_ingest.py；字符范围、单位隔离、失败保留/成功替换 |
 | 检索/重排 | test_keyword.py、test_fusion.py、test_rerank.py、test_retrieve.py；完整候选、课程/索引/排除、评分隔离、失败不回落 |
 | 回答/评测 | test_ask.py、test_eval.py；实际上下文、合法引用、拒答/失败、checkpoint配置隔离 |
-| 反馈事件/统计 | test_ask.py、test_insights.py、test_query_outcome_migration.py；结果/角色快照、UTC窗口、分母/重试/未知、历史成员变化、隔离迁移 |
-| 候选问题组 | test_question_groups.py；合成向量/完全链接、单例/medoid/计数解释、权限/窗口/上限/错误/依赖关闭；真实题对另做人工误合并/误拆分评价 |
+| 反馈事件/统计 | test_ask.py、test_insights.py、test_query_outcome_migration.py；结果/角色快照、UTC窗口、分母/重试/未知、UTC日趋势与学生合计、历史成员变化、隔离迁移 |
+| 候选问题组 | test_question_groups.py；合成向量/完全链接、单例/medoid/计数解释、权限/窗口/上限/错误/依赖关闭。页面不自动 POST；分组 413 与上传 413 的文案分开。真实题对另做人工误合并/误拆分评价 |
 | 权限/原文件/留存 | test_auth.py、test_courses.py、test_storage.py、test_insights.py、test_query_log_retention.py；按实际改动选取 |
 | 配置/就绪 | test_configuration.py、test_health.py；缺配置不转Fake、状态不冒充连通、错误脱敏 |
-| UI | frontend npm run build；相关前端测试与新增控件实际点击；不重复pytest已覆盖的行为 |
+| UI | frontend npm run build；相关前端测试与新增控件实际点击。教师反馈包括时间筛选、趋势、待核对问句和需确认的候选组；不重复pytest已覆盖的行为 |
 
 所有pytest在仓库根使用backend/.venv；排除可选云/Postgres标记的离线示例：
 

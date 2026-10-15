@@ -13,6 +13,9 @@ const serviceMessages = {
   DATABASE_UNAVAILABLE: "数据库暂时不可用，请稍后重试。",
   UPSTREAM_UNAVAILABLE: "上游 AI 服务暂时不可用，请稍后重试。",
   UPSTREAM_TIMEOUT: "上游 AI 服务响应超时，请稍后显式重试。",
+  QUESTION_GROUPING_DISABLED: "问题语义分组尚未启用。基础统计仍可查看；这次没有把问句发到嵌入服务。",
+  QUESTION_GROUPING_FAILED: "候选分组没有完成，没有可展示的分组结果。请稍后重试。",
+  QUESTION_GROUPING_LIMIT: "本次窗口内的问句数量或文本超出分组上限，请缩小时间范围后重试。",
 };
 const knownDetails = {
   "Invalid credentials": "用户名或密码不正确，请重新输入。",
@@ -25,6 +28,8 @@ const knownDetails = {
   "Ingest job is missing": "入库任务不存在，请联系管理员核对。",
   "Upload storage unavailable": "上传存储不可用，请联系管理员检查磁盘和目录权限。",
   "empty file": "文件为空，请选择有内容的文件。",
+  "Time window must overlap retained history": "所选时间与当前可统计的留存窗口没有交集，或开始时刻不早于结束时刻。",
+  "Explicit external processing confirmation required": "需要先确认本次会把问句原文发送到已配置的嵌入服务。",
 };
 function responseError(status, body) {
   const code = body?.error_code;

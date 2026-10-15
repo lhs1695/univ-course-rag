@@ -19,6 +19,27 @@ test('HTTP errors use safe categories and never display arbitrary server details
   await assert.rejects(api('/test'), error => error.code === 'MODEL_NOT_CONFIGURED' && !error.message.includes('raw-secret'));
 });
 
+test('question grouping limit is not reported as an oversized upload', async () => {
+  globalThis.fetch = async () => reply({ error_code: 'QUESTION_GROUPING_LIMIT', message: 'raw-provider-detail' }, 413);
+  await assert.rejects(
+    api('/courses/course-one/insights/groups', { method: 'POST', json: { min_similarity: 0.5 } }),
+    error => error.code === 'QUESTION_GROUPING_LIMIT'
+      && error.message.includes('缩小时间范围')
+      && !error.message.includes('15 MB')
+      && !error.message.includes('raw-provider'),
+  );
+  globalThis.fetch = async () => reply({ detail: 'stored-path' }, 413);
+  await assert.rejects(
+    api('/courses/course-one/documents', { method: 'POST' }),
+    error => error.message.includes('15 MB') && !error.message.includes('stored-path'),
+  );
+  globalThis.fetch = async () => reply({ error_code: 'QUESTION_GROUPING_DISABLED', message: 'raw' }, 503);
+  await assert.rejects(
+    api('/courses/course-one/insights/groups', { method: 'POST', json: {} }),
+    error => error.code === 'QUESTION_GROUPING_DISABLED' && error.message.includes('尚未启用') && !error.message.includes('raw'),
+  );
+});
+
 test('network failure and request timeout are distinct', async () => {
   globalThis.fetch = async () => { throw new TypeError('raw network details'); };
   await assert.rejects(api('/test'), error => error.code === 'NETWORK_ERROR' && error.status === 0);

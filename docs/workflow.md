@@ -71,7 +71,7 @@ frontend 使用 npm ci（新锁文件环境）和 npm run dev；正常运行不�
 | 向量 | EMBEDDER_BACKEND、EMBEDDING_MODEL、EMBEDDING_BASE_URL、SILICONFLOW_API_KEY；索引身份必须兼容 |
 | 生成 | LLM_BACKEND、DEEPSEEK_MODEL、DEEPSEEK_BASE_URL、DEEPSEEK_API_KEY；显式选择 Fake 或真实，不缺配置回落 |
 | 重排 | RERANKER_BACKEND 默认 disabled；siliconflow 只与 hybrid 组合，使用现有 SiliconFlow key；model/base_url 决定模型与发送目的地 |
-| 候选问题组 | QUESTION_GROUPING_BACKEND默认disabled；embedding仅复用已配置SiliconFlow嵌入；独立POST须明确阈值和本次外发确认，普通GET统计不调用模型，不使用Fake词项哈希作语义 |
+| 候选问题组 | QUESTION_GROUPING_BACKEND默认disabled；embedding仅复用已配置SiliconFlow嵌入；独立POST须明确阈值和本次外发确认。页面加载、刷新和时间筛选只请求GET；教师填写阈值并勾选确认后才POST。普通统计不调用模型，不使用Fake词项哈希作语义 |
 | Session | HTTP-only session_id 与服务端 Session；本机 HTTP 的 Secure Cookie 配置须相容 |
 | 资源 | 上游超时/有限 SDK 重试、嵌入批次、解析与日志留存上限；具体合同见 engineering |
 
