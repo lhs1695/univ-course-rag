@@ -7,7 +7,9 @@ from zipfile import BadZipFile, ZipFile
 from app.config import Settings
 from app.services.docling_adapter import (
     DoclingAdapterError,
+    ParseQualityReport,
     PdfConverter,
+    build_parse_quality_report,
     flatten_pages,
     parse_pdf_document,
 )
@@ -54,17 +56,38 @@ def parse_document(
     pdf_converter: PdfConverter | None = None,
 ) -> list[tuple[int | None, str]]:
     """Return (page, text) pairs. Page is 1-based for PDF/PPTX, 1 otherwise."""
+    pages, _quality = parse_document_with_quality(
+        filename, data, limits=limits, pdf_converter=pdf_converter,
+    )
+    return pages
+
+
+def parse_document_with_quality(
+    filename: str,
+    data: bytes,
+    *,
+    limits: ParseLimits = DEFAULT_PARSE_LIMITS,
+    pdf_converter: PdfConverter | None = None,
+) -> tuple[list[tuple[int | None, str]], ParseQualityReport | None]:
+    """PDF quality is returned for inspection; ingest must gate on its status."""
     name = filename.lower()
     if name.endswith(".pdf"):
-        return _parse_pdf(data, limits, pdf_converter)
+        try:
+            document = parse_pdf_document(
+                data, converter=pdf_converter, max_pages=limits.max_pages,
+                max_text_chars=limits.max_text_chars,
+            )
+        except DoclingAdapterError as exc:
+            raise ParseError(str(exc)) from exc
+        return flatten_pages(document), build_parse_quality_report(document)
     if name.endswith(".pptx"):
         _validate_ooxml_archive(data, limits)
-        return _parse_ppt(data, limits)
+        return _parse_ppt(data, limits), None
     if name.endswith(".docx"):
         _validate_ooxml_archive(data, limits)
-        return _parse_word(data, limits)
+        return _parse_word(data, limits), None
     if name.endswith((".md", ".markdown", ".txt")):
-        return _parse_text(data, limits)
+        return _parse_text(data, limits), None
     raise ParseError(_UNSUPPORTED)
 
 
@@ -78,23 +101,6 @@ def _parse_text(data: bytes, limits: ParseLimits) -> list[tuple[int | None, str]
     if not text:
         raise ParseError("no extractable text")
     return [(1, text)]
-
-
-def _parse_pdf(
-    data: bytes,
-    limits: ParseLimits,
-    converter: PdfConverter | None,
-) -> list[tuple[int | None, str]]:
-    try:
-        document = parse_pdf_document(
-            data,
-            converter=converter,
-            max_pages=limits.max_pages,
-            max_text_chars=limits.max_text_chars,
-        )
-    except DoclingAdapterError as exc:
-        raise ParseError(str(exc)) from exc
-    return flatten_pages(document)
 
 
 def _parse_ppt(data: bytes, limits: ParseLimits) -> list[tuple[int | None, str]]:

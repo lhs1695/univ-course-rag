@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import io
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from enum import StrEnum
 from importlib.metadata import PackageNotFoundError, version
+from time import perf_counter
 from typing import Protocol
 
 
@@ -62,6 +65,129 @@ class ParsedDocument:
     pages: tuple[ParsedPage, ...]
     parser_version: str
     status: ParseStatus
+    conversion_time_ms: float | None = None
+
+
+@dataclass(frozen=True)
+class PageQualityEntry:
+    number: int
+    status: ParseStatus
+    empty: bool
+    timing_ms: float | None
+    element_counts: dict[str, int]
+    method_counts: dict[str, int]
+    notes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ParseQualityReport:
+    status: ParseStatus
+    total_pages: int
+    pages: tuple[PageQualityEntry, ...]
+    success_pages: tuple[int, ...]
+    abnormal_pages: tuple[int, ...]
+    empty_pages: tuple[int, ...]
+    success_count: int
+    abnormal_count: int
+    empty_count: int
+    page_numbers_continuous: bool
+    missing_pages: tuple[int, ...]
+    element_counts: dict[str, int]
+    method_counts: dict[str, int]
+    parse_method_summary: tuple[str, ...]
+    parser_version: str
+    models: tuple[str, ...]
+    structured_hash: str
+    conversion_time_ms: float | None
+    notes: tuple[str, ...]
+
+
+def build_parse_quality_report(
+    document: ParsedDocument,
+    *,
+    page_timings_ms: dict[int, float] | None = None,
+) -> ParseQualityReport:
+    """Conservatively require usable text and valid provenance on every page."""
+    entries = []
+    element_counts = dict.fromkeys(ElementType, 0)
+    method_counts = dict.fromkeys(ExtractionMethod, 0)
+    models = set()
+    numbers = [page.number for page in document.pages]
+    missing = tuple(sorted(set(range(1, max(numbers, default=0) + 1)) - set(numbers)))
+    continuous = bool(numbers) and sorted(numbers) == list(range(1, len(numbers) + 1))
+    notes = []
+    if document.status is not ParseStatus.SUCCEEDED:
+        notes.append(f"converter_status:{document.status}")
+    if not continuous:
+        notes.append("invalid_page_sequence")
+    for page in document.pages:
+        counts = dict.fromkeys(ElementType, 0)
+        methods = dict.fromkeys(ExtractionMethod, 0)
+        page_notes = []
+        empty = not any(e.text and e.text.strip() for e in page.elements)
+        if empty:
+            page_notes.append("no_usable_text")
+        if page.number < 1 or numbers.count(page.number) > 1:
+            page_notes.append("invalid_page_number")
+        for element in page.elements:
+            counts[element.kind] += 1
+            methods[element.extraction_method] += 1
+            if element.model:
+                models.add(element.model)
+            if element.page != page.number:
+                page_notes.append("element_page_mismatch")
+            if element.status is not ParseStatus.SUCCEEDED:
+                page_notes.append(f"element_status:{element.status}")
+        if page.status is not ParseStatus.SUCCEEDED:
+            page_notes.append(f"page_status:{page.status}")
+        status = page.status
+        if page_notes and status is ParseStatus.SUCCEEDED:
+            status = ParseStatus.PARTIAL
+        entries.append(PageQualityEntry(
+            page.number, status, empty, (page_timings_ms or {}).get(page.number),
+            counts, methods, tuple(sorted(set(page_notes))),
+        ))
+        notes.extend(f"page:{page.number}:{note}" for note in sorted(set(page_notes)))
+        for kind, count in counts.items():
+            element_counts[kind] += count
+        for method, count in methods.items():
+            method_counts[method] += count
+    success = tuple(e.number for e in entries if e.status is ParseStatus.SUCCEEDED)
+    abnormal = tuple(e.number for e in entries if e.status is not ParseStatus.SUCCEEDED)
+    empty_pages = tuple(e.number for e in entries if e.empty)
+    status = document.status
+    if status is ParseStatus.SUCCEEDED and (abnormal or not continuous):
+        status = ParseStatus.PARTIAL
+    if not entries or all(e.empty for e in entries):
+        status = ParseStatus.FAILED
+    # v1 canonical UTF-8 JSON: sorted keys, compact separators, literal Unicode;
+    # preserve page/element reading order and all structural fields, exclude timing.
+    canonical = json.dumps(
+        {"schema": 1, "parser_version": document.parser_version,
+         "status": document.status, "pages": [asdict(p) for p in document.pages]},
+        sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False,
+    ).encode("utf-8")
+    return ParseQualityReport(
+        status=status,
+        total_pages=len(entries),
+        pages=tuple(entries),
+        success_pages=success,
+        abnormal_pages=abnormal,
+        empty_pages=empty_pages,
+        success_count=len(success),
+        abnormal_count=len(abnormal),
+        empty_count=len(empty_pages),
+        page_numbers_continuous=continuous,
+        missing_pages=missing,
+        element_counts=element_counts,
+        method_counts=method_counts,
+        parse_method_summary=tuple(sorted(m for m, count in method_counts.items() if count)),
+        parser_version=document.parser_version,
+        models=tuple(sorted(models)),
+        structured_hash=hashlib.sha256(canonical).hexdigest(),
+        conversion_time_ms=document.conversion_time_ms,
+        notes=tuple(notes),
+    )
 
 
 class PdfConverter(Protocol):
@@ -103,7 +229,9 @@ def parse_pdf_document(
 ) -> ParsedDocument:
     """Convert PDF bytes into the project model without exposing Docling types."""
     try:
+        started = perf_counter()
         result = (converter or _DoclingPdfConverter(max_pages=max_pages)).convert(data)
+        conversion_time_ms = (perf_counter() - started) * 1000
     except DoclingAdapterError:
         raise
     except Exception as exc:
@@ -143,6 +271,7 @@ def parse_pdf_document(
         pages=pages,
         parser_version=parser_version,
         status=result_status,
+        conversion_time_ms=conversion_time_ms,
     )
     text_size = sum(
         len(element.text or "")

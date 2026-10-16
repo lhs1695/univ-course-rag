@@ -3,7 +3,7 @@
 import io
 from types import SimpleNamespace
 
-from app.services.parse import parse_document
+from app.services.parse import parse_document, parse_document_with_quality
 from docx import Document
 from pptx import Presentation
 
@@ -49,6 +49,16 @@ def test_pdf_skips_empty_page_without_renumbering_later_sources() -> None:
     units = parse_document("synthetic.pdf", b"fake", pdf_converter=converter)
     assert [page for page, _text in units] == [1, 3]
     assert [text for _page, text in units] == ["First page", "Third page"]
+    quality_units, report = parse_document_with_quality(
+        "synthetic.pdf", b"fake", pdf_converter=converter,
+    )
+    assert quality_units == units
+    assert report.empty_pages == (2,)
+    assert report.status.value == "partial"
+
+
+def test_non_pdf_quality_is_optional() -> None:
+    assert parse_document_with_quality("note.md", b"hello") == ([(1, "hello")], None)
 
 
 def test_slides_skip_empty_slide_without_renumbering_later_sources() -> None:

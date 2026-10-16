@@ -183,9 +183,13 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 逐页/幻灯片调用现成切分器，800字符容量、120最大重叠；MarkdownSplitter处理Markdown，其余TextSplitter处理抽取文本。实际重叠由结构决定；可容纳块优先保留，小章节可合并，超长代码/表格/段落仍会拆分，不保证围栏闭合或完整标题树。
 
-现行解析：**PDF 经 Docling 薄适配器**（`docling_adapter.parse_pdf_document` → `flatten_pages`）进入原有 `(page, text)` 切分；PPTX 读文本框和表格；DOCX 经 `iter_inner_content` 保持顶层段落/表格顺序；Markdown/TXT 按 UTF-8。DOCX 仍不还原物理分页/复杂布局。PDF 侧 OCR/公式/表格/图元素已在适配层建模，但入库页级质量与 PARTIAL/FAILED 合同属 R7B-3。当前 `LOW_EXTRACTED_TEXT` 仍只比整份资料字符总量。即使生成模型支持图片，现有 `DeepSeekLLM.generate` 仍只发字符串。
+现行解析：**PDF 经 Docling 薄适配器**（`docling_adapter.parse_pdf_document` → `flatten_pages`）进入原有 `(page, text)` 切分；PPTX 读文本框和表格；DOCX 经 `iter_inner_content` 保持顶层段落/表格顺序；Markdown/TXT 按 UTF-8。DOCX 仍不还原物理分页/复杂布局。当前 `LOW_EXTRACTED_TEXT` 仍只比整份资料字符总量。即使生成模型支持图片，现有 `DeepSeekLLM.generate` 仍只发字符串。
 
-R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过；**R7B-2 已接入**：PDF 现行入口为 Docling 薄适配器，再 flatten 为原有 (page, text) 切分输入。Element 级字段在适配层已建模；入库侧页级质量/失败状态见 R7B-3。旧纯文字 PyMuPDF 路径不再作为 PDF 默认入口。步骤见 plan，门槛见 validation；代表页报告见 `corpus/local/r7b-1-docling-2026-10-16/COMPARISON.md`（忽略区）。
+**R7B-3 页级质量合同：** `parse_document_with_quality` 返回文本页与 PDF 的 `ParseQualityReport`（其他格式为 None）；旧 `parse_document` 保留派生文本接口。报告记录观测总页、成功/异常/空页号和计数（空页也计入异常）、从 1 起的页号连续性与缺页、逐页元素/方法计数、已知模型身份、parser version、稳定结构化 SHA-256 与安全异常说明。空页指无可用元素文本；空页、页号缺口、元素失败或来源页不符均保守降为 PARTIAL，不直接推断实际内容错误。真实转换仅记录实测整次 wall time，未测逐页耗时为 None，禁止均摊伪造。哈希采用代码注明的 v1 UTF-8 canonical JSON，含页/元素及 page/bbox、状态、parser/model，保留阅读顺序，排除耗时。ingest 在切分/嵌入前拒绝 PARTIAL/FAILED（`incomplete PDF parse`）；Docling FAILED 仍抛 `unreadable PDF`，不冒充 ingest succeeded，旧完整索引与质量计数保留。成功片段附加 parser_version/structured_hash，原页号仍由 unit_index/page 定位，不入库完整报告或解析 JSON。
+
+**R7B-3 复用决策：** 继续调用已固定的 Docling 2.140.0 官方 converter/status 与 Document→Page→Element 薄适配（MIT，模型许可另核），不复制解析算法。上游转换状态不能代替本项目空页/连续性/原子替换门槛；因此本地只补 dataclass 报告、标准库 JSON/SHA-256/计时与入库状态检查。无新依赖或迁移，成本限适配器和 Fake 回归；真实 17 PDF 核对留 R7B-4。
+
+R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过；**R7B-2/R7B-3 已接入**：PDF 现行入口为 Docling 薄适配器，经页级质量门槛再 flatten 为原有 (page, text) 切分输入。旧纯文字 PyMuPDF 路径不再作为 PDF 默认入口。步骤见 plan，门槛见 validation；代表页报告见 `corpus/local/r7b-1-docling-2026-10-16/COMPARISON.md`（忽略区）。
 
 ### R7B 课程资料来源合同
 
@@ -195,12 +199,12 @@ R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过；**R7B-
 
 ### 解析证据中间层（接入后更新）
 
-**现行（R7B-2）：** Docling 输出经薄适配进入 Document → Page → Element（Text/Formula/Table/Image/Chart），保留 page、bbox（可得时）、extraction_method、parser/model、status、asset_ref；结构化产物为事实源，Markdown/Chunk 为派生视图；PARTIAL/FAILED ≠ ingest succeeded。细节与验收子项见 [plan R7B-2/R7B-3](implementation-plan.md#docling-稳妥型开工计划)。切分/检索字段表在 flatten 之后仍适用；Element 级入库扩展见 R7B-3。
+**现行（R7B-3）：** Docling 输出经薄适配进入 Document → Page → Element（Text/Formula/Table/Image/Chart），保留 page、bbox（可得时）、extraction_method、parser/model、status、asset_ref；结构化产物为事实源，Markdown/Chunk 为派生视图；PARTIAL/FAILED ≠ ingest succeeded。细节与验收子项见 [plan R7B-2/R7B-3](implementation-plan.md#docling-稳妥型开工计划)。切分/检索字段表在 flatten 之后仍适用；Element/bbox 保留在结构化对象，不复制到每个片段。
 
 | 字段 | 当前含义 |
 | --- | --- |
 | Document.chunking_version | 成功入库后sts-0.33.0-char800-overlap120-r5-v1；资料列表/详情提供同名可空字段 |
-| Chunk.source_metadata | 可空JSON，含kind/unit_index/char_start/char_end/chunk_index/splitter，无路径/账号或正文副本 |
+| Chunk.source_metadata | 可空JSON，含kind/unit_index/char_start/char_end/chunk_index/splitter；新PDF另含parser_version/structured_hash，无路径/账号或正文副本 |
 | kind/unit_index | pdf_page或pptx_slide使用实际1-based页/幻灯片；markdown/plain_text/docx_text为抽取单位（当前1），不表示物理页 |
 | char_start/char_end | 清洗后当前单位内0-based半开Python Unicode字符范围，必须unit[start:end]==chunk.text；不是文件字节/屏幕坐标 |
 | chunk_index/splitter | 文档内0-based连续序号；markdown或text；重复正文直接使用上游偏移，不用find猜位置 |

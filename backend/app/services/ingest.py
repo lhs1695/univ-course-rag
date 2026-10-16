@@ -9,12 +9,13 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.services.chunk import CHUNKING_VERSION, chunk_pages
+from app.services.docling_adapter import ParseStatus
 from app.services.embedder import Embedder
 from app.services.parse import (
     DEFAULT_PARSE_LIMITS,
     ParseError,
     ParseLimits,
-    parse_document,
+    parse_document_with_quality,
 )
 from app.services.upstream import UpstreamUnavailable
 
@@ -23,7 +24,7 @@ _POSTGRES_NUL = "\x00"
 SAFE_INGEST_ERRORS = frozenset({
     "UPSTREAM_UNAVAILABLE", "UPSTREAM_TIMEOUT", "INGEST_FAILED",
     "no extractable text", "text file is not valid UTF-8",
-    "PDF parser is not installed", "unreadable PDF",
+    "PDF parser is not installed", "unreadable PDF", "incomplete PDF parse",
     "PPT parser is not installed", "unreadable PPT",
     "Word parser is not installed", "unreadable Word", "unreadable OOXML",
     "OOXML resource limit exceeded", "extracted text exceeds resource limit",
@@ -119,13 +120,22 @@ def process_ingest_job(
 
     try:
         data = Path(document.storage_path).read_bytes()
-        pages = _sanitize_extracted_pages(
-            parse_document(document.filename, data, limits=parse_limits)
+        pages, quality = parse_document_with_quality(
+            document.filename, data, limits=parse_limits,
         )
+        if quality is not None and quality.status is not ParseStatus.SUCCEEDED:
+            raise ParseError("incomplete PDF parse")
+        pages = _sanitize_extracted_pages(pages)
         extracted_char_count = sum(len(text) for _, text in pages)
         pieces = chunk_pages(pages, filename=document.filename)
         if not pieces:
             raise IngestError("no chunks produced")
+        if quality is not None:
+            for piece in pieces:
+                piece.source_metadata.update({
+                    "parser_version": quality.parser_version,
+                    "structured_hash": quality.structured_hash,
+                })
         vectors: list[list[float]] = []
         for start in range(0, len(pieces), batch_size):
             batch = pieces[start : start + batch_size]

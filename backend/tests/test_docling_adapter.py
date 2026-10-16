@@ -1,4 +1,5 @@
 import builtins
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -6,6 +7,9 @@ from app.services.docling_adapter import (
     DoclingAdapterError,
     ElementType,
     ExtractionMethod,
+    ParsedPage,
+    ParseStatus,
+    build_parse_quality_report,
     flatten_pages,
     parse_pdf_document,
 )
@@ -178,3 +182,75 @@ def test_partial_status_is_preserved_when_text_exists() -> None:
     )
     assert parsed.status.value == "partial"
     assert flatten_pages(parsed) == [(1, "Partial page")]
+
+
+def test_quality_counts_methods_models_hash_and_measured_timing() -> None:
+    items = [
+        FakeItem(label="text", text="Native", prov=[_prov(1)]),
+        FakeItem(label="text", text="OCR", prov=[_prov(2)],
+                 extraction_method="ocr", model="rapidocr-v1"),
+        FakeItem(label="formula", text="x^2", prov=[_prov(2)], model="formula-v2"),
+        FakeItem(label="table", markdown="|a|b|", prov=[_prov(2)]),
+        FakeItem(label="picture", prov=[_prov(2)], self_ref="#/pictures/0"),
+        FakeItem(label="chart", text="Values", prov=[_prov(2)]),
+    ]
+    document = _parse(_document(*items, pages=2))
+    report = build_parse_quality_report(document, page_timings_ms={1: 3.5})
+    assert report.status is ParseStatus.SUCCEEDED
+    assert report.total_pages == report.success_count == 2
+    assert report.success_pages == (1, 2)
+    assert report.abnormal_count == report.empty_count == 0
+    assert report.page_numbers_continuous and not report.missing_pages
+    assert report.element_counts == {"text": 2, "formula": 1, "table": 1, "image": 1, "chart": 1}
+    assert report.method_counts["ocr"] == 1
+    assert report.parse_method_summary == tuple(sorted(m.value for m in ExtractionMethod))
+    assert report.models == ("formula-v2", "rapidocr-v1")
+    assert report.parser_version == document.parser_version
+    assert report.pages[0].timing_ms == 3.5
+    assert report.pages[1].timing_ms is None
+    assert report.conversion_time_ms >= 0
+    assert report.structured_hash == build_parse_quality_report(
+        replace(document, conversion_time_ms=999), page_timings_ms={1: 99},
+    ).structured_hash
+    assert len(report.structured_hash) == 64
+    first = document.pages[0]
+    changed = replace(first.elements[0], bbox=None)
+    assert report.structured_hash != build_parse_quality_report(replace(
+        document, pages=(replace(first, elements=(changed,)), document.pages[1]),
+    )).structured_hash
+    assert first.elements[0].page == 1
+    assert first.elements[0].bbox.left == 1
+
+
+def test_quality_empty_page_and_continuity_gap_are_explicit() -> None:
+    item = FakeItem(label="text", text="Text", prov=[_prov(3)])
+    document = _parse(_document(item, pages=3))
+    report = build_parse_quality_report(document)
+    assert report.status is ParseStatus.PARTIAL
+    assert report.empty_pages == report.abnormal_pages == (1, 2)
+    assert report.empty_count == report.abnormal_count == 2
+    assert report.success_count == 1
+    assert "page:1:no_usable_text" in report.notes
+    gap = build_parse_quality_report(replace(document, pages=(document.pages[2],)))
+    assert not gap.page_numbers_continuous
+    assert gap.missing_pages == (1, 2)
+    assert gap.status is ParseStatus.PARTIAL
+
+
+@pytest.mark.parametrize("status", [ParseStatus.PARTIAL, ParseStatus.FAILED])
+def test_quality_preserves_document_failure_even_with_usable_pages(status) -> None:
+    document = _parse(_document(FakeItem(label="text", text="Text", prov=[_prov(1)])))
+    report = build_parse_quality_report(replace(document, status=status))
+    assert report.status is status
+    assert f"converter_status:{status}" in report.notes
+
+
+def test_quality_rejects_element_failure_and_wrong_source_page() -> None:
+    document = _parse(_document(FakeItem(label="text", text="Text", prov=[_prov(1)])))
+    element = replace(document.pages[0].elements[0], page=2, status=ParseStatus.FAILED)
+    report = build_parse_quality_report(replace(
+        document, pages=(ParsedPage(1, (element,), ParseStatus.SUCCEEDED),),
+    ))
+    assert report.status is ParseStatus.PARTIAL
+    assert report.abnormal_pages == (1,)
+    assert "element_page_mismatch" in report.pages[0].notes
