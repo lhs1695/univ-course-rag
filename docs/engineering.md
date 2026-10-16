@@ -27,6 +27,8 @@
 
 回答保留“已返回回答·请核对证据”、依据不足、服务/索引失败三类显示，不新增“部分依据”或“完全支持”标签；当前没有经验证的逐主张支持判断。索引不兼容单独显示为异常，不提示成资料没有答案。引用合法只表示来源登记，不证明答案正确。
 
+问答工作台提交时保存本次问句快照并在回答区显示；编辑后续草稿不会改变已提交问句，失败时“重试本次问题”仍发送该快照。直接复用现有 Vue 3 状态和 Element Plus 按钮，不引入新组件或依赖；本地只保留请求与草稿的对应关系。现成表单控件不持有本项目的已提交请求身份，引入状态管理包会增加依赖和迁移成本，故用短小页面状态适配。验收为编辑草稿后点击重试，两个请求体仍为原问句且草稿保留。
+
 教学反馈按最终事件结果和提问时课内角色计数。页面用已安装的 Element Plus 时间选择器提交可选窗口，并展示服务端返回的实际窗口、样本量、分母、失败/未知/非学生/角色未知与刷新失败。趋势是同一次统计里的学生 UTC 日计数，直接用 Chart.js 堆叠柱，空日为 0。基础问句列表仍折叠空白并截断 200 字符，可能合并相同前缀，不是同义组。候选分组仍是默认关闭的独立 POST：加载、刷新或改时间都不调用；教师须自行填写未校准阈值并勾选本次外发确认。候选、单例、排除量以及未启用/超限/失败分开显示，分组超限不能显示成上传文件过大。聚合受课内教师权限、时间窗/留存与隐私约束，不建学生掌握度画像，不凭高频、依据不足或候选相似度断言教学缺失或已验证同义。
 
 <a id="open-source-selection"></a>
@@ -34,6 +36,23 @@
 ## 复用与许可
 
 路线为开源组件复用与课程适配，不声称原创 BM25、RRF、模型或切分算法。实际使用方式如下；完整复用决策规则见 [workflow](workflow.md#reuse-gate)。
+
+### R7B 开源选型（已定结论）
+
+**已定：Docling 为唯一主解析器；接入并通过验收后更新本文「切分与来源」现行合同。** 施工步骤见 [plan 稳妥型开工计划](implementation-plan.md#docling-稳妥型开工计划)；验收门槛见 [validation](validation.md#r7b-parser-selection)。当前尚未安装接入，不以计划合同冒充现行行为。
+
+| 对象 | 角色 |
+| --- | --- |
+| Docling | 唯一主解析器（MIT 代码；模型许可另核） |
+| MinerU | 仅 Docling 明确 blocker 时的后备，不并行维护生产管线 |
+| PyMuPDF4LLM / PaddleOCR | 低成本逃生或专项 OCR 后备，非主方案 |
+| RAGFlow / Kotaemon / Dify / RAG-Anything / FlagEmbedding 等 | 只借鉴局部设计（parser 可替换、citation UX、元素分型、hybrid/rerank）；不整体迁移 |
+
+**不选完整平台接管的原因（短）：** 本项目已有 FastAPI + Postgres/pgvector + Vue 骨架，整体换 RAGFlow/Dify/Kotaemon 重验成本高于收益；当前阻塞在解析与来源质量，不在图谱/Agent；PyMuPDF4LLM/PaddleOCR 不能单独覆盖中期公式+扫描+图表目标。更长选型讨论见 git 历史。
+
+**Docling 接入前运行原则：** 最小必要 extras/模型；只在 ingestion 加载；单机低并发；记录包版本、下载体积、峰值 RAM、耗时与失败。许可拆成代码包 / 模型权重 / 素材 / 托管服务四层分别核对。
+
+### 已接入与已评估组件
 
 | 对象与版本 | 实际采用方式/来源 | 许可与本地工作 |
 | --- | --- | --- |
@@ -53,7 +72,7 @@
 | PyMuPDF / python-pptx | 沿用当前解析依赖；本机核对版本为1.28.2/1.0.2 | 具体发行包声明随依赖保留，正式交付重新核对实际版本与发行方式；不由本表推断所有依赖同许可 |
 | LlamaIndex citation query engine | 仅作来源组织设计参考，未接入其数据库/鉴权/运行时 | 保留必要课程Source/实际上下文合同，不称已集成框架 |
 
-复杂布局/OCR/公式解析仍待专项选型，不预装平台或下载权重。组件、模型、托管服务的许可/费用分别核对；代码包许可不能代替模型或服务条款。对照对象仅说明当前保留/接入的成本理由，不视为其他平台性能或兼容性结论。
+复杂布局/OCR/公式解析目前进入 R7B Docling 代表页验证，不预装平台或下载权重。组件、模型、托管服务的许可/费用分别核对；代码包许可不能代替模型或服务条款。MinerU 只保留为 blocker 后备，不把未运行的候选写成已验证结论。
 
 SciPy安装为CPython3.12 Windows二进制wheel（36.7MB），仅新增SciPy包，元数据要求NumPy>=2.0,<2.8，与现有2.5.4兼容，pip check通过；原始许可位于scipy-1.18.1.dist-info/LICENSE.txt，包含实际捆绑声明，随依赖保留。没有复制其源码、安装scikit-learn/模型平台或下载权重。
 
@@ -164,7 +183,19 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 逐页/幻灯片调用现成切分器，800字符容量、120最大重叠；MarkdownSplitter处理Markdown，其余TextSplitter处理抽取文本。实际重叠由结构决定；可容纳块优先保留，小章节可合并，超长代码/表格/段落仍会拆分，不保证围栏闭合或完整标题树。
 
-DOCX通过iter_inner_content保持顶层段落/表格顺序；块间空行、表格行换行、单元格制表符，保留空单元格位置。不还原Word物理分页、合并/嵌套表、图片/公式或布局。PDF/PPTX空单位可跳过但真实编号不重排。
+当前解析是纯文字基线：PDF 通过 PyMuPDF `page.get_text("text")`，PPTX 读取文本框和表格，DOCX 通过 `iter_inner_content` 保持顶层段落/表格顺序，Markdown/TXT 按 UTF-8 读取。DOCX 不还原物理分页、合并/嵌套表、图片/公式或布局；PDF/PPTX 不做 OCR、版面恢复、图片/图表理解或可靠公式恢复，空单位可跳过但真实编号不重排。当前 `LOW_EXTRACTED_TEXT` 只比较整份资料字符总量，不能识别局部空页、图片页或公式乱码。R7B 预检已增加页级风险画像，但这些分类仍只描述 PyMuPDF 现状，不是解析质量评分。即使生成模型本身支持图片，现有 `DeepSeekLLM.generate` 仍只发送字符串，没有视觉内容块。
+
+R7B **已定** Docling 为主解析器，**接入后**更新本节现行解析描述；当前生产路径仍是上文纯文字抽取。步骤见 plan，门槛见 validation。
+
+### R7B 课程资料来源合同
+
+中期基线只认 `corpus/local/r7b-four-course-source-inventory-2026-10-16.json` 的 17 份 PDF；`corpus/local/SOURCES.md` 是人工可读索引。不得通过扫描 `corpus/local` 自动把历史实验、重复上传、旧 Calculus 或其他课程资料加入当前基线。资料文件名可以作为本地 provenance，但课程标题、讲次和官方来源以 inventory 的 metadata 为准。
+
+当前固定资料均来自 MIT OpenCourseWare，并记录课程代码、课程标题、学期、教师、官方课程页、官方资源页/PDF URL、SHA-256 和项目使用状态。哲学明确是有限覆盖，仅第 1–4 讲；线性代数第 4、5 个文件已按官方实际讲次直接修正本地文件名，内容字节未改。页级预检只用于发现解析风险，不能把 `pages_with_text` 当作内容正确率，也不能把 OCR/公式/图片派生结果伪装成原生资料。
+
+### 解析证据中间层（接入后更新）
+
+**已定方向（尚未成为现行代码合同）：** Docling 输出经薄适配进入 Document → Page → Element（Text/Formula/Table/Image/Chart），保留 page、bbox（可得时）、extraction_method、parser/model、status、asset_ref；结构化产物为事实源，Markdown/Chunk 为派生视图；PARTIAL/FAILED ≠ ingest succeeded。细节与验收子项见 [plan R7B-2/R7B-3](implementation-plan.md#docling-稳妥型开工计划)。接入并验收通过前，仍以本节下方现行 PyMuPDF/切分字段表为准。
 
 | 字段 | 当前含义 |
 | --- | --- |
@@ -194,6 +225,53 @@ DOCX通过iter_inner_content保持顶层段落/表格顺序；块间空行、表
 GET /courses/{course_id}/documents/{document_id}/content先做Session/成员鉴权，再验证存储范围与文件存在；不公开挂载上传目录。PDF/Markdown/纯文本inline，PPTX/DOCX attachment；MIME白名单与nosniff，不承诺Office页内预览。PDF可使用可信页码附加#page=。
 
 上传先落盘后提交数据库，失败回滚并补偿刚写入文件；删除先提交数据库后清理文件。清理失败保留删除成功语义，记录storage_cleanup_failed的scope/对象ID/error_type，不记录正文或完整路径；当前需人工补偿，不在请求内无限重试。
+
+<a id="midterm-product-contract"></a>
+
+## 中期产品化与运行合同
+
+中期目标是本机小规模演示，不是生产服务。已有业务与 RAG 架构足够，产品化只做收口，不新增基础设施。
+
+### 课程与成员
+
+- 管理员创建课程与账号；管理员可维护课程成员；教师只能维护自己有权限的课程并加入已有学生；学生只访问当前已加入课程。
+- 中期不做学生自主选课、邀请码、公开课程目录、申请审批和成绩/能力画像。
+- 成员撤权必须影响下一次课程、资料、问答和原文件请求；删除课程/资料后不得继续检索或读取旧内容。
+
+### 数据库与文件
+
+- PostgreSQL + pgvector 继续作为唯一业务/向量数据库；不为中期引入 Redis、Elasticsearch、MongoDB、对象存储或独立分析平台。
+- 解析事实源/图片等大制品放受控本机文件；数据库保存必要 metadata、来源、Chunk、向量和状态，不把完整解析 JSON 与所有二进制塞进业务表。
+- Alembic 迁移、课程/资料删除、失败任务恢复和数据库 dump 恢复分别验证；恢复不得依赖删除卷重建。
+- 解析、切分、embedding、索引身份变化必须能被识别；新解析失败不得覆盖旧完整索引。
+
+### 中期资源上限
+
+| 类别 | 合同 |
+| --- | --- |
+| 文件/问题 | 沿用当前单文件大小、PDF 页数、问题长度等 API 限制；用户可理解的主要限制由 UI 提示 |
+| 解析 | Docling 低并发、固定版本、最小必要 extras/模型；按代表页/文件范围测试，避免无谓全量重跑 |
+| Embedding | 固定模型与 batch；资料冻结后不因 UI/prompt 小改反复全量向量化 |
+| Retrieval | 固定候选上限与最终 Top-K；课程过滤先于召回 |
+| Rerank | 默认关闭；只有 baseline 证明“候选已召回但排序不足”才开启 |
+| LLM/Vision | 真实调用必须有当次范围、次数/预算、超时、重试和停止条件；Vision 默认关闭，只用于少量固定视觉题 |
+| 日志 | QueryLog 只按既定留存窗口保存；不把完整原始模型输出或密钥写日志 |
+
+供应商价格、RPM/TPM、模型别名和服务能力会变化。项目记录本次实验实际模型、版本、usage/账单依据与总费用，不把网页上的历史单价当永久合同；没有可靠 usage 就不估算成精确费用。SiliconFlow 当前文档明确区分 RPM/TPM/TPD 等限流指标，具体模型限制以模型广场为准。
+
+### 运行与 Demo
+
+- 保持现有本机启动方式；至少有数据库、migration、backend、frontend、health/ready、登录六步检查。
+- health/ready/runtime 只说明进程、数据库和本地配置状态；configured 不等于供应商连通或模型可用。
+- Demo 使用固定课程、账号、资料和题目，不在现场临时解析、入库或换模型。
+- 准备最小恢复/重置路径，只作用于明确的 Demo 数据；真实资料、旧结果和数据库恢复副本不得被“重置”顺手删除。
+
+### AI 编程环境
+
+- 权威工作区仍是本机 D:\workspace\univ-course-rag；Git 状态和最终验收以本机工作区为准。
+- 一个工作区同一时刻只允许一个写入型 coding agent 负责代码修改；其他 Agent 只做只读检查、研究或 review，避免两个 agent 同时改同一工作树。
+- 如果使用远程云电脑，只同步代码和合成/公开测试资料；17 份受控课程资料、数据库恢复包、.env 和其他本机数据默认不上传。远程结果必须回到本机 Git 工作区核对后才算项目事实。
+- Windows 原生与 WSL2 均可作为本机执行环境；优先保持与最终演示一致的环境。若为 Docling/本地工具选择 WSL2，只把它当执行层，不改变项目权威路径和数据合同。
 
 <a id="query-log-retention"></a>
 
@@ -248,7 +326,7 @@ trend 与 summary、问句列表来自同一条 SQL：按课内角色、最终�
 
 ## 异常与恢复
 
-当前真实向量为BAAI/bge-m3/1024，生成模板deepseek-flash，显式关闭thinking；这些配置不代表供应商已连通或效果已验收。未知/缺key/空模型/非法URL等真实配置不静默转Fake。/health仅进程，/ready仅SELECT 1，/runtime仅安全本地状态；含reranking disabled/configured/unavailable，connectivity/migration/index仍not_checked，不发计费探测。
+当前真实向量为BAAI/bge-m3/1024，生成模板deepseek-flash，显式关闭thinking；现行调用是纯文字 Chat Completions，不因同名模型具备视觉能力而自动处理图片。这些配置不代表供应商已连通或效果已验收。未知/缺key/空模型/非法URL等真实配置不静默转Fake。/health仅进程，/ready仅SELECT 1，/runtime仅安全本地状态；含reranking disabled/configured/unavailable，connectivity/migration/index仍not_checked，不发计费探测。
 
 | 场景 | 当前处理 |
 | --- | --- |
@@ -265,4 +343,4 @@ trend 与 summary、问句列表来自同一条 SQL：按课内角色、最终�
 
 ## 当前待验证边界
 
-R7 新隔离库已核验0011/pgvector和真实供应商可用性，单课程效果见 [结果登记](evaluation-results.md)。原长期目标库迁移、性能/并发、实际账单、人工事实复核和拒答/阈值校准、关键词独有证据的充分性、复杂资料解析及独立试用仍待验证。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
+R7 新隔离库已核验0011/pgvector和真实供应商可用性，单课程纯文字效果见 [结果登记](evaluation-results.md)。原长期目标库迁移、性能/并发、实际账单、人工事实复核和拒答/阈值校准、关键词独有证据的充分性、Docling 代表页验证、复杂资料解析、页级质量、视觉输入及内部联合验收仍待验证。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
