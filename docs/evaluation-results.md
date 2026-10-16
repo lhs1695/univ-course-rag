@@ -99,7 +99,23 @@ MIT OCW [使用条件](https://ocw.mit.edu/pages/privacy-and-terms-of-use/)为 C
 
 复杂性主要来自心理学与历史的图片/图文页，以及线性代数的数学文本映射风险；哲学解析简单但覆盖有限。后续 Docling 验证须原页核对，不能用这些类别宣布“解析正确”。
 
+## R7B-1 Docling 代表页离线验证（2026-10-16）
+
+**判定：通过（带登记限制）。** 未改生产解析器、未入库、未调云、未跑 344 页全量。
+
+| 项 | 值 |
+| --- | --- |
+| 包 | `docling==2.140.0` / `docling-core==2.101.1` / `torch==2.14.1`；RapidOCR；`do_formula_enrichment=True` |
+| 模型 | 默认集合 layout+tableformer+code_formula+picture_classifier+rapidocr；无 `--all`、无 VLM |
+| 缓存 | `C:\Users\16747\.cache\docling\models`（约 1.34 GB）；venv 增量约 1.05 GB（D: `backend/.venv`） |
+| 样本 | 16 页冻结清单 `corpus/local/r7b-1-docling-2026-10-16/representative-pages.json` |
+| 运行 | 16/16 成功；墙钟约 18 min；峰值 RSS 约 2.0 GB；CPU |
+| 报告 | `corpus/local/r7b-1-docling-2026-10-16/COMPARISON.md`、`run-summary.json`、`outputs/` |
+
+登记限制：个别 image_only OCR 弱但仍有 picture+页码+bbox；公式 enrichment 偶发噪声；对比幻灯可能是图非原生表。硬失败项未触发。下一项 R7B-2。
+
 <a id="run-logs"></a>
+
 
 ## 实现/联调运行日志（自 validation 迁入）
 

@@ -2,15 +2,17 @@
 
 更新：2026-10-16。
 
-**现状：** 产品骨架可用；R7 仅心理学单课有限纯文字对照，不作四课基线。Docling 已定为唯一主解析器，尚未安装接入。17 份/344 页离线预检与来源清单已在 `corpus/local`。
+**现状：** 产品骨架可用；R7 心理学有限纯文字对照不作四课基线。**R7B-1 已通过（带登记限制）：** Docling 2.140.0 最小安装 + 默认模型（无 all/VLM）；16 代表页离线验证完成。报告与产物：`corpus/local/r7b-1-docling-2026-10-16/`（含 `COMPARISON.md`、`run-summary.json`、`outputs/`）。模型缓存：`C:\Users\16747\.cache\docling\models`。
 
-**阻碍：** Docling 未装；较大依赖/模型下载须用户当次授权。工作区另有未提交的前端/开题资料改动，施工时须保护。
+**登记限制（非 blocker）：** 个别 image_only 页 OCR 弱但仍有 picture+页码+bbox；公式 enrichment 偶发 `\intertext` 噪声；对比类幻灯可能是图而非原生表。
 
-**下一项：R7B-1 Docling 代表页离线验证**
+**阻碍：** 无 R7B-1 blocker。工作区仍有未提交的 `AskView.vue` / 开题资料，施工须保护。
 
-- 施工步骤（唯一）：[implementation-plan「稳妥型开工计划」R7B-1](implementation-plan.md#docling-稳妥型开工计划)
-- 通过/失败门槛：[validation R7B](validation.md#r7b-parser-selection)
-- 本项：约 12–16 代表页离线对比；不改生产解析器、不入库、不调云、不读原题答案。
-- **提交：** 无代码/文档改动的纯报告可不提交；有文档或脚本改动则验收后本地 Conventional Commit，不默认 push。
+**下一项：R7B-2 Docling 薄适配器**
 
-后续顺序：R7B-2…7 → P7 → R8 → R9（详见 plan 状态表）。已完成能力与 R7 数字见 [evaluation-results](evaluation-results.md)。
+- 步骤：[implementation-plan R7B-2](implementation-plan.md#docling-稳妥型开工计划)
+- 门槛：[validation](validation.md#r7b-parser-selection) + plan R7B-2 验收
+- 本项：只替换「文件→解析单位」入口；不入库真资料、不调云、不装 all。
+- 提交：验收后本地 Conventional Commit，不默认 push。
+
+后续：R7B-3…7 → P7 → R8 → R9。

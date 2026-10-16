@@ -50,7 +50,7 @@
 
 **不选完整平台接管的原因（短）：** 本项目已有 FastAPI + Postgres/pgvector + Vue 骨架，整体换 RAGFlow/Dify/Kotaemon 重验成本高于收益；当前阻塞在解析与来源质量，不在图谱/Agent；PyMuPDF4LLM/PaddleOCR 不能单独覆盖中期公式+扫描+图表目标。更长选型讨论见 git 历史。
 
-**Docling 接入前运行原则：** 最小必要 extras/模型；只在 ingestion 加载；单机低并发；记录包版本、下载体积、峰值 RAM、耗时与失败。许可拆成代码包 / 模型权重 / 素材 / 托管服务四层分别核对。
+**Docling 运行原则（R7B-1 已验证）：** 最小必要依赖（`docling==2.140.0`，含 RapidOCR/公式所需，**禁止** `docling[all]` 与默认 VLM/SmolDocling）；只在 ingestion/离线脚本加载；单机低并发；记录包版本、下载体积、峰值 RAM、耗时与失败。本机模型缓存优先 C:：`DOCLING_ARTIFACTS_PATH` / `DOCLING_CACHE_DIR` / `HF_HOME`（用户级环境变量，无密钥入仓）。可选依赖见 `backend/pyproject.toml` 的 `docling` extra。许可拆成代码包 / 模型权重 / 素材 / 托管服务四层分别核对。
 
 ### 已接入与已评估组件
 
@@ -72,7 +72,7 @@
 | PyMuPDF / python-pptx | 沿用当前解析依赖；本机核对版本为1.28.2/1.0.2 | 具体发行包声明随依赖保留，正式交付重新核对实际版本与发行方式；不由本表推断所有依赖同许可 |
 | LlamaIndex citation query engine | 仅作来源组织设计参考，未接入其数据库/鉴权/运行时 | 保留必要课程Source/实际上下文合同，不称已集成框架 |
 
-复杂布局/OCR/公式解析目前进入 R7B Docling 代表页验证，不预装平台或下载权重。组件、模型、托管服务的许可/费用分别核对；代码包许可不能代替模型或服务条款。MinerU 只保留为 blocker 后备，不把未运行的候选写成已验证结论。
+R7B-1 已在本机装入最小 Docling 并完成 16 代表页离线验证（通过，带登记限制）；**生产解析路径仍是纯文字 PyMuPDF，未切换。** 组件、模型、托管服务的许可/费用分别核对；代码包许可不能代替模型或服务条款。MinerU 只保留为 blocker 后备。
 
 SciPy安装为CPython3.12 Windows二进制wheel（36.7MB），仅新增SciPy包，元数据要求NumPy>=2.0,<2.8，与现有2.5.4兼容，pip check通过；原始许可位于scipy-1.18.1.dist-info/LICENSE.txt，包含实际捆绑声明，随依赖保留。没有复制其源码、安装scikit-learn/模型平台或下载权重。
 
@@ -185,7 +185,7 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 当前解析是纯文字基线：PDF 通过 PyMuPDF `page.get_text("text")`，PPTX 读取文本框和表格，DOCX 通过 `iter_inner_content` 保持顶层段落/表格顺序，Markdown/TXT 按 UTF-8 读取。DOCX 不还原物理分页、合并/嵌套表、图片/公式或布局；PDF/PPTX 不做 OCR、版面恢复、图片/图表理解或可靠公式恢复，空单位可跳过但真实编号不重排。当前 `LOW_EXTRACTED_TEXT` 只比较整份资料字符总量，不能识别局部空页、图片页或公式乱码。R7B 预检已增加页级风险画像，但这些分类仍只描述 PyMuPDF 现状，不是解析质量评分。即使生成模型本身支持图片，现有 `DeepSeekLLM.generate` 仍只发送字符串，没有视觉内容块。
 
-R7B **已定** Docling 为主解析器，**接入后**更新本节现行解析描述；当前生产路径仍是上文纯文字抽取。步骤见 plan，门槛见 validation。
+R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过。**接入（R7B-2）后**更新本节现行解析描述；当前生产路径仍是上文纯文字抽取。步骤见 plan，门槛见 validation；代表页报告见 `corpus/local/r7b-1-docling-2026-10-16/COMPARISON.md`（忽略区）。
 
 ### R7B 课程资料来源合同
 
