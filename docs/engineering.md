@@ -39,7 +39,7 @@
 
 ### R7B 开源选型（已定结论）
 
-**已定：Docling 为唯一主解析器；接入并通过验收后更新本文「切分与来源」现行合同。** 施工步骤见 [plan 稳妥型开工计划](implementation-plan.md#docling-稳妥型开工计划)；验收门槛见 [validation](validation.md#r7b-parser-selection)。当前尚未安装接入，不以计划合同冒充现行行为。
+**已定且 R7B-2 已接入：Docling 为唯一主解析器。** PDF 经 `app.services.docling_adapter` 进入 parse_document（Document→Page→Element）；MD/TXT/DOCX/PPTX 仍走原路径。页级质量/PARTIAL 合同见 R7B-3。施工步骤见 [plan](implementation-plan.md#docling-稳妥型开工计划)；门槛见 [validation](validation.md#r7b-parser-selection)。
 
 | 对象 | 角色 |
 | --- | --- |
@@ -72,7 +72,7 @@
 | PyMuPDF / python-pptx | 沿用当前解析依赖；本机核对版本为1.28.2/1.0.2 | 具体发行包声明随依赖保留，正式交付重新核对实际版本与发行方式；不由本表推断所有依赖同许可 |
 | LlamaIndex citation query engine | 仅作来源组织设计参考，未接入其数据库/鉴权/运行时 | 保留必要课程Source/实际上下文合同，不称已集成框架 |
 
-R7B-1 已在本机装入最小 Docling 并完成 16 代表页离线验证（通过，带登记限制）；**生产解析路径仍是纯文字 PyMuPDF，未切换。** 组件、模型、托管服务的许可/费用分别核对；代码包许可不能代替模型或服务条款。MinerU 只保留为 blocker 后备。
+R7B-1 已在本机装入最小 Docling 并完成 16 代表页离线验证（通过，带登记限制）；**R7B-2 起 PDF 生产解析入口切换为 Docling 薄适配器**（Fake 可测；无包时安全失败）。 组件、模型、托管服务的许可/费用分别核对；代码包许可不能代替模型或服务条款。MinerU 只保留为 blocker 后备。
 
 SciPy安装为CPython3.12 Windows二进制wheel（36.7MB），仅新增SciPy包，元数据要求NumPy>=2.0,<2.8，与现有2.5.4兼容，pip check通过；原始许可位于scipy-1.18.1.dist-info/LICENSE.txt，包含实际捆绑声明，随依赖保留。没有复制其源码、安装scikit-learn/模型平台或下载权重。
 
@@ -183,9 +183,9 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 逐页/幻灯片调用现成切分器，800字符容量、120最大重叠；MarkdownSplitter处理Markdown，其余TextSplitter处理抽取文本。实际重叠由结构决定；可容纳块优先保留，小章节可合并，超长代码/表格/段落仍会拆分，不保证围栏闭合或完整标题树。
 
-当前解析是纯文字基线：PDF 通过 PyMuPDF `page.get_text("text")`，PPTX 读取文本框和表格，DOCX 通过 `iter_inner_content` 保持顶层段落/表格顺序，Markdown/TXT 按 UTF-8 读取。DOCX 不还原物理分页、合并/嵌套表、图片/公式或布局；PDF/PPTX 不做 OCR、版面恢复、图片/图表理解或可靠公式恢复，空单位可跳过但真实编号不重排。当前 `LOW_EXTRACTED_TEXT` 只比较整份资料字符总量，不能识别局部空页、图片页或公式乱码。R7B 预检已增加页级风险画像，但这些分类仍只描述 PyMuPDF 现状，不是解析质量评分。即使生成模型本身支持图片，现有 `DeepSeekLLM.generate` 仍只发送字符串，没有视觉内容块。
+现行解析：**PDF 经 Docling 薄适配器**（`docling_adapter.parse_pdf_document` → `flatten_pages`）进入原有 `(page, text)` 切分；PPTX 读文本框和表格；DOCX 经 `iter_inner_content` 保持顶层段落/表格顺序；Markdown/TXT 按 UTF-8。DOCX 仍不还原物理分页/复杂布局。PDF 侧 OCR/公式/表格/图元素已在适配层建模，但入库页级质量与 PARTIAL/FAILED 合同属 R7B-3。当前 `LOW_EXTRACTED_TEXT` 仍只比整份资料字符总量。即使生成模型支持图片，现有 `DeepSeekLLM.generate` 仍只发字符串。
 
-R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过。**接入（R7B-2）后**更新本节现行解析描述；当前生产路径仍是上文纯文字抽取。步骤见 plan，门槛见 validation；代表页报告见 `corpus/local/r7b-1-docling-2026-10-16/COMPARISON.md`（忽略区）。
+R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过；**R7B-2 已接入**：PDF 现行入口为 Docling 薄适配器，再 flatten 为原有 (page, text) 切分输入。Element 级字段在适配层已建模；入库侧页级质量/失败状态见 R7B-3。旧纯文字 PyMuPDF 路径不再作为 PDF 默认入口。步骤见 plan，门槛见 validation；代表页报告见 `corpus/local/r7b-1-docling-2026-10-16/COMPARISON.md`（忽略区）。
 
 ### R7B 课程资料来源合同
 
@@ -195,7 +195,7 @@ R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过。**接�
 
 ### 解析证据中间层（接入后更新）
 
-**已定方向（尚未成为现行代码合同）：** Docling 输出经薄适配进入 Document → Page → Element（Text/Formula/Table/Image/Chart），保留 page、bbox（可得时）、extraction_method、parser/model、status、asset_ref；结构化产物为事实源，Markdown/Chunk 为派生视图；PARTIAL/FAILED ≠ ingest succeeded。细节与验收子项见 [plan R7B-2/R7B-3](implementation-plan.md#docling-稳妥型开工计划)。接入并验收通过前，仍以本节下方现行 PyMuPDF/切分字段表为准。
+**现行（R7B-2）：** Docling 输出经薄适配进入 Document → Page → Element（Text/Formula/Table/Image/Chart），保留 page、bbox（可得时）、extraction_method、parser/model、status、asset_ref；结构化产物为事实源，Markdown/Chunk 为派生视图；PARTIAL/FAILED ≠ ingest succeeded。细节与验收子项见 [plan R7B-2/R7B-3](implementation-plan.md#docling-稳妥型开工计划)。切分/检索字段表在 flatten 之后仍适用；Element 级入库扩展见 R7B-3。
 
 | 字段 | 当前含义 |
 | --- | --- |

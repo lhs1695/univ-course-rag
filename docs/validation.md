@@ -42,6 +42,17 @@
 
 <a id="product-acceptance"></a>
 
+
+## R7B-2 Docling 薄适配器（门槛）
+
+| 维度 | 通过证据 |
+|---|---|
+| 入口替换 | PDF 走 `docling_adapter`；MD/TXT/DOCX/PPTX 原路径 |
+| 项目模型 | Fake 可验证 Text/Formula/Table/Image/Chart + method/bbox/status |
+| 安全失败 | 无 Docling → 既有 `ParseError`；失败/空文不冒充成功 |
+| 回归 | `test_docling_adapter` + `test_parse` + Ruff；无关合同未破坏 |
+
+步骤见 [plan R7B-2](implementation-plan.md#docling-稳妥型开工计划)。本项不入库、不调云。
 ## 当前验收范围
 
 已有 Fake/合成合同测试可用于回归。中期前按实际 diff 和冻结范围重新验证，不能将局部通过数当整个产品或真实效果证明。带日期的实现/联调运行日志见 [evaluation-results](evaluation-results.md#run-logs)。

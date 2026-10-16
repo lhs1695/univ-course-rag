@@ -1,8 +1,8 @@
 """Synthetic parser/order regressions for the R5 splitter inputs."""
 
 import io
+from types import SimpleNamespace
 
-import fitz
 from app.services.parse import parse_document
 from docx import Document
 from pptx import Presentation
@@ -31,12 +31,22 @@ def test_word_interleaves_tables_and_paragraphs_in_document_order() -> None:
 
 
 def test_pdf_skips_empty_page_without_renumbering_later_sources() -> None:
-    with fitz.open() as document:
-        document.new_page().insert_text((72, 72), "First page")
-        document.new_page()
-        document.new_page().insert_text((72, 72), "Third page")
-        data = document.tobytes()
-    units = parse_document("synthetic.pdf", data)
+    first = SimpleNamespace(
+        label="text",
+        text="First page",
+        prov=[SimpleNamespace(page_no=1)],
+    )
+    third = SimpleNamespace(
+        label="text",
+        text="Third page",
+        prov=[SimpleNamespace(page_no=3)],
+    )
+    document = SimpleNamespace(
+        pages={1: object(), 2: object(), 3: object()},
+        iterate_items=lambda: iter([(first, 0), (third, 0)]),
+    )
+    converter = SimpleNamespace(convert=lambda _data: SimpleNamespace(document=document))
+    units = parse_document("synthetic.pdf", b"fake", pdf_converter=converter)
     assert [page for page, _text in units] == [1, 3]
     assert [text for _page, text in units] == ["First page", "Third page"]
 

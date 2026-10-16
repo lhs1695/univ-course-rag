@@ -5,6 +5,12 @@ from dataclasses import dataclass
 from zipfile import BadZipFile, ZipFile
 
 from app.config import Settings
+from app.services.docling_adapter import (
+    DoclingAdapterError,
+    PdfConverter,
+    flatten_pages,
+    parse_pdf_document,
+)
 
 
 class ParseError(Exception):
@@ -45,11 +51,12 @@ def parse_document(
     data: bytes,
     *,
     limits: ParseLimits = DEFAULT_PARSE_LIMITS,
+    pdf_converter: PdfConverter | None = None,
 ) -> list[tuple[int | None, str]]:
     """Return (page, text) pairs. Page is 1-based for PDF/PPTX, 1 otherwise."""
     name = filename.lower()
     if name.endswith(".pdf"):
-        return _parse_pdf(data, limits)
+        return _parse_pdf(data, limits, pdf_converter)
     if name.endswith(".pptx"):
         _validate_ooxml_archive(data, limits)
         return _parse_ppt(data, limits)
@@ -73,31 +80,21 @@ def _parse_text(data: bytes, limits: ParseLimits) -> list[tuple[int | None, str]
     return [(1, text)]
 
 
-def _parse_pdf(data: bytes, limits: ParseLimits) -> list[tuple[int | None, str]]:
+def _parse_pdf(
+    data: bytes,
+    limits: ParseLimits,
+    converter: PdfConverter | None,
+) -> list[tuple[int | None, str]]:
     try:
-        import fitz
-    except ImportError as exc:
-        raise ParseError("PDF parser is not installed") from exc
-    try:
-        doc = fitz.open(stream=data, filetype="pdf")
-    except Exception as exc:
-        raise ParseError("unreadable PDF") from exc
-    pages: list[tuple[int | None, str]] = []
-    extracted_chars = 0
-    try:
-        for index, page in enumerate(doc):
-            if index >= limits.max_pages:
-                raise ParseError(_TEXT_RESOURCE_LIMIT)
-            page_text = page.get_text("text").replace("\r\n", "\n").strip()
-            if page_text:
-                extracted_chars += len(page_text)
-                _validate_text_size(extracted_chars, limits)
-                pages.append((index + 1, page_text))
-    finally:
-        doc.close()
-    if not pages:
-        raise ParseError("no extractable text")
-    return pages
+        document = parse_pdf_document(
+            data,
+            converter=converter,
+            max_pages=limits.max_pages,
+            max_text_chars=limits.max_text_chars,
+        )
+    except DoclingAdapterError as exc:
+        raise ParseError(str(exc)) from exc
+    return flatten_pages(document)
 
 
 def _parse_ppt(data: bytes, limits: ParseLimits) -> list[tuple[int | None, str]]:

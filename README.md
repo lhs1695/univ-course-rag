@@ -18,7 +18,7 @@
 ## 当前现状（三行）
 
 1. 产品骨架可用（权限、入库、dense/hybrid、引用、反馈）；R7 仅心理学单课有限纯文字对照，**不是四课中期基线**。
-2. 主解析路线已定 Docling；**R7B-1 代表页离线验证已通过**（带登记限制）。生产解析仍为纯文字。下一项：**R7B-2 薄适配器**。
+2. 主解析路线已定 Docling；**R7B-1/R7B-2 已完成**（代表页验证 + PDF 薄适配器）。下一项：**R7B-3 页级质量/来源与失败状态**。
 3. 细节与阻碍以 [NEXT-SESSION](docs/NEXT-SESSION.md) 为准；施工步骤见 [plan R7B](docs/implementation-plan.md#docling-稳妥型开工计划)，验收门槛见 [validation](docs/validation.md#r7b-parser-selection)。
 
 ## 运行入口
