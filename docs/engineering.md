@@ -1,6 +1,6 @@
 # 现行工程合同
 
-更新：2026-10-15。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。旧阶段叙述与评测数字已清理，中期效果以改进版本的新运行重建。
+更新：2026-10-16。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。R7 有限真实运行见 [结果登记](evaluation-results.md)，不改变本合同默认设置。
 
 ## 目录
 
@@ -156,7 +156,7 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 系统提示和上下文要求只回答正文支持内容，不足时仅输出 NO_EVIDENCE；精确匹配该信号（忽略首尾空白）、空回答或无合法引用均保持现有 NO_EVIDENCE/answer=null/空引用。响应结构不变，generate_answer 保留 tuple 接口，问答路径使用同次生成结果中的正文快照。现有正则引用白名单是结构检查，不解析每个事实、引号/代码的语义，也不自动识别“相关但没答案”；Fake 负例是 scripted 拒答合同测试，不冒充语义模型。即使模型引用合法 ID，仍可能误答；未做额外计费判定调用。服务超时/失败维持原503/504与错误码，不归为知识不足；QueryLog.hit 仍为检索是否有证据，不再用来判断教学反馈的最终结果。
 
-评测recall_at_k仍统计最终证据文档覆盖，不冒充候选覆盖；元数据区分检索合同、重排开关/模型/端点哈希，并增加 generation_contract=r6-context-citations-refusal-v1，拒绝续跑旧生成合同 checkpoint。合法引用指标不等于人工支持评价；完整混合问答、真实拒答与事实质量仍未验收。
+评测recall_at_k仍统计最终证据文档覆盖，不冒充候选覆盖；元数据区分检索合同、重排开关/模型/端点哈希，并增加 generation_contract=r6-context-citations-refusal-v1，拒绝续跑旧生成合同 checkpoint。合法引用指标不等于人工支持评价；R7 仅有 AI 预标的单课有限真实对照，完整混合问答、人工事实复核与拒答校准仍未验收。
 
 <a id="chunk-source"></a>
 
@@ -218,7 +218,7 @@ GET /courses/{course_id}/insights 保留 retention_days/frequent/no_evidence，�
 
 按 member_role_at_ask=student 统计，无当前成员表或用户身份join，改角色/移出课程不重写历史；teacher单列排除，其余角色/null为未知角色，不进入学生结果或问句列表。只查询本课，访问者仍须当前课内教师。单条SQL直接复用case/count/max/group_by，同时得总量与列表，避免两次查询观察到不同提交；不读取非学生/未知事件的问句，也不返回用户标识。
 
-summary中 recorded_attempts = student_attempts + non_student_attempts + unknown_role_attempts；student_attempts = cited_answer + no_evidence + failure + unknown_outcome。knowledge_attempts = cited_answer + no_evidence；no_evidence_rate仅为 no_evidence/knowledge_attempts，分母0返回null，失败/未知不进入分母，不能称正确率或教学缺口率。frequent仅列有引用回答，no_evidence仅列依据不足，空规范化问句只计总量不入列表；失败不混入二者。旧记录可全部为未知，绝不使用当前角色补造新基线。新增列后真实目标库须先迁移0011；尚未实际应用。
+summary中 recorded_attempts = student_attempts + non_student_attempts + unknown_role_attempts；student_attempts = cited_answer + no_evidence + failure + unknown_outcome。knowledge_attempts = cited_answer + no_evidence；no_evidence_rate仅为 no_evidence/knowledge_attempts，分母0返回null，失败/未知不进入分母，不能称正确率或教学缺口率。frequent仅列有引用回答，no_evidence仅列依据不足，空规范化问句只计总量不入列表；失败不混入二者。旧记录可全部为未知，绝不使用当前角色补造新基线。新增列后目标库须先迁移0011；R7 新隔离库已实际应用，原长期目标库未核验。
 
 仅admin可POST /admin/query-logs/retention，先dry_run查看一批，再显式delete；按created_at,id处理最旧一批，has_more表示仍可继续。维护日志只写模式/数量/是否更多，不写提问/用户/Cookie/Session。当前库删除不能立即抹除外部备份；聚合、未来向量与缓存也须继承权限和留存。
 
@@ -265,4 +265,4 @@ trend 与 summary、问句列表来自同一条 SQL：按课内角色、最终�
 
 ## 当前待验证边界
 
-真实库迁移/pgvector执行与性能、真实供应商可用性/费用、改进后课程效果和拒答校准、关键词独有证据的充分性、复杂资料解析及独立试用均需重新验证。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
+R7 新隔离库已核验0011/pgvector和真实供应商可用性，单课程效果见 [结果登记](evaluation-results.md)。原长期目标库迁移、性能/并发、实际账单、人工事实复核和拒答/阈值校准、关键词独有证据的充分性、复杂资料解析及独立试用仍待验证。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
