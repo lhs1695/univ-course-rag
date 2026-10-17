@@ -114,6 +114,27 @@ MIT OCW [使用条件](https://ocw.mit.edu/pages/privacy-and-terms-of-use/)为 C
 
 登记限制：个别 image_only OCR 弱但仍有 picture+页码+bbox；公式 enrichment 偶发噪声；对比幻灯可能是图非原生表。硬失败项未触发。下一项 R7B-2。
 
+## R7B-4 四课离线解析冻结（2026-10-17，用户暂停）
+
+<a id="r7b-4-pause"></a>
+
+**判定：未完成（用户要求先暂停）。** 已授权开跑后中断；未宣称整项通过。未调云、未写数据库、未入库。
+
+| 项 | 值 |
+| --- | --- |
+| 包 / 配置 | 同 R7B-1：`docling==2.140.0` / `docling-core==2.101.1`；`do_ocr` + `do_table_structure` + `do_formula_enrichment`；无 VLM / 无 page images |
+| inventory | `corpus/local/r7b-four-course-source-inventory-2026-10-16.json`（17 / 344） |
+| 产物目录 | `corpus/local/r7b-4-docling-2026-10-17/`（忽略区；`progress.json` / `run-summary.json` / `outputs/`） |
+| 进度 | **8/17** 已落盘且 `usable_freeze`；`finished=false`；失败 0 |
+| 已冻 | 心理学 4 份均为 `partial`（空页/`no_usable_text`，可冻结）；线代 `01`–`04` 均为 `ok` |
+| 未完成 | 线代 `05_diagonalization_powers_of_a`（进程已杀，目录仅不完整 `manifest.json`）；历史 4 份；哲学 4 份 |
+| 已处理耗时 | `total_elapsed_sec` ≈ 14854（约 4.1 h，仅已完成 8 份墙钟合计） |
+| 峰值 RSS | ≈ 4370 MB（采样；可能略低于瞬时峰） |
+| 慢点 | 线代公式页极慢：`01` 约 71 min/4 页；`04` 约 94 min/5 页 |
+| 脚本 | worktree `univ-course-rag-wt/r7b4-offline-freeze`，分支 `feat/r7b4-offline-freeze`，`scripts/r7b4_freeze_docling.py`（`--resume`）；**尚未合入 main / 未提交** |
+
+续跑（须再授权）：在该 worktree 对同一产物目录执行同一脚本并加 `--resume`（跳过已验证成功的 8 份）。整项完成前不进入 R7B-5。局限草稿见产物内 `LIMITATIONS.md`（随跑生成，非最终验收结论）。
+
 <a id="run-logs"></a>
 
 
