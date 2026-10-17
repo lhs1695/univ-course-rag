@@ -188,7 +188,16 @@ MIT OCW [使用条件](https://ocw.mit.edu/pages/privacy-and-terms-of-use/)为 C
 
 ## 实现/联调运行日志（自 validation 迁入）
 
+### R8 共验清单与库预检（2026-10-17）
+
+- 产出可执行清单：`corpus/local/r8-joint-acceptance-2026-10-17/CHECKLIST.md`（忽略区）；validation 增补三角色/四类勾选模板。
+- 只读核验：`univ_course_rag_r7b6_real` alembic `0011`、4 课 / 17 文档 / 385 chunks；旧库 `univ_course_rag` 1/4/257；Fake `univ_course_rag_r7b6` 4/4/74。根默认库名仍为旧库；未改 `.env`。
+- 成员缺口：四课 `course_members` 仅 teacher；student 未入课 → 共验须先授权。
+- Fake/SQLite：`test_auth.py` + `test_courses.py`（`not integration and not postgres`）26 passed。未启演示栈、未跑真实 Embedding/LLM 共验提问。
+- **不记为 R8 通过。**
+
 ### R8 内部验收前置检查（2026-10-16）
+
 
 - 问答页将已提交问句与后续草稿分开显示；失败后“重试本次问题”发送原问句。浏览器用合成身份、课程、503 和成功响应实际点击：编辑草稿后，两次 POST 请求体均为原问句，后续草稿保留，回答区显示原问句。没有连接后端数据库或供应商，此项仅是前端交互检查。
 - `frontend` 的 `npm run build` 通过（既有主包超过 500 kB 警告）；`node --test tests/answerMarkdown.test.mjs tests/recovery.test.mjs` 为 13 passed。后端 Fake/SQLite 的 `test_auth.py`、`test_courses.py`、`test_storage.py`、`test_ask.py`、`test_insights.py` 以 `not integration and not postgres` 运行，101 passed。这些均不证明真实端到端操作已完成。
