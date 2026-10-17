@@ -267,6 +267,7 @@ GET /courses/{course_id}/documents/{document_id}/content先做Session/成员鉴�
 - 保持现有本机启动方式；至少有数据库、migration、backend、frontend、health/ready、登录六步检查。
 - health/ready/runtime 只说明进程、数据库和本地配置状态；configured 不等于供应商连通或模型可用。
 - Demo 使用固定课程、账号、资料和题目，不在现场临时解析、入库或换模型。
+- 四课真实基线演示时，后端进程级数据库应指向 `univ_course_rag_r7b6_real`；根 `.env` 可能仍指向旧库，勿改密钥进 Git，也不要把旧库结果当成 R7B-7。
 - 准备最小恢复/重置路径，只作用于明确的 Demo 数据；真实资料、旧结果和数据库恢复副本不得被“重置”顺手删除。
 
 ### AI 编程环境

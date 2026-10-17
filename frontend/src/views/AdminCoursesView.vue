@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建课程，选择课程行查看并管理成员。管理员访问课程内容也需显式加入。</p></header>
+    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程，选择课程行管理成员。管理员访问课程内容也需显式加入。</p></header>
     <el-form :inline="true" @submit.prevent="onCreateCourse">
       <el-form-item label="标题">
         <el-input v-model="newTitle" />
@@ -11,13 +11,21 @@
     </el-form>
 
     <el-table
+      ref="courseTable"
+      row-key="id"
       :data="courses"
       v-loading="loading"
       empty-text="暂无课程，可先创建一门课程"
       highlight-current-row
       @current-change="onSelectCourse"
     >
-      <el-table-column prop="title" label="课程" />
+      <el-table-column prop="title" label="课程" min-width="120" />
+      <el-table-column label="操作" width="150" fixed="right">
+        <template #default="{ row }">
+          <el-button type="primary" link :disabled="courseBusy" @click.stop="onRenameCourse(row)">重命名</el-button>
+          <el-button type="danger" link :disabled="courseBusy" @click.stop="onDeleteCourse(row)">删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
     <template v-if="selected">
@@ -57,11 +65,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 
 const courses = ref([]);
+const courseTable = ref(null);
+const courseBusy = ref(false);
 const users = ref([]);
 const members = ref([]);
 const selected = ref(null);
@@ -79,8 +89,12 @@ const bindableUsers = computed(() => {
   return users.value.filter((user) => ["student", "admin"].includes(user.role));
 });
 
-async function loadCourses() {
+async function loadCourses(selectedId = selected.value?.id) {
   courses.value = await api("/admin/courses");
+  const row = courses.value.find(course => course.id === selectedId) || null;
+  await onSelectCourse(row);
+  await nextTick();
+  courseTable.value?.setCurrentRow(row);
 }
 
 async function loadUsers() {
@@ -103,6 +117,10 @@ onMounted(async () => {
 });
 
 async function onSelectCourse(row) {
+  if (row?.id && row.id === selected.value?.id) {
+    selected.value = row;
+    return;
+  }
   selected.value = row;
   members.value = [];
   memberUserId.value = "";
@@ -128,13 +146,58 @@ async function onCreateCourse() {
     const course = await api("/admin/courses", { method: "POST", json: { title } });
     newTitle.value = "";
     ElMessage.success("已创建课程");
-    await loadCourses();
-    selected.value = course;
-    await loadMembers(course.id);
+    await loadCourses(course.id);
   } catch (error) {
     ElMessage.error(error.message);
   } finally {
     creating.value = false;
+  }
+}
+
+async function onRenameCourse(row) {
+  if (courseBusy.value) return;
+  courseBusy.value = true;
+  try {
+    let value;
+    try {
+      ({ value } = await ElMessageBox.prompt("请输入新的课程名称", "重命名课程", {
+        inputValue: row.title,
+        inputValidator: value => Boolean(value?.trim()) || "课程名称不能为空",
+        confirmButtonText: "保存", cancelButtonText: "取消",
+      }));
+    } catch {
+      return;
+    }
+    await api(`/admin/courses/${row.id}`, { method: "PATCH", json: { title: value.trim() } });
+    ElMessage.success("已重命名课程");
+    await loadCourses(row.id);
+  } catch (error) {
+    ElMessage.error(error.message);
+  } finally {
+    courseBusy.value = false;
+  }
+}
+
+async function onDeleteCourse(row) {
+  if (courseBusy.value) return;
+  courseBusy.value = true;
+  try {
+    try {
+      await ElMessageBox.confirm(`删除课程「${row.title}」将移除成员与课内数据，且不可从本页恢复。确定删除？`, "确认删除课程", {
+        confirmButtonText: "删除课程", cancelButtonText: "取消", type: "warning",
+      });
+    } catch {
+      return;
+    }
+    await api(`/admin/courses/${row.id}`, { method: "DELETE" });
+    await onSelectCourse(null);
+    courseTable.value?.setCurrentRow();
+    ElMessage.success("已删除课程");
+    await loadCourses();
+  } catch (error) {
+    ElMessage.error(error.message);
+  } finally {
+    courseBusy.value = false;
   }
 }
 

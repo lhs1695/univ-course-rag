@@ -10,7 +10,7 @@
       <section class="answer-column" aria-label="提问与回答">
         <div class="composer-panel">
           <div class="panel-heading"><h2 id="question-title">你的问题</h2><span class="subtle">一次聚焦一个疑问</span></div>
-          <el-form class="ask-form" aria-labelledby="question-title" @submit.prevent="onAsk">
+          <el-form class="ask-form" aria-labelledby="question-title" @submit.prevent="submitQuestion">
             <el-form-item>
               <el-input v-model="query" id="question-input" aria-label="课程问题" aria-describedby="question-help"
                 type="textarea" :rows="4" maxlength="2000" show-word-limit
@@ -18,7 +18,7 @@
             </el-form-item>
             <div class="composer-footer">
               <p id="question-help" class="subtle">仅依据本课资料作答；问句草稿仅保存在本页内存。</p>
-              <el-button type="primary" native-type="submit" :loading="asking" :disabled="!query.trim()">
+              <el-button type="primary" native-type="submit" :loading="asking" :disabled="asking || !query.trim()">
                 {{ asking ? '正在组织回答' : '提问' }}
               </el-button>
             </div>
@@ -27,13 +27,14 @@
 
         <section class="response-panel" :aria-busy="asking" aria-labelledby="response-title">
           <div class="panel-heading"><h2 id="response-title">课内回答</h2><span v-if="result?.answer" class="status-label">已返回回答 · 请核对证据</span></div>
+          <p v-if="submittedQuery" class="submitted-question"><strong>本次问题：</strong>{{ submittedQuery }}</p>
           <div v-if="asking" class="response-body">
             <p role="status" class="subtle">正在检索本课资料并组织回答，请稍候。</p>
             <el-skeleton :rows="4" animated />
           </div>
           <div v-else-if="failure" class="response-body">
             <el-alert :title="failure" type="error" :closable="false" show-icon />
-            <el-button :disabled="asking || !query.trim()" @click="onAsk">重试提问</el-button>
+            <el-button :disabled="asking" @click="retryQuestion">重试本次问题</el-button>
           </div>
           <div v-else-if="result?.error_code === 'NO_EVIDENCE'" class="response-body">
             <el-alert :title="result.message || '依据不足'" type="warning" :closable="false" show-icon />
@@ -104,6 +105,7 @@ watch(query, value => questionDraft(userId, courseId.value, value), { flush: "sy
 const asking = ref(false);
 const result = ref(null);
 const failure = ref("");
+const submittedQuery = ref("");
 
 async function loadContext() {
   loadingContext.value = true;
@@ -148,11 +150,18 @@ function citationUrl(citation) {
   return citation.content_url;
 }
 
-async function onAsk() {
+function submitQuestion() {
   const text = query.value.trim();
-  if (!text || asking.value) {
-    return;
-  }
+  if (text) askQuestion(text);
+}
+
+function retryQuestion() {
+  if (submittedQuery.value) askQuestion(submittedQuery.value);
+}
+
+async function askQuestion(text) {
+  if (asking.value) return;
+  submittedQuery.value = text;
   asking.value = true;
   result.value = null;
   failure.value = "";
@@ -185,6 +194,8 @@ async function onAsk() {
 .composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .composer-footer p { margin: 0; max-width: 70%; }
 .response-panel { min-height: 300px; }
+.submitted-question { margin: 14px 22px 0; padding: 10px 12px; border-radius: 7px; background: #f4f8f6; color: #475569; font-size: 13px; overflow-wrap: anywhere; }
+.submitted-question strong { color: #213e36; }
 .response-body { padding: 8px 22px 24px; }
 .evidence-card:focus { outline: 3px solid #17675f; outline-offset: 3px; }
 .workspace-empty { padding: 32px 24px 38px; }
@@ -203,5 +214,5 @@ async function onAsk() {
 .citation-snippet { margin: 14px 0; padding-left: 12px; border-left: 2px solid #bbd0c2; color: #475569; font-size: 13px; }
 .evidence-empty { padding-top: 8px; }
 @media (max-width: 900px) { .workspace-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
-@media (max-width: 500px) { .panel-heading { padding: 18px 16px 0; } .ask-form { margin: 16px; } .composer-footer { align-items: flex-start; } .response-body { padding: 6px 16px 20px; } .evidence-scope { margin: 14px 16px; } .evidence-list { padding: 0 14px 16px; } }
+@media (max-width: 500px) { .panel-heading { padding: 18px 16px 0; } .ask-form { margin: 16px; } .composer-footer { align-items: flex-start; } .submitted-question { margin: 14px 16px 0; } .response-body { padding: 6px 16px 20px; } .evidence-scope { margin: 14px 16px; } .evidence-list { padding: 0 14px 16px; } }
 </style>
