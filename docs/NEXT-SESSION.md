@@ -9,6 +9,7 @@
 - **R7B-7 指标边界：** 23 道可回答题中 23/23 命中预期文档与页码；Dense 对 28 题调用 LLM 26 次，弱引用支持检查为 27/28（其中含 5 道预期拒答），拒答判定 5/5。Hybrid 完成 28 题检索对照，未运行生成。阈值 0.45 未校准，未开 Vision/reranker；实际人民币费用未查账单。
 - **P7 产品化收口（部分完成）：** 问答台已提交问句/同句重试；管理员课程重命名/删除 UI；validation 最短启动与四类 Demo。任务记录为后端 pytest 32 passed、前端测试 15 passed、构建通过（主 JS 包约 1.34 MB，有 Vite 500 KB 警告）。这些不是全量回归或真实端到端验收。数据库 dump/资料恢复实操、Demo Reset、成本/资源限制专项验收仍待处理；不先扩展功能。
 - **R8 清单已备、真人共验待做：** 可执行清单 `corpus/local/r8-joint-acceptance-2026-10-17/CHECKLIST.md`；validation 已补三角色/四类勾选模板。预检：演示库 4/17/385；**student 尚未加入四课**（须管理员先授权）；Fake auth/courses 26 passed。不得把预检标成 R8 通过。
+- **R8 通过门槛口径：** 受控清单中 C4“系统失败恢复”行标为可选，但 `docs/validation.md` 要求四类演示关键路径通过。现场按严格门槛执行：必须验证失败后重试沿用已提交问句；若无法触发/复现故障，记录为阻塞，R8 保持待验。清单位于 `corpus/local/`，本轮未修改该受控文件。
 - 旧库 `univ_course_rag` 与 Fake 库 `univ_course_rag_r7b6` 未被本卡改写；根 `.env` 可能仍指旧库，服务不会自动连 `r7b6_real`。
 - Docling worktree `feat/r7b4-offline-freeze` **不要**合并、续跑或删除。
 
