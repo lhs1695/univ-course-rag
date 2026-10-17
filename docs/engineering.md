@@ -1,6 +1,6 @@
 # 现行工程合同
 
-更新：2026-10-16。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。R7 有限真实运行见 [结果登记](evaluation-results.md)，不改变本合同默认设置。
+更新：2026-10-17。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。R7 有限真实运行及 Docling 停止原因见 [结果登记](evaluation-results.md)。
 
 ## 目录
 
@@ -37,20 +37,19 @@
 
 路线为开源组件复用与课程适配，不声称原创 BM25、RRF、模型或切分算法。实际使用方式如下；完整复用决策规则见 [workflow](workflow.md#reuse-gate)。
 
-### R7B 开源选型（已定结论）
+### R7B 解析路线决策（2026-10-17）
 
-**已定且 R7B-2 已接入：Docling 为唯一主解析器。** PDF 经 `app.services.docling_adapter` 进入 parse_document（Document→Page→Element）；MD/TXT/DOCX/PPTX 仍走原路径。页级质量/PARTIAL 合同见 R7B-3。施工步骤见 [plan](implementation-plan.md#docling-稳妥型开工计划)；门槛见 [validation](validation.md#r7b-parser-selection)。
+**已决定停止 Docling 全量主解析路线，恢复现有 PyMuPDF 原生文字路径。** 这是一项已拍板、尚待代码实施的决定：当前 checkout 的 PDF 入口仍调用 `app.services.docling_adapter`，R7B-L1 完成前不得在交接、演示或报告中声称已切回 PyMuPDF。
 
-| 对象 | 角色 |
+| 对象 | 当前角色 |
 | --- | --- |
-| Docling | 唯一主解析器（MIT 代码；模型许可另核） |
-| MinerU | 仅 Docling 明确 blocker 时的后备，不并行维护生产管线 |
-| PyMuPDF4LLM / PaddleOCR | 低成本逃生或专项 OCR 后备，非主方案 |
-| RAGFlow / Kotaemon / Dify / RAG-Anything / FlagEmbedding 等 | 只借鉴局部设计（parser 可替换、citation UX、元素分型、hybrid/rerank）；不整体迁移 |
+| PyMuPDF（已存在依赖） | 目标 PDF 默认路径；复用原生文字提取，不增加模型/运行时 |
+| Docling 2.140.0 | 历史代表页/全量实验；全量停在 8/17，因公式密集资料耗时不可接受，当前不续跑、不作为生产主解析器 |
+| OCR 工具 | 尚未选定；只有固定页面确认需要 OCR 后，才按页面范围与预算单独评估 |
+| EdgeParse / OpenDataLoader / MinerU / Marker | 当前不验证、不引入；避免再次开启新解析器选型循环 |
+| RAGFlow / Kotaemon / Dify / RAG-Anything / FlagEmbedding 等 | 只借鉴局部设计（解析调试、citation UX、hybrid/rerank）；不整体迁移 |
 
-**不选完整平台接管的原因（短）：** 本项目已有 FastAPI + Postgres/pgvector + Vue 骨架，整体换 RAGFlow/Dify/Kotaemon 重验成本高于收益；当前阻塞在解析与来源质量，不在图谱/Agent；PyMuPDF4LLM/PaddleOCR 不能单独覆盖中期公式+扫描+图表目标。更长选型讨论见 git 历史。
-
-**Docling 运行原则（R7B-1 已验证）：** 最小必要依赖（`docling==2.140.0`，含 RapidOCR/公式所需，**禁止** `docling[all]` 与默认 VLM/SmolDocling）；只在 ingestion/离线脚本加载；单机低并发；记录包版本、下载体积、峰值 RAM、耗时与失败。本机模型缓存优先 C:：`DOCLING_ARTIFACTS_PATH` / `DOCLING_CACHE_DIR` / `HF_HOME`（用户级环境变量，无密钥入仓）。可选依赖见 `backend/pyproject.toml` 的 `docling` extra。许可拆成代码包 / 模型权重 / 素材 / 托管服务四层分别核对。
+保留现有 FastAPI + Postgres/pgvector + Vue 骨架。R7B-L1 已恢复轻量入口和最小页级质量门禁；历史 Docling 适配器、extra 与 worktree 暂不删除或合并，另开清理卡再决定。PyMuPDF 的 AGPL/商业许可边界仍须按实际分发方式核对，不因其已安装而忽略许可义务。
 
 ### 已接入与已评估组件
 
@@ -72,7 +71,7 @@
 | PyMuPDF / python-pptx | 沿用当前解析依赖；本机核对版本为1.28.2/1.0.2 | 具体发行包声明随依赖保留，正式交付重新核对实际版本与发行方式；不由本表推断所有依赖同许可 |
 | LlamaIndex citation query engine | 仅作来源组织设计参考，未接入其数据库/鉴权/运行时 | 保留必要课程Source/实际上下文合同，不称已集成框架 |
 
-R7B-1 已在本机装入最小 Docling 并完成 16 代表页离线验证（通过，带登记限制）；**R7B-2 起 PDF 生产解析入口切换为 Docling 薄适配器**（Fake 可测；无包时安全失败）。 组件、模型、托管服务的许可/费用分别核对；代码包许可不能代替模型或服务条款。MinerU 只保留为 blocker 后备。
+Docling R7B-1 的 16 代表页测试曾通过（带登记限制），随后 R7B-4 全量冻结因不可接受耗时停在 8/17；完整证据见 [结果登记](evaluation-results.md#r7b-4-pause)。这是历史实验结果，不构成继续使用 Docling 的理由。R7B-L1 目标为切回 PyMuPDF 并补页级质量；不引入 MinerU 等替代主解析器。
 
 SciPy安装为CPython3.12 Windows二进制wheel（36.7MB），仅新增SciPy包，元数据要求NumPy>=2.0,<2.8，与现有2.5.4兼容，pip check通过；原始许可位于scipy-1.18.1.dist-info/LICENSE.txt，包含实际捆绑声明，随依赖保留。没有复制其源码、安装scikit-learn/模型平台或下载权重。
 
@@ -183,13 +182,11 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 逐页/幻灯片调用现成切分器，800字符容量、120最大重叠；MarkdownSplitter处理Markdown，其余TextSplitter处理抽取文本。实际重叠由结构决定；可容纳块优先保留，小章节可合并，超长代码/表格/段落仍会拆分，不保证围栏闭合或完整标题树。
 
-现行解析：**PDF 经 Docling 薄适配器**（`docling_adapter.parse_pdf_document` → `flatten_pages`）进入原有 `(page, text)` 切分；PPTX 读文本框和表格；DOCX 经 `iter_inner_content` 保持顶层段落/表格顺序；Markdown/TXT 按 UTF-8。DOCX 仍不还原物理分页/复杂布局。当前 `LOW_EXTRACTED_TEXT` 仍只比整份资料字符总量。即使生成模型支持图片，现有 `DeepSeekLLM.generate` 仍只发字符串。
+**当前代码（路线切换前）：** PDF 仍经 Docling 薄适配器（`docling_adapter.parse_pdf_document` → `flatten_pages`）进入原有 `(page, text)` 切分；PPTX 读文本框和表格；DOCX 经 `iter_inner_content` 保持顶层段落/表格顺序；Markdown/TXT 按 UTF-8。DOCX 仍不还原物理分页/复杂布局。当前 `LOW_EXTRACTED_TEXT` 仍只比整份资料字符总量。即使生成模型支持图片，现有 `DeepSeekLLM.generate` 仍只发字符串。此段是当前 checkout 的实际行为，不代表推荐继续采用 Docling。
 
-**R7B-3 页级质量合同：** `parse_document_with_quality` 返回文本页与 PDF 的 `ParseQualityReport`（其他格式为 None）；旧 `parse_document` 保留派生文本接口。报告记录观测总页、成功/异常/空页号和计数（空页也计入异常）、从 1 起的页号连续性与缺页、逐页元素/方法计数、已知模型身份、parser version、稳定结构化 SHA-256 与安全异常说明。空页指无可用元素文本；空页、页号缺口、元素失败或来源页不符均保守降为 PARTIAL，不直接推断实际内容错误。真实转换仅记录实测整次 wall time，未测逐页耗时为 None，禁止均摊伪造。哈希采用代码注明的 v1 UTF-8 canonical JSON，含页/元素及 page/bbox、状态、parser/model，保留阅读顺序，排除耗时。ingest 在切分/嵌入前拒绝 PARTIAL/FAILED（`incomplete PDF parse`）；Docling FAILED 仍抛 `unreadable PDF`，不冒充 ingest succeeded，旧完整索引与质量计数保留。成功片段附加 parser_version/structured_hash，原页号仍由 unit_index/page 定位，不入库完整报告或解析 JSON。
+**Docling 专属质量实现（待轻量路线替换/复用评估）：** 当前 `parse_document_with_quality` 返回文本页与 PDF 的 `ParseQualityReport`；报告记录观测总页、成功/异常/空页号和计数、页号连续性/缺页、逐页元素/方法计数、已知模型身份、parser version、结构化 SHA-256 与安全异常说明。当前实现将空页、页号缺口、元素失败或来源页不符降为 PARTIAL，并在切分/嵌入前拒绝 PARTIAL/FAILED；失败时保留旧完整索引。该合同依赖 Docling 的元素和结构化输出，不能原样视作 PyMuPDF 的现行实现。R7B-L1 应改为最小通用页级报告，明确区分解析执行失败与文字覆盖不完整，避免心理学的已知图像页令整份可读文字静默无法入库，也不得把部分覆盖显示成完整成功。
 
-**R7B-3 复用决策：** 继续调用已固定的 Docling 2.140.0 官方 converter/status 与 Document→Page→Element 薄适配（MIT，模型许可另核），不复制解析算法。上游转换状态不能代替本项目空页/连续性/原子替换门槛；因此本地只补 dataclass 报告、标准库 JSON/SHA-256/计时与入库状态检查。无新依赖或迁移，成本限适配器和 Fake 回归；真实 17 PDF 核对留 R7B-4。
-
-R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过；**R7B-2/R7B-3 已接入**：PDF 现行入口为 Docling 薄适配器，经页级质量门槛再 flatten 为原有 (page, text) 切分输入。旧纯文字 PyMuPDF 路径不再作为 PDF 默认入口。步骤见 plan，门槛见 validation；代表页报告见 `corpus/local/r7b-1-docling-2026-10-16/COMPARISON.md`（忽略区）。
+**目标合同（R7B-L1，尚未实现）：** 复用已安装的 PyMuPDF 原生文字提取与现有 `(page, text)` 切分接口；质量报告至少保存总页数、连续页码、每页文字长度、空页/稀疏页/异常字符、输入哈希、解析器版本与实测总耗时。空页不生成 embedding，但仍留在报告中。可读文字页可进入索引的前提是页映射完整且覆盖警告会明确显示；文件不可读、页数不一致、意外全空或不可恢复错误必须失败并保留旧完整索引。bbox/元素树不是中期必需，不把完整解析 JSON 存入数据库。
 
 ### R7B 课程资料来源合同
 
@@ -197,9 +194,11 @@ R7B **已定** Docling 为主解析器；R7B-1 代表页验证已通过；**R7B-
 
 当前固定资料均来自 MIT OpenCourseWare，并记录课程代码、课程标题、学期、教师、官方课程页、官方资源页/PDF URL、SHA-256 和项目使用状态。哲学明确是有限覆盖，仅第 1–4 讲；线性代数第 4、5 个文件已按官方实际讲次直接修正本地文件名，内容字节未改。页级预检只用于发现解析风险，不能把 `pages_with_text` 当作内容正确率，也不能把 OCR/公式/图片派生结果伪装成原生资料。
 
-### 解析证据中间层（接入后更新）
+### 解析证据与来源字段
 
-**现行（R7B-3）：** Docling 输出经薄适配进入 Document → Page → Element（Text/Formula/Table/Image/Chart），保留 page、bbox（可得时）、extraction_method、parser/model、status、asset_ref；结构化产物为事实源，Markdown/Chunk 为派生视图；PARTIAL/FAILED ≠ ingest succeeded。细节与验收子项见 [plan R7B-2/R7B-3](implementation-plan.md#docling-稳妥型开工计划)。切分/检索字段表在 flatten 之后仍适用；Element/bbox 保留在结构化对象，不复制到每个片段。
+**当前代码（Docling 路线，待切换）：** 适配器输出 Document → Page → Element（Text/Formula/Table/Image/Chart），可保留 page、bbox、extraction_method、parser/model、status、asset_ref；这些结构不应被描述成 PyMuPDF 路线已经实现的能力。
+
+**目标（R7B-L1，待实现）：** 采用轻量的逐页文本记录和质量摘要，Markdown/Chunk 是可检索派生视图；原页号通过既有 unit_index/page 定位。原生文字、未来可能的 OCR/公式/图片派生内容必须区分。细节见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan)；不要求为中期建立完整通用元素图或 bbox 入库合同。
 
 | 字段 | 当前含义 |
 | --- | --- |
@@ -254,7 +253,7 @@ GET /courses/{course_id}/documents/{document_id}/content先做Session/成员鉴�
 | 类别 | 合同 |
 | --- | --- |
 | 文件/问题 | 沿用当前单文件大小、PDF 页数、问题长度等 API 限制；用户可理解的主要限制由 UI 提示 |
-| 解析 | Docling 低并发、固定版本、最小必要 extras/模型；按代表页/文件范围测试，避免无谓全量重跑 |
+| 解析 | 现有 PyMuPDF 原生文字提取为默认；不新增主解析器。OCR/公式/视觉仅针对固定页面另立任务并设资源/耗时上限 |
 | Embedding | 固定模型与 batch；资料冻结后不因 UI/prompt 小改反复全量向量化 |
 | Retrieval | 固定候选上限与最终 Top-K；课程过滤先于召回 |
 | Rerank | 默认关闭；只有 baseline 证明“候选已召回但排序不足”才开启 |
@@ -275,7 +274,7 @@ GET /courses/{course_id}/documents/{document_id}/content先做Session/成员鉴�
 - 权威工作区仍是本机 D:\workspace\univ-course-rag；Git 状态和最终验收以本机工作区为准。
 - 一个工作区同一时刻只允许一个写入型 coding agent 负责代码修改；其他 Agent 只做只读检查、研究或 review，避免两个 agent 同时改同一工作树。
 - 如果使用远程云电脑，只同步代码和合成/公开测试资料；17 份受控课程资料、数据库恢复包、.env 和其他本机数据默认不上传。远程结果必须回到本机 Git 工作区核对后才算项目事实。
-- Windows 原生与 WSL2 均可作为本机执行环境；优先保持与最终演示一致的环境。若为 Docling/本地工具选择 WSL2，只把它当执行层，不改变项目权威路径和数据合同。
+- Windows 原生与 WSL2 均可作为本机执行环境；优先保持与最终演示一致的环境。只有选定工具出现明确兼容 blocker 时才讨论 WSL2，不因解析器试验建立第二套项目事实源。
 
 <a id="query-log-retention"></a>
 
@@ -347,4 +346,4 @@ trend 与 summary、问句列表来自同一条 SQL：按课内角色、最终�
 
 ## 当前待验证边界
 
-R7 新隔离库已核验0011/pgvector和真实供应商可用性，单课程纯文字效果见 [结果登记](evaluation-results.md)。原长期目标库迁移、性能/并发、实际账单、人工事实复核和拒答/阈值校准、关键词独有证据的充分性、Docling 代表页验证、复杂资料解析、页级质量、视觉输入及内部联合验收仍待验证。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
+R7 新隔离库已核验0011/pgvector和真实供应商可用性，单课程纯文字效果见 [结果登记](evaluation-results.md)。原长期目标库迁移、性能/并发、实际账单、人工事实复核和拒答/阈值校准、关键词独有证据的充分性、PyMuPDF 轻量路径的页级质量、四课新基线、视觉输入及内部联合验收仍待验证。Docling 代表页测试已完成但带限制，全量路线因耗时不可接受而停止。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。

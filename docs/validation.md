@@ -1,70 +1,44 @@
 # 验证与中期重跑指南
 
-更新：2026-10-16。R7 有限对照与运行日志见 [evaluation-results](evaluation-results.md)；R7B **施工步骤**见 [plan 稳妥型开工计划](implementation-plan.md#docling-稳妥型开工计划)。本文只保留验收方法与通过/失败门槛。操作规则见 [workflow](workflow.md)。
+更新：2026-10-17。R7 有限对照与运行日志见 [evaluation-results](evaluation-results.md)；R7B **当前施工步骤**见 [轻量解析路线计划](implementation-plan.md#r7b-lightweight-plan)。Docling 代表页和全量试验均为历史记录，不能作为当前主解析路线。本文只保留验收方法与通过/失败门槛。操作规则见 [workflow](workflow.md)。
 
 <a id="r7b-parser-selection"></a>
 
-## R7B Docling 代表页离线验证（门槛）
+## R7B 轻量解析路线验收门槛
 
-下一实现项只验证已确定的 Docling 主解析器：不入库、不生成向量、不冻结题集、不调用云模型。样本约 12–16 页的选取与安装步骤以 plan R7B-1 为准。**只有在用户明确允许较大依赖/模型下载后才安装；最小可行配置，不装全量 extras。** MinerU 不在本项并行运行。
+**路线决定：** 停止 Docling 全量主解析路线，当前目标是恢复现有 PyMuPDF 原生文字提取。生产 PDF 默认已为 PyMuPDF 轻量路径（R7B-L1 已通过）。
+
+### R7B-L1：默认入口与页级质量门禁
 
 | 维度 | 通过证据 |
-| --- | --- |
-| 正文与顺序 | 对照原页检查缺字、错序、重复、页眉页脚污染；不只比较字符数 |
-| OCR | 纯图像页产生可读文字，原页号不丢；普通文字页不因强制 OCR 明显退化 |
-| 公式 | 关键变量、上下标、运算符、矩阵结构与原页一致；LaTeX 可读≠数学正确 |
-| 表格/图表/图片 | 表头与单元关系可恢复；图片/图表至少被发现并保留 asset + page，能回原页；派生理解单独记录 |
-| 来源定位 | 至少保留原文件哈希、页码、元素类型和解析器/模型版本；优先验证页内 bbox |
-| 工程成本 | Windows 与现有硬件可重复运行；记录安装、模型下载、CPU/GPU、峰值资源、逐页耗时和失败 |
-| 许可与维护 | 固定包/模型版本和许可；只接公开 API/CLI，不复制解析算法，不引入整套 RAG 框架 |
+|---|---|
+| 依赖与入口 | 使用现有 PyMuPDF；PDF 默认不再调用 Docling；PPTX/DOCX/Markdown/TXT 路径不受无关影响 |
+| 页码完整性 | 报告总页数与 1-based 连续页号一致；空页仍有记录，不静默丢弃；每页文字长度可追溯 |
+| 质量标记 | 空页、稀疏页、明显异常字符分别记录；稀疏只作风险提示，不能单凭字符数宣称内容错误或正确 |
+| 覆盖与任务状态 | 区分解析执行失败和文字覆盖不完整；已知图像页可在明确显示覆盖警告时索引其余可读文字，但不得显示为内容完整；不可读、页数不一致、意外全空或不可恢复异常必须失败 |
+| 索引安全 | 致命解析失败不调用 embedder、不替换旧完整索引；质量警告不会被 UI 显示为普通完整成功 |
+| 测试 | Fake/单元测试覆盖空页、稀疏页、页码缺失、全空、部分覆盖警告、失败恢复；运行当前项测试与 Ruff |
 
-### 最小资源门槛
+本项不安装新依赖、不运行真实课程资料全量解析、不入库、不调用真实模型。代码切换完成前，不得把目标方案描述为现行代码。
 
-- 不执行 `all` extras，不下载与代表页无关的 VLM/音视频等模型。
-- 优先本机 Python API/CLI；Docling Serve 非中期必需。
-- 先代表页，通过后再全量 17 份；安装/模型明显超本机可接受范围则停在 R7B-1。
-- 解析耗时可较长，但必须可重复；中期目标是离线冻结，不是实时上传解析。
+### R7B-L2：固定代表页人工核对
 
-**硬失败：** 页码/来源丢失、代表公式系统性错误、关键视觉页无法核对、环境无法稳定复现 → 当前配置不得进入适配。通过后直接采用 Docling；出现明确 blocker 再另开 MinerU 后备项。
+从已有 17 份资料 inventory 固定少量页面，覆盖普通文字、线代公式、历史图文/表格、心理学图像页和哲学稀疏页。逐页对照原 PDF 检查缺字、错序、控制字符、公式/表格损坏、页码和引用。样本固定后不得按结果替换；复用既有预检，不先重跑 344 页。只对实际发现的缺口另开定向任务。
 
-### 结构化结果检查要点
+**通过证据：** 每类关键风险都有可复核页号和明确结论；尚未覆盖的图片/公式内容清楚标记，不以文字提取成功冒充视觉理解或公式正确。
 
-至少记录：页级成功/异常/空页与耗时；Text/Formula/Table/Image/Chart 代表元素；page、bbox（可得时）、哈希、parser/model version；native/OCR/formula/image/chart 来源性质分开；asset 能否回原页。检测到图片 ≠ 已理解图片。PARTIAL/FAILED 不得映射成 ingest succeeded。结构化结果与 Markdown 冲突时以结构化结果和原页为准。
+### R7B-L3：17 份轻量离线冻结
 
-### 主解析器决策
+全量前核对原文件 SHA-256/页数，只运行 PyMuPDF 原生文字提取，不运行 OCR、公式增强、表格模型或视觉模型。逐文件/逐页产物记录输入哈希、解析器版本、总耗时、页数、空页/稀疏页/异常页及终态。
 
-1. 先按硬门槛验证 Docling；通过后直接作为唯一主解析器。
-2. 不做无收益的平行选型平均分比较。
-3. 仅当 Docling 出现明确 blocker 且 MinerU 能稳定解决同一问题时，才另开后备验证。
-4. 单项小误差记入页级质量限制，不因此重新选型。
+- 单文件硬上限 3 分钟，全量硬上限 15 分钟（不含人工核对）。
+- 超时立即停止并汇报，不自动重试、不无限续跑、不进入后续阶段。
+- 17 份文件均有终态记录、页码/来源可对账，且失败不污染旧索引，才允许进入 R7B-5。
+- **状态（2026-10-17）：** R7B-L1…L3 与 R7B-5 已通过；证据见 [evaluation-results 轻量进度](evaluation-results.md#r7b-lightweight-pass)。R7B-6 起才允许受控入库。
 
-四课 PyMuPDF 预检画像与代表页风险说明见 [evaluation-results](evaluation-results.md#r7b-preflight)。
+四课预检画像见 [evaluation-results](evaluation-results.md#r7b-preflight)；施工步骤见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan)。
 
 <a id="product-acceptance"></a>
-
-
-## R7B-2 Docling 薄适配器（门槛）
-
-| 维度 | 通过证据 |
-|---|---|
-| 入口替换 | PDF 走 `docling_adapter`；MD/TXT/DOCX/PPTX 原路径 |
-| 项目模型 | Fake 可验证 Text/Formula/Table/Image/Chart + method/bbox/status |
-| 安全失败 | 无 Docling → 既有 `ParseError`；失败/空文不冒充成功 |
-| 回归 | `test_docling_adapter` + `test_parse` + Ruff；无关合同未破坏 |
-
-步骤见 [plan R7B-2](implementation-plan.md#docling-稳妥型开工计划)。本项不入库、不调云。
-
-## R7B-3 页级质量、来源和失败状态（门槛）
-
-| 维度 | 通过证据 |
-|---|---|
-| 页级报告 | Fake 验证总页、成功/异常/空页计数和页号、连续性/缺页、逐页元素与方法计数；空页计入异常并降为 PARTIAL |
-| 解析身份与耗时 | parser_version、已知元素模型集合、方法摘要；实测整次转换耗时，未测逐页为 None，可注入 Fake 页耗时 |
-| 结构化来源 | page/bbox 保留；canonical JSON 的 SHA-256 对耗时稳定，对来源结构变化敏感；成功 PDF 片段带 parser_version/structured_hash |
-| 硬失败 | converter PARTIAL/FAILED、空页不能成为 ingest succeeded；Fake 重入库失败保留旧片段、来源、版本和质量计数，且不调用 embedder |
-| 回归 | `test_docling_adapter`、`test_parse`、`test_ingest` 与触及文件 Ruff；无 Docling/模型安装要求 |
-
-R7B-3 仅证明 Fake/合成合同；17 PDF 内容质量、逐页实测和离线产物冻结留 R7B-4。步骤见 [plan](implementation-plan.md#docling-稳妥型开工计划)。
 
 ## 当前验收范围
 
@@ -94,9 +68,9 @@ backend/.venv/Scripts/python.exe -m ruff check
 
 ## 中期前重新建立数据与基线
 
-1. 先按 [R7B 门槛](#r7b-parser-selection) 固定 Docling 包/模型版本、许可、运行方式和代表页结果；未通过不得进入四课正式解析。实际安装前另确认较大依赖/模型下载授权。施工顺序见 [plan](implementation-plan.md#docling-稳妥型开工计划)。
+1. 先按 [R7B 门槛](#r7b-parser-selection) 验收 PyMuPDF 轻量默认入口和页级质量门禁；不安装新解析器，不恢复 Docling 全量任务。施工顺序见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan)。
 2. 固定可恢复的实际工作区、依赖、迁移、配置与索引身份。包含未提交改动时HEAD不足以标识版本；数据、结构化解析产物与配置恢复副本留受控位置。
-3. 离线解析四课资料并核对页级质量。预检分类见 evaluation-results；Docling 阶段再记录总页、成功/异常页、原生文字/OCR/公式/表格/图片/图表、解析器和模型版本、结构化产物哈希。机器识别结果与原生正文分开。
+3. 离线解析四课资料并核对页级质量。预检分类见 evaluation-results；轻量阶段记录总页、每页文字长度、空页/稀疏页/异常字符、页码连续性、输入哈希、解析器版本与实测耗时。后续若对固定页面使用 OCR/公式/视觉专项，必须分开记录处理方法与模型身份，不将机器派生内容伪装成原生正文。
 4. 在明确目标库应用当前迁移、受控重新入库。记录 Document.chunking_version 和当前索引，确认未混 Fake 与真实向量；关键页解析失败不得显示普通成功，不覆盖旧完整索引或自动删除资料。
 5. 新建可核对的题集，先标注必需要点、支持文档/页或区域与应否拒答。同知识点改写不跨开发/测试；先开发集校准，再冻结测试集，不按结果删失败题。
 6. 取得当次联网/计费授权与预算，分别验证服务可用性，再执行有限规模对照；配置非空不证明云服务可用，浏览器超时不证明计费停止。

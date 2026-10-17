@@ -1,6 +1,6 @@
 # 开发与运行工作流
 
-更新：2026-10-16。任务以 [施工计划](implementation-plan.md) 为准，下一步见 [当前交接](NEXT-SESSION.md)。本文件只保留有效操作规则。
+更新：2026-10-17。任务以 [施工计划](implementation-plan.md) 为准，下一步见 [当前交接](NEXT-SESSION.md)。本文件只保留有效操作规则。
 
 ## 会话与变更
 
@@ -19,7 +19,7 @@
 
 每项在现有 engineering 或施工计划记录：具体对象与版本/commit、许可、实际采用方式、接入/迁移/维护成本、剩余本地工作和验收。只有参考链接不能算接入；自写须比较现成对象的实际不适配之处。
 
-分词、BM25、重排、解析等算法优先直接复用；本地保留课程授权、ID/索引映射、生命周期、上限与错误适配。**复杂资料解析：Docling 唯一主解析器；MinerU 仅 blocker 后备。** R7B 施工步骤见 [plan 稳妥型开工计划](implementation-plan.md#docling-稳妥型开工计划)，验收门槛见 [validation](validation.md#r7b-parser-selection)；本文件不重复地图长文。复制源码保留原声明；不扩大为通用检索、模型或插件框架。
+分词、BM25、重排、解析等算法优先直接复用；本地保留课程授权、ID/索引映射、生命周期、上限与错误适配。**PDF 当前决策为恢复现有 PyMuPDF 原生文字路径，停止 Docling 全量主解析路线；代码切换前仍以实际工作区为准。** 不再启动新的解析器选型循环；OCR/公式/视觉仅针对确认的具体页面另立任务。R7B 施工步骤见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan)，验收门槛见 [validation](validation.md#r7b-parser-selection)。复制源码保留原声明；不扩大为通用检索、模型或插件框架。
 
 开源“抄作业”以最小复用单元为准：优先调用成熟 API/CLI，其次参考稳定的数据结构或适配代码，最后才复制短小且许可证明确的必要源码。每次复制必须保留原版权/许可证声明并记录来源 commit。不要复制整仓库、默认配置、模型权重或第三方素材；模型和权重的许可单独核对。
 
@@ -71,7 +71,7 @@ frontend 使用 npm ci（新锁文件环境）和 npm run dev；正常运行不�
 
 本机工作区 D:\workspace\univ-course-rag 是项目权威工作区；最终 Git 状态、测试、资料、结果和验收均以本机工作区为准。一个工作树同一时刻只允许一个写入型 coding agent 施工，其他 Agent 只能研究、只读检查或 review。
 
-Codex CLI、Cursor 等本机 coding agent 可在 Windows 原生或 WSL2 使用；默认优先与最终中期演示一致的本机 Windows 环境。若 Docling 或其他本地解析依赖在 Windows 出现明确兼容/性能 blocker，再使用 WSL2 作为执行层，不因此建立第二套项目事实源。WSL2 中的 venv、node_modules 与 Windows 原生环境分开，不跨环境直接复用二进制环境目录。
+Codex CLI、Cursor 等本机 coding agent 可在 Windows 原生或 WSL2 使用；默认优先与最终中期演示一致的本机 Windows 环境。只有已选工具出现明确兼容 blocker 时才考虑 WSL2，不因 Docling 的性能问题迁移环境或重跑任务。WSL2 中的 venv、node_modules 与 Windows 原生环境分开，不跨环境直接复用二进制环境目录。
 
 Grok Bot 的 hosted computer 是独立的云 Linux 工作区，不是本机 D:\workspace。若用 Grok Bot 做辅助开发，只允许把它当可恢复的远程副本/研究环境：优先同步代码与合成/公开测试资料，真实四课资料、数据库恢复包、.env、Cookie 和其他本机受控数据默认不上传；远程改动必须回到本机工作区通过 Git diff、测试和实际验收后才算项目事实。不要让 Grok Bot 与本机 Cursor/Codex 同时修改同一工作树。
 
@@ -102,4 +102,4 @@ Grok Bot 的 hosted computer 是独立的云 Linux 工作区，不是本机 D:\w
 
 ## 实验与交付
 
-中期前先完成 Docling 主解析器验证、页级质量和四课离线解析冻结，再以改进后的实际工作区和固定配置重新入库/评测，保存可恢复基线；HEAD 不等于含未提交修改的当前版本。R7 新隔离库/资料/题集/输出只证明旧单课纯文字路径，具体结果见 [evaluation-results](evaluation-results.md)；AI 预标与判分无人工复核，不能冒充人工事实正确率或四课新基线。后续开发集选参数、测试集封存，解析/切分、模型、检索与回答机制分别比较，失败和降级不删。R8 为用户与开发者共同操作的内部验收；若另称独立试用，仍须非开发者实际独立完成。展示材料待项目能力稳定后讨论。
+中期前先完成 PyMuPDF 轻量入口与页级质量门禁、固定代表页核对、带硬时间上限的四课离线冻结，再以改进后的实际工作区和固定配置重新入库/评测，保存可恢复基线；HEAD 不等于含未提交修改的当前版本。Docling 全量冻结已停在 8/17，不续跑，旧产物只作历史证据。R7 新隔离库/资料/题集/输出只证明旧单课纯文字路径，具体结果见 [evaluation-results](evaluation-results.md)；AI 预标与判分无人工复核，不能冒充人工事实正确率或四课新基线。后续开发集选参数、测试集封存，解析/切分、模型、检索与回答机制分别比较，失败和降级不删。R8 为用户与开发者共同操作的内部验收；若另称独立试用，仍须非开发者实际独立完成。展示材料待项目能力稳定后讨论。
