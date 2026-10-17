@@ -4,9 +4,10 @@
 
 ## 当前状态
 
-- 主仓：`main`（相对 `origin/main` ahead；以最新本地提交为准）。现场未提交文件：`新开题资料.md`（研究笔记，勿误提交）。
+- 主仓：`main`（存在尚未 push 的本地提交；交接以本机当前工作区为准）。现场用户未提交文件为 `新开题资料.md`（研究笔记，勿误提交、勿随文档对账提交）。
 - **R7B 轻量路线已到 R7B-7 通过：** 独立库 `univ_course_rag_r7b6_real`，17 份 / 385 chunks，SiliconFlow BGE-M3 + 有限 DeepSeek；证据见 `corpus/local/r7b-7-four-course-baseline-2026-10-17/`（忽略区）。答案指标为 AI 预标+引用支持，不是人工事实正确率。
-- **P7 产品化收口（部分完成）：** 问答台已提交问句/同句重试；管理员课程重命名/删除 UI；validation 最短启动与四类 Demo。P7-3 dump 实操恢复、Demo Reset、P7-4 成本面板仍待验。
+- **R7B-7 指标边界：** 23 道可回答题中 23/23 命中预期文档与页码；Dense 对 28 题调用 LLM 26 次，弱引用支持检查为 27/28（其中含 5 道预期拒答），拒答判定 5/5。Hybrid 完成 28 题检索对照，未运行生成。阈值 0.45 未校准，未开 Vision/reranker；实际人民币费用未查账单。
+- **P7 产品化收口（部分完成）：** 问答台已提交问句/同句重试；管理员课程重命名/删除 UI；validation 最短启动与四类 Demo。任务记录为后端 pytest 32 passed、前端测试 15 passed、构建通过（主 JS 包约 1.34 MB，有 Vite 500 KB 警告）。这些不是全量回归或真实端到端验收。数据库 dump/资料恢复实操、Demo Reset、成本/资源限制专项验收仍待处理；不先扩展功能。
 - **R8 清单已备、真人共验待做：** 可执行清单 `corpus/local/r8-joint-acceptance-2026-10-17/CHECKLIST.md`；validation 已补三角色/四类勾选模板。预检：演示库 4/17/385；**student 尚未加入四课**（须管理员先授权）；Fake auth/courses 26 passed。不得把预检标成 R8 通过。
 - 旧库 `univ_course_rag` 与 Fake 库 `univ_course_rag_r7b6` 未被本卡改写；根 `.env` 可能仍指旧库，服务不会自动连 `r7b6_real`。
 - Docling worktree `feat/r7b4-offline-freeze` **不要**合并、续跑或删除。
@@ -29,13 +30,13 @@
 1. 进程级切到 `univ_course_rag_r7b6_real`，启前后端（见 validation「演示与恢复」与清单 §1）。
 2. 管理员把 student 加入四门 R7B6C 课。
 3. 按清单走管理员 → 教师 → 学生（四类演示 + PHIL-T02 观察）。
-4. 勾选通过后写入 evaluation-results，再标 R8 通过并进 R9。
+4. 对每项记录实际操作人、课程、结果和卡点；只有满足 `CHECKLIST.md` 的真人验收条件后，才写入 evaluation-results 并标 R8 通过。
 
 不默认 push；不续跑 Docling；不默认 Vision/rerank；共验提问保持小样本并记成本。
 
 ## 后续顺序
 
-R8 真人共验通过 →（可选补 P7-3 dump 恢复实操 / Demo Reset）→ R9 冻结与展示材料。
+R8 真人共验通过 → 优先补一轮受控 dump/资料恢复验证（Demo Reset 可选，按时间决定）→ R9 冻结与展示材料。R8 前不为追求“全功能”扩写 P7，也不把未完的可选项伪装成通过。
 
 ## 已知限制（带入后续）
 

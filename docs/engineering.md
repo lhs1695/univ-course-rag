@@ -39,7 +39,7 @@
 
 ### R7B 解析路线决策（2026-10-17）
 
-**已决定停止 Docling 全量主解析路线，恢复现有 PyMuPDF 原生文字路径。** 这是一项已拍板、尚待代码实施的决定：当前 checkout 的 PDF 入口仍调用 `app.services.docling_adapter`，R7B-L1 完成前不得在交接、演示或报告中声称已切回 PyMuPDF。
+**Docling 全量主解析路线已停止；生产 PDF 默认路径已切回 PyMuPDF 原生文字提取。** R7B-L1 已实现最小页级质量报告，R7B-L2/L3 完成代表页核对与 17 份离线冻结。生产入口在 `app.services.parse`；`app.services.docling_adapter` 保留为历史/可选适配代码，不是当前默认 PDF 入口。旧 worktree 不续跑、不合并、不清理，后续如需删除另立明确清理任务。
 
 | 对象 | 当前角色 |
 | --- | --- |
@@ -182,11 +182,9 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 逐页/幻灯片调用现成切分器，800字符容量、120最大重叠；MarkdownSplitter处理Markdown，其余TextSplitter处理抽取文本。实际重叠由结构决定；可容纳块优先保留，小章节可合并，超长代码/表格/段落仍会拆分，不保证围栏闭合或完整标题树。
 
-**当前代码（路线切换前）：** PDF 仍经 Docling 薄适配器（`docling_adapter.parse_pdf_document` → `flatten_pages`）进入原有 `(page, text)` 切分；PPTX 读文本框和表格；DOCX 经 `iter_inner_content` 保持顶层段落/表格顺序；Markdown/TXT 按 UTF-8。DOCX 仍不还原物理分页/复杂布局。当前 `LOW_EXTRACTED_TEXT` 仍只比整份资料字符总量。即使生成模型支持图片，现有 `DeepSeekLLM.generate` 仍只发字符串。此段是当前 checkout 的实际行为，不代表推荐继续采用 Docling。
+**当前代码（R7B-L1 后）：** PDF 由 `app.services.parse` 使用 PyMuPDF `fitz` 的 `get_text("text")` 原生文字路径，返回现有 `(page, text)` 切分接口和 `ParseQualityReport`；PPTX 读文本框/表格，DOCX 经 `iter_inner_content` 保持顶层段落/表格顺序，Markdown/TXT 按 UTF-8。DOCX 仍不还原物理分页/复杂布局。`LOW_EXTRACTED_TEXT` 仍按整份资料字符总量判断。现有 `DeepSeekLLM.generate` 只发送文本，不会因为模型具备视觉能力而自动读取 PDF 图片。
 
-**Docling 专属质量实现（待轻量路线替换/复用评估）：** 当前 `parse_document_with_quality` 返回文本页与 PDF 的 `ParseQualityReport`；报告记录观测总页、成功/异常/空页号和计数、页号连续性/缺页、逐页元素/方法计数、已知模型身份、parser version、结构化 SHA-256 与安全异常说明。当前实现将空页、页号缺口、元素失败或来源页不符降为 PARTIAL，并在切分/嵌入前拒绝 PARTIAL/FAILED；失败时保留旧完整索引。该合同依赖 Docling 的元素和结构化输出，不能原样视作 PyMuPDF 的现行实现。R7B-L1 应改为最小通用页级报告，明确区分解析执行失败与文字覆盖不完整，避免心理学的已知图像页令整份可读文字静默无法入库，也不得把部分覆盖显示成完整成功。
-
-**目标合同（R7B-L1，尚未实现）：** 复用已安装的 PyMuPDF 原生文字提取与现有 `(page, text)` 切分接口；质量报告至少保存总页数、连续页码、每页文字长度、空页/稀疏页/异常字符、输入哈希、解析器版本与实测总耗时。空页不生成 embedding，但仍留在报告中。可读文字页可进入索引的前提是页映射完整且覆盖警告会明确显示；文件不可读、页数不一致、意外全空或不可恢复错误必须失败并保留旧完整索引。bbox/元素树不是中期必需，不把完整解析 JSON 存入数据库。
+**现行 PDF 页级质量合同：** 报告记录总页数、逐页页码与文字长度、空页/稀疏页/异常字符、页码连续性、输入 SHA-256、解析器版本、结构化摘要哈希、耗时和质量说明。空页不生成 chunk，但仍在报告中；短于 50 字的非空页、异常字符页或空页会使资料标记 `COVERAGE_INCOMPLETE`，允许其余可读文字入库但不能显示成完整覆盖。不可读、页码不连续或整份无可提取文字会失败；全部向量生成成功后，旧 chunks 与新 chunks 在同一数据库事务中替换，失败事务回滚并保留旧索引。该机制是低成本风险提示，不证明内容完整、事实正确或图片/公式已识别。
 
 ### R7B 课程资料来源合同
 
@@ -196,9 +194,7 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 ### 解析证据与来源字段
 
-**当前代码（Docling 路线，待切换）：** 适配器输出 Document → Page → Element（Text/Formula/Table/Image/Chart），可保留 page、bbox、extraction_method、parser/model、status、asset_ref；这些结构不应被描述成 PyMuPDF 路线已经实现的能力。
-
-**目标（R7B-L1，待实现）：** 采用轻量的逐页文本记录和质量摘要，Markdown/Chunk 是可检索派生视图；原页号通过既有 unit_index/page 定位。原生文字、未来可能的 OCR/公式/图片派生内容必须区分。细节见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan)；不要求为中期建立完整通用元素图或 bbox 入库合同。
+**现行实现（R7B-L1）：** 生产 PDF 解析报告使用逐页文字记录与质量摘要；Chunk 作为可检索派生视图，原页号通过既有 page/unit_index 定位。当前生产路径只抽取原生文字，不生成 bbox、OCR、公式识别、图片描述或图表抽取结果。`parse_quality.py` / `docling_adapter.py` 中仍保留通用元素类型与历史适配代码，但不能据此声称当前索引已包含图片/公式等结构化内容。若以后新增 OCR/公式/图片派生内容，必须区分 extraction method、模型身份和原生文字来源；中期不要求建立完整通用元素图或 bbox 入库合同。
 
 | 字段 | 当前含义 |
 | --- | --- |
@@ -347,4 +343,4 @@ trend 与 summary、问句列表来自同一条 SQL：按课内角色、最终�
 
 ## 当前待验证边界
 
-R7 新隔离库已核验0011/pgvector和真实供应商可用性，单课程纯文字效果见 [结果登记](evaluation-results.md)。原长期目标库迁移、性能/并发、实际账单、人工事实复核和拒答/阈值校准、关键词独有证据的充分性、PyMuPDF 轻量路径的页级质量、四课新基线、视觉输入及内部联合验收仍待验证。Docling 代表页测试已完成但带限制，全量路线因耗时不可接受而停止。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
+R7B-7 四课真实基线已核验隔离库 `univ_course_rag_r7b6_real` 的 migration 0011、4 课 / 17 份资料 / 385 chunks，以及来源映射、索引隔离和幂等复跑；指标与限制见 [结果登记](evaluation-results.md)。仍待验证：原长期目标库是否需要迁移、真实 Postgres 下的完整产品路径、性能/并发、供应商实际账单、人工事实复核、阈值校准、关键词独有证据充分性、视觉输入及 R8 真人联合验收。PyMuPDF 页级报告和固定代表页已有测试/冻结证据，但覆盖警告不是内容完整性证明。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
