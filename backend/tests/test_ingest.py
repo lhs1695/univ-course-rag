@@ -1,7 +1,6 @@
 import io
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from types import SimpleNamespace
 from uuid import UUID, uuid4
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -14,6 +13,7 @@ from app.models.user import User, UserRole
 from app.services.chunk import CHUNKING_VERSION
 from app.services.embedder import FakeEmbedder, get_embedder
 from app.services.ingest import (
+    COVERAGE_INCOMPLETE,
     LOW_EXTRACTED_TEXT,
     IngestLeaseLost,
     _touch_running_job,
@@ -28,13 +28,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from tests.conftest import add_user
-from tests.test_docling_adapter import FakeConverter, FakeItem, _document, _prov
+from tests.test_parse import make_pdf
 
 UNIQUE_SENTENCE = "紫石英口令：本课向量必须绑定 course_id-alpha-9371。"
 PPTX_SENTENCE = "紫石英PPT口令：幻灯片锚点 delta-8820。"
 DOCX_SENTENCE = "紫石英Word口令：实验指导锚点 epsilon-5503。"
 SAMPLE_MD = Path(__file__).parent / "fixtures" / "sample.md"
-SAMPLE_PDF = Path(__file__).parent / "fixtures" / "sample.pdf"
 SAMPLE_PPTX = Path(__file__).parent / "fixtures" / "sample.pptx"
 SAMPLE_DOCX = Path(__file__).parent / "fixtures" / "sample.docx"
 PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
@@ -98,7 +97,7 @@ def assert_safe_quality_metadata(payload: dict, chunks: list[Chunk]) -> None:
     assert payload["source_unit_count"] >= 1
     assert payload["extracted_char_count"] >= 1
     assert payload["chunk_count"] == len(chunks)
-    assert payload["quality_warning"] in {None, LOW_EXTRACTED_TEXT}
+    assert payload["quality_warning"] in {None, LOW_EXTRACTED_TEXT, COVERAGE_INCOMPLETE}
     assert payload["chunking_version"] == CHUNKING_VERSION
     assert all(chunk.source_metadata is not None for chunk in chunks)
     assert {"text", "snippet", "storage_path"}.isdisjoint(payload)
@@ -218,15 +217,7 @@ def test_upload_sample_docx_indexes_unique_sentence(client: TestClient, db: Sess
     assert_safe_quality_metadata(detail.json(), chunks)
 
 
-def test_upload_sample_pdf_stays_available(client: TestClient, db: Session, monkeypatch) -> None:
-    # API/ingest contract test: optional Docling and its model downloads are not required.
-    monkeypatch.setattr(
-        "app.services.docling_adapter._DoclingPdfConverter",
-        lambda **_kwargs: SimpleNamespace(convert=lambda _data: SimpleNamespace(
-            document=_document(FakeItem(label="text", text="Sample PDF", prov=[_prov(1)])),
-            status="success",
-        )),
-    )
+def test_upload_sample_pdf_stays_available(client: TestClient, db: Session) -> None:
     teacher = add_user(db, "t1", "pass", UserRole.teacher)
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
@@ -234,7 +225,7 @@ def test_upload_sample_pdf_stays_available(client: TestClient, db: Session, monk
 
     uploaded = client.post(
         f"/courses/{course.id}/documents",
-        files={"file": ("sample.pdf", SAMPLE_PDF.read_bytes(), "application/pdf")},
+        files={"file": ("sample.pdf", make_pdf("Sample PDF"), "application/pdf")},
     )
 
     assert uploaded.status_code == 201
@@ -461,14 +452,7 @@ def test_corrupt_docx_fails_without_chunks(client: TestClient, db: Session) -> N
     assert chunks == []
 
 
-def test_corrupt_pdf_fails_without_chunks(client: TestClient, db: Session, monkeypatch) -> None:
-    def broken_conversion(_data):
-        raise ValueError("scripted PDF decoding failure")
-
-    monkeypatch.setattr(
-        "app.services.docling_adapter._DoclingPdfConverter",
-        lambda **_kwargs: SimpleNamespace(convert=broken_conversion),
-    )
+def test_corrupt_pdf_fails_without_chunks(client: TestClient, db: Session) -> None:
     teacher = add_user(db, "t1", "pass", UserRole.teacher)
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
@@ -641,16 +625,22 @@ def test_ingest_strips_postgresql_nul_before_embedding_and_storage(
     job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
     db.add(job)
     db.commit()
+    from app.services.parse_quality import build_native_pdf_quality_report
+    text = "vector\x00database evidence"
+    report = build_native_pdf_quality_report(
+        [(1, text), (2, "\x00")], parser_version="test", input_sha256="0" * 64,
+    )
     monkeypatch.setattr(
-        "app.services.docling_adapter._DoclingPdfConverter",
-        lambda **_kwargs: SimpleNamespace(convert=lambda _data: SimpleNamespace(
-            document=_document(FakeItem(
-                label="text", text="vector\x00database evidence", prov=[_prov(1)],
-            )), status="success",
-        )),
+        "app.services.ingest.parse_document_with_quality",
+        lambda *args, **kwargs: ([(1, text), (2, "\x00")], report),
     )
 
-    process_ingest_job(db, job.id, FakeEmbedder())
+    class CapturingEmbedder(FakeEmbedder):
+        def embed(self, texts):
+            assert texts == ["vectordatabase evidence"]
+            return super().embed(texts)
+
+    process_ingest_job(db, job.id, CapturingEmbedder())
 
     db.expire_all()
     stored_job = db.get(IngestJob, job.id)
@@ -660,6 +650,8 @@ def test_ingest_strips_postgresql_nul_before_embedding_and_storage(
     assert stored_job.status == IngestJobStatus.succeeded.value
     assert [chunk.text for chunk in chunks] == ["vectordatabase evidence"]
     assert stored_document is not None
+    assert stored_document.source_unit_count == 1
+    assert stored_document.quality_warning == COVERAGE_INCOMPLETE
     assert stored_document.extracted_char_count == len("vectordatabase evidence")
 
 
@@ -931,17 +923,22 @@ def test_reingest_replaces_source_metadata_and_version_only_after_complete_succe
 
 
 @pytest.mark.parametrize(
-    ("status", "empty_page", "expected_error"),
-    [("partial_success", False, "incomplete PDF parse"),
-     ("failure", False, "unreadable PDF"),
-     ("success", True, "incomplete PDF parse"),
-     ("success", False, None)],
+    ("mode", "expected_error"),
+    [("partial", None), ("sparse", None), ("unreadable", "unreadable PDF"),
+     ("empty", "no extractable text"), ("failed_report", "incomplete PDF parse"),
+     ("success", None)],
 )
 def test_pdf_quality_gates_atomic_reingest(
-    db, tmp_path, monkeypatch, status, empty_page, expected_error,
+    db, tmp_path, monkeypatch, mode, expected_error,
 ) -> None:
     source = tmp_path / "fake.pdf"
-    source.write_bytes(b"pdf")
+    text = "short" if mode == "sparse" else ("new content " * 100).strip()
+    data = make_pdf(text, "") if mode == "partial" else make_pdf(text)
+    if mode == "empty":
+        data = make_pdf("")
+    elif mode == "unreadable":
+        data = b"not a PDF"
+    source.write_bytes(data)
     course = add_course(db, "PDF quality")
     document = Document(
         course_id=course.id, uploaded_by=uuid4(), filename=source.name,
@@ -960,13 +957,17 @@ def test_pdf_quality_gates_atomic_reingest(
     db.add_all([old, job])
     db.commit()
     old_id = old.id
-    converter = FakeConverter(_document(
-        FakeItem(label="text", text="new content " * 100, prov=[_prov(1)]),
-        pages=2 if empty_page else 1,
-    ), status=status)
-    monkeypatch.setattr(
-        "app.services.docling_adapter._DoclingPdfConverter", lambda **_kwargs: converter,
-    )
+    if mode == "failed_report":
+        from dataclasses import replace
+
+        from app.services.parse import parse_document_with_quality
+        from app.services.parse_quality import ParseStatus
+
+        pages, report = parse_document_with_quality(source.name, data)
+        monkeypatch.setattr(
+            "app.services.ingest.parse_document_with_quality",
+            lambda *args, **kwargs: (pages, replace(report, status=ParseStatus.FAILED)),
+        )
     embedder = RecordingEmbedder()
     process_ingest_job(db, job.id, embedder)
     db.expire_all()
@@ -987,7 +988,14 @@ def test_pdf_quality_gates_atomic_reingest(
     else:
         assert stored_job.status == IngestJobStatus.succeeded.value
         assert old_id not in {chunk.id for chunk in chunks}
-        assert stored.chunk_count == len(chunks) > 1
+        assert stored.chunk_count == len(chunks) >= 1
+        assert stored.source_unit_count == 1
+        assert stored.extracted_char_count == len(text)
+        assert stored.chunking_version == CHUNKING_VERSION
+        assert stored_job.error_message is None
+        assert stored.quality_warning == (
+            COVERAGE_INCOMPLETE if mode in {"partial", "sparse"} else None
+        )
         for chunk in chunks:
             assert chunk.page == chunk.source_metadata["unit_index"] == 1
             assert "parser_version" in chunk.source_metadata

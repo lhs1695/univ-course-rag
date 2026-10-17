@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.services.chunk import CHUNKING_VERSION, chunk_pages
-from app.services.docling_adapter import ParseStatus
 from app.services.embedder import Embedder
 from app.services.parse import (
     DEFAULT_PARSE_LIMITS,
@@ -17,9 +16,11 @@ from app.services.parse import (
     ParseLimits,
     parse_document_with_quality,
 )
+from app.services.parse_quality import ParseStatus
 from app.services.upstream import UpstreamUnavailable
 
 LOW_EXTRACTED_TEXT = "LOW_EXTRACTED_TEXT"
+COVERAGE_INCOMPLETE = "COVERAGE_INCOMPLETE"
 _POSTGRES_NUL = "\x00"
 SAFE_INGEST_ERRORS = frozenset({
     "UPSTREAM_UNAVAILABLE", "UPSTREAM_TIMEOUT", "INGEST_FAILED",
@@ -55,7 +56,10 @@ def _sanitize_extracted_pages(
     Apply this before chunking and embedding so the indexed text, metadata count,
     and persisted text describe the same extract on every supported database.
     """
-    return [(page, text.replace(_POSTGRES_NUL, "")) for page, text in pages]
+    return [
+        (page, clean) for page, text in pages
+        if (clean := text.replace(_POSTGRES_NUL, "")).strip()
+    ]
 
 
 def _claim_pending_job(db: DbSession, job_id: UUID) -> UUID | None:
@@ -123,7 +127,7 @@ def process_ingest_job(
         pages, quality = parse_document_with_quality(
             document.filename, data, limits=parse_limits,
         )
-        if quality is not None and quality.status is not ParseStatus.SUCCEEDED:
+        if quality is not None and quality.status is ParseStatus.FAILED:
             raise ParseError("incomplete PDF parse")
         pages = _sanitize_extracted_pages(pages)
         extracted_char_count = sum(len(text) for _, text in pages)
@@ -165,7 +169,8 @@ def process_ingest_job(
         document.extracted_char_count = extracted_char_count
         document.chunk_count = len(pieces)
         document.quality_warning = (
-            LOW_EXTRACTED_TEXT if extracted_char_count < low_text_chars else None
+            COVERAGE_INCOMPLETE if quality is not None and quality.status is ParseStatus.PARTIAL
+            else LOW_EXTRACTED_TEXT if extracted_char_count < low_text_chars else None
         )
         document.chunking_version = CHUNKING_VERSION
         completed = db.execute(

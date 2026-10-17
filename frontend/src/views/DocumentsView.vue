@@ -37,7 +37,9 @@
       <el-table-column prop="filename" label="文件" min-width="220" />
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="statusType(row.job_status)">{{ statusLabel(row.job_status) }}</el-tag>
+          <el-tag
+            :type="row.job_status === 'succeeded' && row.quality_warning === 'COVERAGE_INCOMPLETE' ? 'warning' : statusType(row.job_status)"
+          >{{ row.job_status === 'succeeded' && row.quality_warning === 'COVERAGE_INCOMPLETE' ? '已入库（覆盖不全）' : statusLabel(row.job_status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="失败原因" min-width="240">
@@ -52,6 +54,9 @@
               含文本单元 {{ row.source_unit_count }} · 抽取 {{ row.extracted_char_count }} 字 ·
               {{ row.chunk_count }} 切片
             </div>
+            <el-text v-if="row.quality_warning === 'COVERAGE_INCOMPLETE'" type="warning">
+              文本覆盖不完整，部分页面可能仅含图片或文本稀少，请核对原文
+            </el-text>
             <el-text v-if="row.quality_warning === 'LOW_EXTRACTED_TEXT'" type="warning">
               抽取文本较少，问答依据可能不完整
             </el-text>

@@ -13,7 +13,6 @@ from app.services.docling_adapter import (
     flatten_pages,
     parse_pdf_document,
 )
-from app.services.parse import ParseError, parse_document
 
 
 class FakeItem(SimpleNamespace):
@@ -147,8 +146,8 @@ def test_missing_docling_becomes_existing_safe_parse_error(monkeypatch) -> None:
 
     monkeypatch.setattr(builtins, "__import__", missing_docling)
 
-    with pytest.raises(ParseError, match="PDF parser is not installed"):
-        parse_document("missing.pdf", b"pdf")
+    with pytest.raises(DoclingAdapterError, match="PDF parser is not installed"):
+        parse_pdf_document(b"pdf", max_pages=10, max_text_chars=10_000)
 
 
 def test_resource_limits_for_page_count_and_text_size() -> None:

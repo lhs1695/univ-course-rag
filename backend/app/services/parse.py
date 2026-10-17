@@ -1,17 +1,16 @@
 from __future__ import annotations
 
+import hashlib
 import io
 from dataclasses import dataclass
+from time import perf_counter
 from zipfile import BadZipFile, ZipFile
 
 from app.config import Settings
-from app.services.docling_adapter import (
-    DoclingAdapterError,
+from app.services.parse_quality import (
     ParseQualityReport,
-    PdfConverter,
-    build_parse_quality_report,
-    flatten_pages,
-    parse_pdf_document,
+    build_native_pdf_quality_report,
+    has_abnormal_characters,
 )
 
 
@@ -53,11 +52,10 @@ def parse_document(
     data: bytes,
     *,
     limits: ParseLimits = DEFAULT_PARSE_LIMITS,
-    pdf_converter: PdfConverter | None = None,
 ) -> list[tuple[int | None, str]]:
     """Return (page, text) pairs. Page is 1-based for PDF/PPTX, 1 otherwise."""
     pages, _quality = parse_document_with_quality(
-        filename, data, limits=limits, pdf_converter=pdf_converter,
+        filename, data, limits=limits,
     )
     return pages
 
@@ -67,19 +65,11 @@ def parse_document_with_quality(
     data: bytes,
     *,
     limits: ParseLimits = DEFAULT_PARSE_LIMITS,
-    pdf_converter: PdfConverter | None = None,
 ) -> tuple[list[tuple[int | None, str]], ParseQualityReport | None]:
     """PDF quality is returned for inspection; ingest must gate on its status."""
     name = filename.lower()
     if name.endswith(".pdf"):
-        try:
-            document = parse_pdf_document(
-                data, converter=pdf_converter, max_pages=limits.max_pages,
-                max_text_chars=limits.max_text_chars,
-            )
-        except DoclingAdapterError as exc:
-            raise ParseError(str(exc)) from exc
-        return flatten_pages(document), build_parse_quality_report(document)
+        return _parse_pdf(data, limits)
     if name.endswith(".pptx"):
         _validate_ooxml_archive(data, limits)
         return _parse_ppt(data, limits), None
@@ -89,6 +79,57 @@ def parse_document_with_quality(
     if name.endswith((".md", ".markdown", ".txt")):
         return _parse_text(data, limits), None
     raise ParseError(_UNSUPPORTED)
+
+
+def _parse_pdf(
+    data: bytes, limits: ParseLimits,
+) -> tuple[list[tuple[int | None, str]], ParseQualityReport]:
+    try:
+        import fitz
+    except ImportError as exc:
+        raise ParseError("PDF parser is not installed") from exc
+    started = perf_counter()
+    try:
+        doc = fitz.open(stream=data, filetype="pdf")
+    except Exception as exc:
+        raise ParseError("unreadable PDF") from exc
+    pages: list[tuple[int, str]] = []
+    raw_abnormal_pages: set[int] = set()
+    extracted_chars = 0
+    try:
+        total_pages = doc.page_count
+        if total_pages > limits.max_pages:
+            raise ParseError(_TEXT_RESOURCE_LIMIT)
+        for index, page in enumerate(doc):
+            if index >= limits.max_pages:
+                raise ParseError(_TEXT_RESOURCE_LIMIT)
+            if page.number != index:
+                raise ParseError("incomplete PDF parse")
+            raw_text = page.get_text("text")
+            if has_abnormal_characters(raw_text):
+                raw_abnormal_pages.add(index + 1)
+            text = raw_text.replace("\r\n", "\n").strip()
+            extracted_chars += len(text)
+            _validate_text_size(extracted_chars, limits)
+            pages.append((index + 1, text))
+        if len(pages) != total_pages:
+            raise ParseError("incomplete PDF parse")
+    except ParseError:
+        raise
+    except Exception as exc:
+        raise ParseError("unreadable PDF") from exc
+    finally:
+        doc.close()
+    if not any(text for _, text in pages):
+        raise ParseError("no extractable text")
+    elapsed_ms = (perf_counter() - started) * 1000
+    report = build_native_pdf_quality_report(
+        pages, parser_version=f"pymupdf:{fitz.VersionBind}",
+        input_sha256=hashlib.sha256(data).hexdigest(),
+        raw_abnormal_pages=raw_abnormal_pages,
+        conversion_time_ms=elapsed_ms,
+    )
+    return [(number, text) for number, text in pages if text], report
 
 
 def _parse_text(data: bytes, limits: ParseLimits) -> list[tuple[int | None, str]]:
