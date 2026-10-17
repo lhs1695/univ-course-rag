@@ -11,7 +11,9 @@
 - **R8 清单已备、真人共验待做：** 可执行清单 `corpus/local/r8-joint-acceptance-2026-10-17/CHECKLIST.md`；validation 已补三角色/四类勾选模板。预检：演示库 4/17/385；**student 尚未加入四课**（须管理员先授权）；Fake auth/courses 26 passed。不得把预检标成 R8 通过。
 - **R8 通过门槛口径：** 受控清单中 C4“系统失败恢复”行标为可选，但 `docs/validation.md` 要求四类演示关键路径通过。现场按严格门槛执行：必须验证失败后重试沿用已提交问句；若无法触发/复现故障，记录为阻塞，R8 保持待验。清单位于 `corpus/local/`，本轮未修改该受控文件。
 - 旧库 `univ_course_rag` 与 Fake 库 `univ_course_rag_r7b6` 未被本卡改写；根 `.env` 可能仍指旧库，服务不会自动连 `r7b6_real`。
-- Docling worktree `feat/r7b4-offline-freeze` **不要**合并、续跑或删除。
+- **Docling 清理已完成：** 主仓适配代码、专属测试、`scripts/r7b1_run_docling_pages.py` 与 optional extra 已删除；Docling 不是生产路径，PyMuPDF 与页级质量门禁保留，历史结论仍见 [evaluation-results](evaluation-results.md#r7b-4-pause)。依赖声明已删，venv 未卸载 Docling 包；corpus/local 全部证据保留（含 R7B-1/R7B-4）。
+- **清理卡已本地提交：** 生产残留导入检查、Ruff、diff 检查通过，parse/ingest 59 passed（临时目录权限处理见施工计划）。提交不含 `新开题资料.md`；未 push。
+- 两个 worktree 均保留，不合并、不续跑：`D:\workspace\univ-course-rag-wt\r7b4-offline-freeze`（`feat/r7b4-offline-freeze`）相对 main 无独有提交，但有未跟踪冻结脚本与 `.codex-*.txt`，工作区不干净；`D:\workspace\univ-course-rag-wt\r7b-l1-pymupdf-gate`（`feat/r7b-l1-pymupdf-gate`）相对 main 无独有提交，已有脏区及未跟踪文件，属于 PyMuPDF 路线，并非 Docling 旧路线。本卡均未删除或改写。
 
 ## 已完成证据（忽略区，不入 Git）
 

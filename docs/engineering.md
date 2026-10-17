@@ -39,17 +39,17 @@
 
 ### R7B 解析路线决策（2026-10-17）
 
-**Docling 全量主解析路线已停止；生产 PDF 默认路径已切回 PyMuPDF 原生文字提取。** R7B-L1 已实现最小页级质量报告，R7B-L2/L3 完成代表页核对与 17 份离线冻结。生产入口在 `app.services.parse`；`app.services.docling_adapter` 保留为历史/可选适配代码，不是当前默认 PDF 入口。旧 worktree 不续跑、不合并、不清理，后续如需删除另立明确清理任务。
+**Docling 全量主解析路线已停止；生产 PDF 默认路径已切回 PyMuPDF 原生文字提取。** R7B-L1 已实现最小页级质量报告，R7B-L2/L3 完成代表页核对与 17 份离线冻结。生产入口在 `app.services.parse`；Docling 适配代码、专属测试、代表页脚本与 optional extra 已删除，Docling 不是生产路径；历史结论仍见 [结果登记](evaluation-results.md#r7b-4-pause)。两个旧 worktree 保留，不续跑、不合并：Docling worktree 不干净，另一 worktree 属于 PyMuPDF 路线。
 
 | 对象 | 当前角色 |
 | --- | --- |
 | PyMuPDF（已存在依赖） | 目标 PDF 默认路径；复用原生文字提取，不增加模型/运行时 |
-| Docling 2.140.0 | 历史代表页/全量实验；全量停在 8/17，因公式密集资料耗时不可接受，当前不续跑、不作为生产主解析器 |
+| Docling 2.140.0（历史实验版本） | 全量停在 8/17，因公式密集资料耗时不可接受；适配代码、专属测试、代表页脚本与 optional extra 已删除，历史证据保留于 evaluation-results 与 corpus/local |
 | OCR 工具 | 尚未选定；只有固定页面确认需要 OCR 后，才按页面范围与预算单独评估 |
 | EdgeParse / OpenDataLoader / MinerU / Marker | 当前不验证、不引入；避免再次开启新解析器选型循环 |
 | RAGFlow / Kotaemon / Dify / RAG-Anything / FlagEmbedding 等 | 只借鉴局部设计（解析调试、citation UX、hybrid/rerank）；不整体迁移 |
 
-保留现有 FastAPI + Postgres/pgvector + Vue 骨架。R7B-L1 已恢复轻量入口和最小页级质量门禁；历史 Docling 适配器、extra 与 worktree 暂不删除或合并，另开清理卡再决定。PyMuPDF 的 AGPL/商业许可边界仍须按实际分发方式核对，不因其已安装而忽略许可义务。
+保留现有 FastAPI + Postgres/pgvector + Vue 骨架。R7B-L1 已恢复轻量入口和最小页级质量门禁；本次仅清理退役 Docling 代码与依赖声明，不改 PyMuPDF、质量门禁或入库行为，不引入替代组件。venv、两个 worktree 与 corpus/local 历史证据均保留。PyMuPDF 的 AGPL/商业许可边界仍须按实际分发方式核对，不因其已安装而忽略许可义务。
 
 ### 已接入与已评估组件
 
@@ -194,7 +194,7 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 ### 解析证据与来源字段
 
-**现行实现（R7B-L1）：** 生产 PDF 解析报告使用逐页文字记录与质量摘要；Chunk 作为可检索派生视图，原页号通过既有 page/unit_index 定位。当前生产路径只抽取原生文字，不生成 bbox、OCR、公式识别、图片描述或图表抽取结果。`parse_quality.py` / `docling_adapter.py` 中仍保留通用元素类型与历史适配代码，但不能据此声称当前索引已包含图片/公式等结构化内容。若以后新增 OCR/公式/图片派生内容，必须区分 extraction method、模型身份和原生文字来源；中期不要求建立完整通用元素图或 bbox 入库合同。
+**现行实现（R7B-L1）：** 生产 PDF 解析报告使用逐页文字记录与质量摘要；Chunk 作为可检索派生视图，原页号通过既有 page/unit_index 定位。当前生产路径只抽取原生文字，不生成 bbox、OCR、公式识别、图片描述或图表抽取结果。`parse_quality.py` 中仍保留通用元素类型，Docling 适配代码已删除；不能据此声称当前索引已包含图片/公式等结构化内容。若以后新增 OCR/公式/图片派生内容，必须区分 extraction method、模型身份和原生文字来源；中期不要求建立完整通用元素图或 bbox 入库合同。
 
 | 字段 | 当前含义 |
 | --- | --- |

@@ -40,7 +40,11 @@
 
 ## R7B 轻量解析路线开工计划
 
-这一节是给 Cursor/Codex 的当前施工顺序。Docling 的历史任务和产物见 [结果登记](evaluation-results.md#r7b-4-pause)，不得按旧计划续跑、合并 worktree 或将 partial 产物用作新基线。生产 PDF 默认已为 PyMuPDF；Docling 代码保留作可选旁路。除后续明确授权外，不读 `.env`、不调用真实 embedding/LLM/Vision/reranker、不重新入库、不删除旧结果，也不安装新解析器。
+这一节是给 Cursor/Codex 的当前施工顺序。Docling 的历史任务和产物见 [结果登记](evaluation-results.md#r7b-4-pause)，不得按旧计划续跑、合并 worktree 或将 partial 产物用作新基线。生产 PDF 默认已为 PyMuPDF；Docling 适配代码、专属测试、代表页脚本与 optional extra 已删除，Docling 不是生产路径。除后续明确授权外，不读 `.env`、不调用真实 embedding/LLM/Vision/reranker、不重新入库、不删除旧结果，也不安装新解析器。
+
+2026-10-17 清理卡：沿用已接入的 PyMuPDF 原生 API 与现有页级质量门禁，无新增组件或自写替代实现；仅删除退役代码与依赖声明、修正文档。验收为生产无残留导入、保留默认路径防 Docling 导入测试、Ruff、parse/ingest 相关测试及 diff 检查。venv 不卸载包；corpus/local 证据和两个 worktree 均保留，原因见当前交接。
+
+本卡验证：生产无残留导入，Ruff 与 `git diff --check` 通过；parse/ingest 共 59 passed。原始 pytest 命令受 Windows 临时目录权限阻塞；最终以同一 venv、同一测试集运行，仅在测试进程将 mkdir 的 0700 调为 0777、使用工作区忽略缓存目录并禁用 cacheprovider，通过后未改测试或产品代码。
 
 ### R7B-L1：恢复 PyMuPDF 默认入口与最小页级质量门禁（已通过）
 

@@ -150,7 +150,7 @@ MIT OCW [使用条件](https://ocw.mit.edu/pages/privacy-and-terms-of-use/)为 C
 
 ### R7B-L1
 
-- 生产 PDF 默认入口改回 PyMuPDF 原生文字提取；保留 Docling 适配器为可选路径。
+- 生产 PDF 默认入口改回 PyMuPDF 原生文字提取；当时保留的 Docling 可选适配器已在 2026-10-17 清理卡删除，专属测试、历史代表页脚本（原位于 main 的 `scripts/r7b1_run_docling_pages.py`）与 optional extra 同步清理。Docling 不是生产路径；R7B-1/R7B-4 历史实验登记与受控证据保留，未提交的 R7B-4 脚本仍留在上述 worktree。
 - 页级质量：总页数与每页 empty/sparse/abnormal 有报告；`FAILED` 拦入库，`PARTIAL` → `COVERAGE_INCOMPLETE` 可入库并警告。
 - 相关 Fake/单元测试与 Ruff 在实施卡内通过（见当时工作区）。
 

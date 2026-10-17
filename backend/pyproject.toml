@@ -34,9 +34,6 @@ dev = [
     "pytest",
     "ruff",
 ]
-docling = [
-    "docling==2.140.0",
-]
 
 [tool.setuptools.packages.find]
 include = ["app*"]
