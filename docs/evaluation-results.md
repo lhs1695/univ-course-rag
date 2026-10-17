@@ -172,6 +172,17 @@ MIT OCW [使用条件](https://ocw.mit.edu/pages/privacy-and-terms-of-use/)为 C
 - **未**调用真实 embedding/LLM；**未**入库；标注无独立人工复核。通过，可进 R7B-6（须另授权）。
 
 
+
+
+## R7B-6B 受控入库（Fake，2026-10-17）
+
+- **目标库：** 新建隔离库 `univ_course_rag_r7b6`，空库迁移至 alembic `0011`。旧库 `univ_course_rag` 仍为 R7 规模（1 课 / 4 资料 / 257 chunks），未 `down -v`、未混写；实施前 custom dump 见忽略区 `corpus/local/r7b-6-controlled-ingest-2026-10-17/dumps/`。
+- **配置：** `EMBEDDER_BACKEND=fake`（index `fake|BAAI/bge-m3|1024|v1`），未调 SiliconFlow/DeepSeek；PDF 默认 PyMuPDF；切分 `sts-0.33.0-char800-overlap120-r5-v1`。
+- **四课×1 PDF：** psychology `01_introduction` 51 chunks / `COVERAGE_INCOMPLETE`；linear_algebra `02_elimination_matrices` 8 / null；history `01_ouster_mubarak` 11 / `COVERAGE_INCOMPLETE`；philosophy `01_introduction` 4 / null。合计 **74 chunks**，4/4 ingest succeeded。
+- **抽检：** 每课 dense 探测有命中且不串课；同名 `01_introduction.pdf` 跨心理/哲学隔离通过。未跑完整 R7B-5 题集。
+- **判定：** R7B-6B 通过。正式四课基线（R7B-7）须另授权真实 embedding；不得把 Fake 索引当作基线数字。
+
+
 <a id="run-logs"></a>
 
 
