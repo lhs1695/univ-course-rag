@@ -15,7 +15,7 @@
 | 新版真实模型连通/预算与校准 | SiliconFlow BAAI/bge-m3 与 DeepSeek `deepseek-v4-flash` 实际调用；沿用默认余弦阈值 0.45，**未校准** |
 | 四课基线与检索对照 | Dense 对 28 题完成检索及有限生成；Hybrid 完成 28 题检索但未生成答案；Hybrid 与 Dense 的预期文档/页命中计数相同，尚未证明 Hybrid 增益 |
 | 真实费用 | 已记录供应商返回的 Token 用量与耗时；**未查账单，人民币费用未知** |
-| R8 用户与开发者内部联合验收 | 四课基线已完成；真人三角色共验仍待操作，开发者运行不能替代 |
+| R8 用户与开发者内部联合验收 | **正式未通过（待验）**；2026-10-17 已完成 API 等价共验（授权/问答/撤权串课通过），真人 UI 与 C4 系统失败重试仍缺 |
 
 <a id="current-parameters"></a>
 <!-- 保留现有代码注释的跳转目标；不保留原阶段报告或旧结果。 -->
@@ -228,6 +228,18 @@ MIT OCW [使用条件](https://ocw.mit.edu/pages/privacy-and-terms-of-use/)为 C
 
 
 ## 实现/联调运行日志（自 validation 迁入）
+
+### R8 API 等价验收（2026-10-17）
+
+- **模式：** API 等价 / UI 未点；进程级连 `univ_course_rag_r7b6_real`（4/17/385）；未改 `.env` 进 Git。
+- **操作：** 执行器脚本 `corpus/local/r8-joint-acceptance-2026-10-17/run_r8_api_acceptance.py`；结果 `ACCEPTANCE_RESULTS.json`、`RESULTS.md`。
+- **成员：** A3 将 student 加入四课（幂等）；C6 撤权验证后已恢复 student×4，演示库可继续用。
+- **三角色 API：** admin 登录/账号/授权/改名恢复；teacher 资料份数 4/5/4/4 与 `quality_warning=COVERAGE_INCOMPLETE` 字段；student 我的课程、问答、撤权后 403、串课/admin 403。
+- **小样本真实问答（Embedding+DeepSeek）：** PSY-D01 / LA-D02 / HIST-D01 / PHIL-D01 均有预期文档引用且哲学同名未串课；PSY-D03 → `NO_EVIDENCE`；PHIL-T02 ask 拒答无 citation，另 `/search` Top1=`02_lecture_02.pdf` p1（命中≠答案正确）。HIST-D01 引用页正确但正文偏短。
+- **成本：** ask 7 次（含同句重试）+ search 1 次；失败 0；未查账单/未抓本轮 token 明细。
+- **库未波及：** Fake `univ_course_rag_r7b6` 仍 4/4/74；旧 `univ_course_rag` 仍 1/4/257。
+- **C4：** 未注入 503/断后端；仅 API 同句再 POST。按 validation 严格门槛，**不能**用此项冒充系统失败演示通过。
+- **正式 R8：** **不标通过。** 待 Vite 三角色真人勾选、原页跳转、UI 覆盖警告、断后端重试后再标。
 
 ### R8 共验清单与库预检（2026-10-17）
 
