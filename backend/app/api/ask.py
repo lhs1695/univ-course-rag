@@ -22,6 +22,7 @@ from app.services.generate import (
 )
 from app.services.keyword import KeywordLimitExceeded
 from app.services.llm import LLM, get_llm
+from app.services.query_expansion import expand_subqueries, is_broad_procedural
 from app.services.rerank import Reranker, get_reranker
 from app.services.retrieve import (
     EMBEDDING_MISMATCH,
@@ -35,6 +36,7 @@ from app.services.retrieve import (
     RetrievalStrategyError,
     has_incompatible_chunks,
     retrieve_chunks,
+    retrieve_expanded_chunks,
 )
 from app.services.upstream import (
     UpstreamUnavailable,
@@ -103,6 +105,23 @@ def ask_course(
                 reranker=reranker,
             )
         )
+        def try_expansion():
+            try:
+                subs = expand_subqueries(body.query, llm)
+                return retrieve_expanded_chunks(
+                    db, access.course.id, body.query, embedder, subs,
+                ) if subs else []
+            except Exception:  # noqa: BLE001 - expansion must degrade; generation stays outside.
+                logger.warning("ask_query_expansion_fallback")
+                return []
+
+        expansion_used = False
+        expansion_enabled = settings.query_expansion_backend == "llm" and not index_mismatch
+        if expansion_enabled and hits and is_broad_procedural(body.query):
+            expanded = try_expansion()
+            if expanded:
+                hits = expanded
+                expansion_used = True
         if index_mismatch:
             error_code = EMBEDDING_MISMATCH
         elif not hits:
@@ -115,6 +134,17 @@ def ask_course(
             if not cited_ids:
                 answer = None
                 error_code = NO_EVIDENCE
+        if not cited_ids and expansion_enabled and not expansion_used:
+            expanded = try_expansion()
+            if expanded:
+                hits = expanded
+                llm_called = True
+                generated = generate_answer_result(db, body.query, hits, llm)
+                answer, cited_ids = generated.answer, generated.cited_ids
+                source_texts = generated.source_texts
+                error_code = None if cited_ids else NO_EVIDENCE
+                if not cited_ids:
+                    answer = None
     except KeywordLimitExceeded as exc:
         logger.warning("ask_keyword_limit resource=%s", exc.resource)
         error_code = KEYWORD_LIMIT

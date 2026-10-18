@@ -166,6 +166,14 @@ RERANKER_BACKEND默认disabled，不创建HTTP客户端；只接受siliconflow�
 
 每次单POST，以with关闭客户端；无自动重试、重定向或环境代理。复用UPSTREAM_TIMEOUT_SECONDS作为HTTPX各IO阶段超时，不承诺总时长。rerank_score独立保存，按分数降序，同分保留RRF顺序；它不是答案支持概率。
 
+### 可选查询扩展
+
+QUERY_EXPANSION_BACKEND 默认 disabled，仅精确值 llm 启用，复用已配置的生成 LLM。ask 对去空白后不超过40字符且含如何/怎么/怎样/怎么办/步骤/方法/解法/求法的问题，在已有命中时预扩展；尚未成功扩展且首次无合法引用（含无命中）时再尝试扩展并重试生成一次。成功预扩展后不再重试；索引不相容时不扩展。search 与 eval 不接入。
+
+最多2个子问题，每个最多200字符；子问题分支在前、原问题分支最后，各自 dense top-20、不设分支阈值，按深度轮询并按 chunk ID 去重，收满最终 top-8。准入及 SearchHit.score 仍是原问题与存储向量的余弦（SiliconFlow >=0.45，Fake >=0.15），不以子问题分数放行。扩展异常或无结果退回原检索；生成异常保留原错误处理，NO_EVIDENCE 证据门禁、引用格式及页码不变。QueryLog 记录最终命中及结果。
+
+复用决策：直接调用项目现有 LLM.generate、_retrieve_dense 与 cosine_similarity，沿用既有客户端/依赖版本与许可，无新依赖或源码复制。已有 RRF 合并不符合本卡子分支优先配额，故本地仅实现有界轮询、文本解析和错误适配；接入与维护成本限于三个薄适配及 Fake 回归，验收覆盖触发、准入、去重、拒答、重试与最终日志，不代表真实模型效果已验收。
+
 ### 最终准入与引用
 
 retrieve_chunks仅返回最终SearchHit。hybrid在完整候选（可选重排之后）先检查已有dense余弦分与该空间min_score，再按当前顺序取最终Top-K。无余弦/低余弦的keyword-only支持片段也仍会被拒绝，等待经验证的充分性选择；不能仅凭词项交集、RRF或重排高分放行。SearchHit.score只承载余弦，不覆盖为其他分数。默认dense不调用关键词或重排。
@@ -180,7 +188,11 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 ## 切分与来源
 
-逐页/幻灯片调用现成切分器，800字符容量、120最大重叠；MarkdownSplitter处理Markdown，其余TextSplitter处理抽取文本。实际重叠由结构决定；可容纳块优先保留，小章节可合并，超长代码/表格/段落仍会拆分，不保证围栏闭合或完整标题树。
+PDF 页/PPTX 幻灯片先分组再调用现成切分器，800字符容量、120最大重叠不变。仅分页类型（pdf_page/pptx_slide）将 stripped 文本长度小于120字符的短页向后合并：按顺序累积，加入首个至少120字符的实质页后立即结束该组；实质页单独出现仍独立成组，文末剩余短页合为最后一组，全短页资料也保留。空白单位不参与分组。组内原文用两个换行符连接，单单位组原文不变；Markdown/TXT/DOCX仍逐单位切分。MarkdownSplitter处理Markdown，其余TextSplitter处理抽取文本。实际重叠由结构决定；可容纳块优先保留，小章节可合并，超长代码/表格/段落仍会拆分，不保证围栏闭合或完整标题树。
+
+复用决策：继续直接调用现有 semantic-text-splitter 0.33.0（MIT）的 chunk_indices，不复制或重写切分算法、不新增依赖。现成切分器提供字符范围，但不维护本项目跨页组合与单页引用归属；剩余本地工作仅为短页分组、范围重叠计数和来源元数据适配，接入及维护成本限于该薄适配与合成文本回归。验收覆盖短页前向合并、尾组、800字符拆分、120字符边界、页码归属和平局、非分页不变及入库来源范围。
+
+限制：分组不强制上游切分器将标题与正文放进同一chunk。标题加超长正文的合成回归中，TextSplitter仍可能按双换行保留独立标题块；此时标题块按字符贡献归标题页，后续块归正文页。前向合并不能保证消除所有低信息标题块。
 
 **当前代码（R7B-L1 后）：** PDF 由 `app.services.parse` 使用 PyMuPDF `fitz` 的 `get_text("text")` 原生文字路径，返回现有 `(page, text)` 切分接口和 `ParseQualityReport`；PPTX 读文本框/表格，DOCX 经 `iter_inner_content` 保持顶层段落/表格顺序，Markdown/TXT 按 UTF-8。DOCX 仍不还原物理分页/复杂布局。`LOW_EXTRACTED_TEXT` 仍按整份资料字符总量判断。现有 `DeepSeekLLM.generate` 只发送文本，不会因为模型具备视觉能力而自动读取 PDF 图片。
 
@@ -198,12 +210,12 @@ assemble_ask_context同次生成prompt、允许Source ID和对应正文快照。
 
 | 字段 | 当前含义 |
 | --- | --- |
-| Document.chunking_version | 成功入库后sts-0.33.0-char800-overlap120-r5-v1；资料列表/详情提供同名可空字段 |
-| Chunk.source_metadata | 可空JSON，含kind/unit_index/char_start/char_end/chunk_index/splitter；新PDF另含parser_version/structured_hash，无路径/账号或正文副本 |
-| kind/unit_index | pdf_page或pptx_slide使用实际1-based页/幻灯片；markdown/plain_text/docx_text为抽取单位（当前1），不表示物理页 |
-| char_start/char_end | 清洗后当前单位内0-based半开Python Unicode字符范围，必须unit[start:end]==chunk.text；不是文件字节/屏幕坐标 |
+| Document.chunking_version | 成功入库后sts-0.33.0-char800-overlap120-shortmerge120-r6-v2；资料列表/详情提供同名可空字段 |
+| Chunk.source_metadata | 可空JSON，含kind/unit_index/char_start/char_end/chunk_index/splitter；合并多单位时另含unit_index_start（首单位页码）/unit_index_end（末单位页码）/merged_unit_count（整数单位数）；新PDF另含parser_version/structured_hash，值仅str或int，无路径/账号或正文副本 |
+| kind/unit_index | pdf_page或pptx_slide使用对该chunk贡献字符最多的实际1-based页/幻灯片号，与Chunk.page一致；markdown/plain_text/docx_text为抽取单位（当前1），不表示物理页 |
+| char_start/char_end | 清洗后当前组拼接文本内0-based半开Python Unicode字符范围，必须group_text[start:end]==chunk.text；单单位组与原unit[start:end]语义相同；不是文件字节/屏幕坐标 |
 | chunk_index/splitter | 文档内0-based连续序号；markdown或text；重复正文直接使用上游偏移，不用find猜位置 |
-| Chunk.page | 新PDF/PPTX保留真实号；新DOCX/Markdown/纯文本为null；旧行不回写 |
+| Chunk.page | 新PDF/PPTX仅一个整数页码：取与chunk范围重叠字符数最多的单位，连接符不计入任何单位，平局取组内最早单位；新DOCX/Markdown/纯文本为null；旧行不回写，无schema或迁移变更 |
 
 切片前移除Postgres不接受的NUL；抽取计数、嵌入输入、落库正文与范围针对同一清洗文本。0010只增加可空版本/JSON列，无回填、不触发重嵌入。旧行null不能冒充新算法；迁移和原子重入库要求见 [workflow](workflow.md)。
 

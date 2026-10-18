@@ -175,6 +175,50 @@ def _retrieve_dense(
     return hits
 
 
+def retrieve_expanded_chunks(
+    db: DbSession,
+    course_id: UUID,
+    query: str,
+    embedder: Embedder,
+    subqueries: Sequence[str],
+    *,
+    top_k: int = SEARCH_TOP_K,
+    min_score: float | None = None,
+    excluded_document_ids: Collection[UUID] = (),
+) -> list[SearchHit]:
+    """Subquery-first quota union, admitted only by original-query cosine."""
+    if not subqueries or top_k <= 0:
+        return []
+    branches = [
+        _retrieve_dense(
+            db, course_id, branch_query, embedder, top_k=20, min_score=None,
+            excluded_document_ids=excluded_document_ids,
+        )
+        for branch_query in [*subqueries, query]
+    ]
+    query_vec = embedder.embed([query.strip()])[0]
+    threshold = _default_min_score(embedder) if min_score is None else min_score
+    seen: set[UUID] = set()
+    hits = []
+    for depth in range(20):
+        for branch in branches:
+            if depth >= len(branch):
+                continue
+            hit = branch[depth]
+            if hit.chunk_id in seen:
+                continue
+            seen.add(hit.chunk_id)
+            chunk = db.get(Chunk, hit.chunk_id)
+            if chunk is None or chunk.embedding is None or len(chunk.embedding) == 0:
+                continue
+            score = float(cosine_similarity(query_vec, chunk.embedding))
+            if score >= threshold:
+                hits.append(replace(hit, score=score))
+                if len(hits) == top_k:
+                    return hits
+    return hits
+
+
 def retrieve_hybrid_candidates(
     db: DbSession,
     course_id: UUID,

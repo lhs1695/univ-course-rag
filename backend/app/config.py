@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     retrieval_strategy: Literal["dense", "hybrid"] = "dense"
     rrf_k: int = Field(default=60, ge=1, le=10_000)
     reranker_backend: str = "disabled"
+    query_expansion_backend: str = "disabled"
     question_grouping_backend: str = "disabled"
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
     reranker_base_url: str = "https://api.siliconflow.cn/v1"
