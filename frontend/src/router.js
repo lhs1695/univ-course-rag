@@ -10,6 +10,7 @@ import MembersView from "./views/MembersView.vue";
 import AdminUsersView from "./views/AdminUsersView.vue";
 import AdminCoursesView from "./views/AdminCoursesView.vue";
 import AdminMaintenanceView from "./views/AdminMaintenanceView.vue";
+import AdminSystemStatusView from "./views/AdminSystemStatusView.vue";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -19,6 +20,7 @@ export const router = createRouter({
     { path: "/admin/users", component: AdminUsersView, meta: { admin: true } },
     { path: "/admin/courses", component: AdminCoursesView, meta: { admin: true } },
     { path: "/admin/maintenance", component: AdminMaintenanceView, meta: { admin: true } },
+    { path: "/admin/system", component: AdminSystemStatusView, meta: { admin: true } },
     { path: "/courses", component: CoursesView },
     { path: "/courses/:courseId/documents", component: DocumentsView },
     { path: "/courses/:courseId/members", component: MembersView, meta: { capability: "can_manage_members" } },

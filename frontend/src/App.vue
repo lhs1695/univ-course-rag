@@ -15,10 +15,10 @@
         <router-link to="/admin/users">账号管理</router-link>
         <router-link to="/admin/courses">课程与授权</router-link>
         <router-link to="/admin/maintenance">日志维护</router-link>
+        <router-link to="/admin/system">系统状态</router-link>
       </template>
     </nav>
     <el-main id="main-content" tabindex="-1">
-      <RuntimeStatus v-if="session.user" />
       <nav v-if="pageAllowed && currentCourse" class="course-nav" aria-label="当前课程导航">
         <div class="course-context"><span>当前课程</span><strong>{{ currentCourse.title }}</strong><span class="role-pill">课内{{ currentCourse.membership_role === 'teacher' ? '教师' : '学生' }}</span></div>
         <div class="course-tabs">
@@ -48,7 +48,6 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { logout, refreshMe, session } from "./session";
 import { clearCourseAccess, courseAccess, refreshCourseAccess } from "./courseAccess";
-import RuntimeStatus from "./components/RuntimeStatus.vue";
 
 const router = useRouter();
 const route = useRoute();

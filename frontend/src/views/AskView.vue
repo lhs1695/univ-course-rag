@@ -37,15 +37,15 @@
             <el-button :disabled="asking" @click="retryQuestion">重试本次问题</el-button>
           </div>
           <div v-else-if="result?.error_code === 'NO_EVIDENCE'" class="response-body">
-            <el-alert :title="result.message || '依据不足'" type="warning" :closable="false" show-icon />
-            <p class="subtle">可核对资料是否已入库，或换一个更具体的问题。</p>
+            <el-alert title="课内资料依据不足，暂时无法据此回答。" type="warning" :closable="false" show-icon />
+            <p class="subtle">这不表示系统故障。可核对课程资料是否齐全，或换一个更具体的问题。</p>
           </div>
           <div v-else-if="result?.error_code" class="response-body">
-            <el-alert :title="result.message || '本次问答未能完成'" type="error" :closable="false" show-icon />
-            <p class="subtle">请核对资料索引状态；服务或索引异常不能说明课内没有答案。</p>
+            <el-alert :title="answerFailureMessage" type="error" :closable="false" show-icon />
+            <p class="subtle">本次回答未能完成，不能据此判断课内资料是否有答案。</p>
           </div>
           <div v-else-if="result?.answer" class="response-body">
-            <p class="subtle">引用仅登记本次提供给模型的正文，仍需核对是否支持回答；普通链接与图片按文本显示。</p>
+            <p class="subtle">请结合引用核对回答是否有依据，并打开原资料核对。</p>
             <AnswerBody :answer="result.answer" :citations="result.citations" @citation="focusCitation" />
           </div>
           <div v-else class="workspace-empty">
@@ -62,7 +62,7 @@
           <p v-if="loadingContext" role="status">正在读取本课资料状态…</p>
           <template v-else-if="contextFailure"><p>{{ contextFailure }}</p><el-button text @click="loadContext">重新加载资料信息</el-button></template>
           <template v-else><p>当前 {{ readyDocumentCount }} 份资料已入库</p><p v-if="readyDocumentCount === 0">暂无成功入库资料，可先到“课程资料”核对。</p></template>
-          <p>下方展示模型实际看到的引用正文；每条最多 1200 字符，可能在段落中截断。请打开原资料核对上下文。PDF 尝试定位到引用页，其他格式可能下载原文件。</p>
+          <p>引用摘录可能不完整，请打开原资料核对上下文。PDF 链接尝试定位到引用页。</p>
         </div>
         <ol v-if="result?.citations?.length" class="evidence-list">
           <li v-for="(citation, index) in result.citations" :key="citation.chunk_id" :id="`source-${citation.chunk_id}`" class="evidence-card" tabindex="-1" :aria-label="`引用 ${index + 1}：${filenameOf(citation.document_id)}`">
@@ -106,6 +106,7 @@ const asking = ref(false);
 const result = ref(null);
 const failure = ref("");
 const submittedQuery = ref("");
+const answerFailureMessage = "暂时无法完成这次回答，请稍后重试。";
 
 async function loadContext() {
   loadingContext.value = true;
@@ -122,9 +123,9 @@ async function loadContext() {
     }
     filenames.value = map;
     contextFailure.value = "";
-  } catch (error) {
-    contextFailure.value = error.message;
-    ElMessage.error(error.message);
+  } catch {
+    contextFailure.value = "暂时无法读取课程资料，请稍后重试。";
+    ElMessage.error(contextFailure.value);
   } finally {
     loadingContext.value = false;
   }
@@ -171,9 +172,9 @@ async function askQuestion(text) {
       json: { query: text },
       timeoutMs: 300000,
     });
-  } catch (error) {
-    failure.value = error.message;
-    ElMessage.error(error.message);
+  } catch {
+    failure.value = answerFailureMessage;
+    ElMessage.error(answerFailureMessage);
   } finally {
     asking.value = false;
   }
