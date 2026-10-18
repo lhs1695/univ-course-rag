@@ -20,13 +20,13 @@
 - **清理卡已本地提交：** 生产残留导入检查、Ruff、diff 检查通过，parse/ingest 59 passed（临时目录权限处理见施工计划）。提交不含 `新开题资料.md`；未 push。
 - 两个 worktree 均保留，不合并、不续跑：`D:\workspace\univ-course-rag-wt\r7b4-offline-freeze`（`feat/r7b4-offline-freeze`）相对 main 无独有提交，但有未跟踪冻结脚本与 `.codex-*.txt`，工作区不干净；`D:\workspace\univ-course-rag-wt\r7b-l1-pymupdf-gate`（`feat/r7b-l1-pymupdf-gate`）相对 main 无独有提交，已有脏区及未跟踪文件，属于 PyMuPDF 路线，并非 Docling 旧路线。本卡均未删除或改写。
 
-## 中文四课换课重跑（2026-10-18，停在预算门，未删旧课）
+## 中文四课换课重跑（2026-10-18 已完成，旧四课已删）
 
-- 用户已定新四课：线性代数（杨启哲 695 页讲义）、概率论与统计学（厦大洪永淼 2024，12 份）、人力资源管理（中财 2025，8 份）、教育学原理（江苏师大吴义昌 2023，6 份）。
-- 已备份旧演示库 `univ_course_rag_r7b6_real`：`corpus/local/cn-replace-2026-10-18/backup/`（dump 1,695,903 B、`pg_restore --list` 68 行可读、旧 uploads 17/17 PDF + SHA-256 清单）；备份保留不删。
-- 新四课已全套下载到 `corpus/local/cn-courses-2026-10-18/` 并逐份 PyMuPDF 核验：27 份 / 2,908 页 / 680,223 字符，失败 0；教育学原理文字层最干净，人力资源管理图示页多（预计覆盖警告），线代 695 页超过默认 500 页解析上限、入库须显式传更高 `ParseLimits.max_pages`。
-- **停下原因：** 离线切分估算 2,977 chunks（未超 4,000），但 chunk 文本 685,075 字符，Embedding 预计约 340k–685k tokens，超过预设 300k 上限。按规则未建 `univ_course_rag_cn_v1`、未调用 SiliconFlow/DeepSeek、未切换演示、**未删除旧四课**。详见忽略区 `corpus/local/cn-replace-2026-10-18/REPORT.md`。
-- 下一步需用户二选一：A 放行 >300k 按 27 份全套继续；B 缩范围（定保留清单）降到 300k 内再重估。
+- 新四课已入库隔离库 `univ_course_rag_cn_v1`（0011）：线性代数 1 份/695 chunks、概率论与统计学 12 份/1,620、人力资源管理 8 份/508、教育学原理 6 份/154，合计 27 份 / 2,977 chunks，SiliconFlow BGE-M3（457,231 tokens / 104 批 / 失败 0；幂等复跑 0 新增）。`COVERAGE_INCOMPLETE` 共 20 份（人力 8/8、概率 11/12、线代 1/1、教育 0/6），已如实登记。
+- 新题集 16 道（每课 3 答 + 1 拒答，冻结在忽略区证据目录）：命中预期文档+页 12/12、引用支持 12/12（弱规则，非人工正确率）、拒答 4/4、系统失败 0；DeepSeek `deepseek-v4-flash` 16 次共 32,161 tokens。
+- 演示已进程级切换到 `univ_course_rag_cn_v1` + 新 uploads（未改 `.env`），API 验收三角色登录、student 新四课与资料、PDF 200、问答引用 page 1 均通过。
+- 旧演示库 `univ_course_rag_r7b6_real` 旧四课已删（现 0/0/0，账号保留），旧 uploads 17 份文件已删；备份在 `corpus/local/cn-replace-2026-10-18/backup/`（dump + 17 PDF + SHA-256 清单，恢复方法见证据 `REPORT.md`），保留不删。`univ_course_rag` 与 Fake 库未动。
+- 注意：PPT v4 与旧 Demo 彩排口径仍是旧四课数字/截图，正式汇报前需按新四课更新；勿再把旧库当演示库。
 
 ## 已完成证据（忽略区，不入 Git）
 
