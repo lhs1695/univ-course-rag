@@ -153,7 +153,7 @@ Postgres需明确--database postgres --allow-postgres；会临时写入受控库
 
 持续标明 Fake/真实模式；未实现的逐主张支持、同义组或主题反馈不伪造展示。录屏不拍入凭据、Cookie、学生身份或私密原文。P7 只提供上述可操作说明与 UI 闭环；**真人共同走通记入 R8**，不把开发者自测冒充联合验收或独立试用。
 
-现场演示和答辩材料在 R9 冻结后再制作。数据库 dump + 上传资料/解析产物隔离恢复实操已于 2026-10-18 通过；Demo Reset、成本/资源限制专项展示仍可单独标为待验，不得将其与恢复实测混为一项。
+R9 冻结后已生成中期汇报 PPT v4 初稿与 [中期演示运行卡](midterm-demo-runbook.md)。PPT 已完成结构/页面边界检查和低分辨率结构预览，但当前工作区没有 PowerPoint/LibreOffice 渲染器，最终字体与换行仍需本机 Office 复核。数据库 dump + 上传资料/解析产物隔离恢复实操已于 2026-10-18 通过；Demo Reset、成本/资源限制专项展示仍可单独标为待验，不得将其与恢复实测混为一项。
 
 <a id="usability-test-template"></a>
 <a id="r8-internal-acceptance"></a>
