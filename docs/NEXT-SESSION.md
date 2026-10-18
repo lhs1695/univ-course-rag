@@ -20,6 +20,14 @@
 - **清理卡已本地提交：** 生产残留导入检查、Ruff、diff 检查通过，parse/ingest 59 passed（临时目录权限处理见施工计划）。提交不含 `新开题资料.md`；未 push。
 - 两个 worktree 均保留，不合并、不续跑：`D:\workspace\univ-course-rag-wt\r7b4-offline-freeze`（`feat/r7b4-offline-freeze`）相对 main 无独有提交，但有未跟踪冻结脚本与 `.codex-*.txt`，工作区不干净；`D:\workspace\univ-course-rag-wt\r7b-l1-pymupdf-gate`（`feat/r7b-l1-pymupdf-gate`）相对 main 无独有提交，已有脏区及未跟踪文件，属于 PyMuPDF 路线，并非 Docling 旧路线。本卡均未删除或改写。
 
+## 中文四课换课重跑（2026-10-18，停在预算门，未删旧课）
+
+- 用户已定新四课：线性代数（杨启哲 695 页讲义）、概率论与统计学（厦大洪永淼 2024，12 份）、人力资源管理（中财 2025，8 份）、教育学原理（江苏师大吴义昌 2023，6 份）。
+- 已备份旧演示库 `univ_course_rag_r7b6_real`：`corpus/local/cn-replace-2026-10-18/backup/`（dump 1,695,903 B、`pg_restore --list` 68 行可读、旧 uploads 17/17 PDF + SHA-256 清单）；备份保留不删。
+- 新四课已全套下载到 `corpus/local/cn-courses-2026-10-18/` 并逐份 PyMuPDF 核验：27 份 / 2,908 页 / 680,223 字符，失败 0；教育学原理文字层最干净，人力资源管理图示页多（预计覆盖警告），线代 695 页超过默认 500 页解析上限、入库须显式传更高 `ParseLimits.max_pages`。
+- **停下原因：** 离线切分估算 2,977 chunks（未超 4,000），但 chunk 文本 685,075 字符，Embedding 预计约 340k–685k tokens，超过预设 300k 上限。按规则未建 `univ_course_rag_cn_v1`、未调用 SiliconFlow/DeepSeek、未切换演示、**未删除旧四课**。详见忽略区 `corpus/local/cn-replace-2026-10-18/REPORT.md`。
+- 下一步需用户二选一：A 放行 >300k 按 27 份全套继续；B 缩范围（定保留清单）降到 300k 内再重估。
+
 ## 已完成证据（忽略区，不入 Git）
 
 | 卡 | 目录 / 要点 |
