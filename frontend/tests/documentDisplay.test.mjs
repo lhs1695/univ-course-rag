@@ -19,7 +19,7 @@ test("page label only calls PDF source units pages", () => {
 
 test("coverage maps ingest state to student-friendly labels", () => {
   assert.deepEqual(documentCoverage(pdf), { label: "已入库", type: "success" });
-  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), { label: "覆盖不全", type: "warning" });
+  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), { label: "已入库", type: "success" });
   assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "LOW_EXTRACTED_TEXT" }), { label: "文本较少", type: "warning" });
   assert.deepEqual(documentCoverage({ ...pdf, job_status: "running" }), { label: "处理中", type: "warning" });
   assert.deepEqual(documentCoverage({ ...pdf, job_status: "failed" }), { label: "暂不可用", type: "danger" });

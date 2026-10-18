@@ -16,9 +16,6 @@ export function documentPageLabel(document) {
 
 export function documentCoverage(document) {
   if (document?.job_status === "succeeded") {
-    if (document.quality_warning === "COVERAGE_INCOMPLETE") {
-      return { label: "覆盖不全", type: "warning" };
-    }
     if (document.quality_warning === "LOW_EXTRACTED_TEXT") {
       return { label: "文本较少", type: "warning" };
     }
