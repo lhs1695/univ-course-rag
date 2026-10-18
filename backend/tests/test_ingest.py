@@ -537,6 +537,50 @@ def test_student_cannot_upload(client: TestClient, db: Session) -> None:
     assert uploaded.status_code == 403
 
 
+def test_student_member_can_read_documents_and_nonmember_is_denied(
+    client: TestClient, db: Session
+) -> None:
+    student = add_user(db, "alice", "pass", UserRole.student)
+    add_user(db, "mallory", "pass", UserRole.student)
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    other_course = add_course(db, "Course 2")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    add_member(db, course, student, CourseMemberRole.student)
+    add_member(db, other_course, student, CourseMemberRole.student)
+    login_as(client, "t1", "pass")
+    content = SAMPLE_MD.read_bytes()
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("sample.md", content, "text/markdown")},
+    )
+    assert uploaded.status_code == 201
+    doc_id = uploaded.json()["id"]
+
+    login_as(client, "alice", "pass")
+    listed = client.get(f"/courses/{course.id}/documents")
+    assert listed.status_code == 200
+    assert [row["id"] for row in listed.json()] == [doc_id]
+    detail = client.get(f"/courses/{course.id}/documents/{doc_id}")
+    assert detail.status_code == 200
+    assert detail.json()["filename"] == "sample.md"
+    served = client.get(f"/courses/{course.id}/documents/{doc_id}/content")
+    assert served.status_code == 200
+    assert content in served.content
+
+    # Same document id under another course the student belongs to must not leak.
+    cross_detail = client.get(f"/courses/{other_course.id}/documents/{doc_id}")
+    assert cross_detail.status_code == 404
+    cross_content = client.get(f"/courses/{other_course.id}/documents/{doc_id}/content")
+    assert cross_content.status_code == 404
+    assert client.get(f"/courses/{other_course.id}/documents").json() == []
+
+    login_as(client, "mallory", "pass")
+    assert client.get(f"/courses/{course.id}/documents").status_code == 403
+    assert client.get(f"/courses/{course.id}/documents/{doc_id}").status_code == 403
+    assert client.get(f"/courses/{course.id}/documents/{doc_id}/content").status_code == 403
+
+
 def test_ingest_sends_configured_embedding_batches(
     client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:

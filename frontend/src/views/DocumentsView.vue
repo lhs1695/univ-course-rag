@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">课程资源</p><h1>课程资料</h1><p class="page-description">{{ canManage ? '上传、检查入库状态，维护本课问答的资料依据。' : '查看已加入课程的资料与入库状态。原资料也可从回答引用中打开。' }}</p></header>
+    <header class="page-heading"><p class="eyebrow">课程资源</p><h1>课程资料</h1><p class="page-description">{{ canManage ? '上传、检查入库状态，维护本课问答的资料依据。' : '只读查看本课资料；PDF 可输入页码后打开到对应页，回答引用也可回到原资料核对。' }}</p></header>
 
     <div class="doc-actions">
       <el-upload
@@ -26,7 +26,39 @@
 
     <p v-if="canManage" class="scope-note">入库质量只说明文本是否被抽取和切片，不代表问答一定正确。文本较少的资料仍会保留，请结合引用核对原文。</p>
 
-    <el-table :data="documents" v-loading="loading" empty-text="还没有资料">
+    <el-table v-if="!canManage" :data="documents" v-loading="loading" empty-text="本课还没有可查看的资料">
+      <el-table-column prop="filename" label="文件名" min-width="220" class-name="filename-cell" />
+      <el-table-column label="页数" width="100">
+        <template #default="{ row }">{{ documentPageLabel(row) }}</template>
+      </el-table-column>
+      <el-table-column label="覆盖状态" width="130">
+        <template #default="{ row }">
+          <el-tag :type="documentCoverage(row).type">{{ documentCoverage(row).label }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" min-width="280">
+        <template #default="{ row }">
+          <div v-if="row.job_status === 'succeeded'" class="student-open">
+            <el-input-number
+              v-if="isPdfDocument(row)"
+              v-model="pageSelections[row.id]"
+              :min="1"
+              :max="row.source_unit_count || 1"
+              size="small"
+              controls-position="right"
+              class="page-input"
+              :aria-label="`打开页码：${row.filename}`"
+            />
+            <el-link :href="studentOpenUrl(row)" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`">
+              {{ isPdfDocument(row) ? '打开该页 ↗' : '打开资料 ↗' }}
+            </el-link>
+          </div>
+          <span v-else class="subtle">暂不可打开</span>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <el-table v-else :data="documents" v-loading="loading" empty-text="还没有资料">
       <el-table-column prop="filename" label="文件" min-width="220" class-name="filename-cell" />
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
@@ -75,6 +107,7 @@ import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 import { courseAccess } from "../courseAccess";
+import { documentContentUrl, documentCoverage, documentPageLabel, isPdfDocument } from "../documentDisplay";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
@@ -86,10 +119,15 @@ const failure = ref("");
 const failedUpload = ref(null);
 const uploadUncertain = ref(false);
 const busyIds = ref(new Set());
+const pageSelections = ref({});
 const canManage = computed(() => courseAccess.course?.capabilities.can_manage_documents);
 let pollTimer = null;
 let active = true;
 let fetchingDocuments = false;
+
+function studentOpenUrl(row) {
+  return documentContentUrl(courseId.value, row, pageSelections.value[row.id] ?? 1);
+}
 
 function jobFailure(code) {
   if (code === "UPSTREAM_TIMEOUT") return "向量服务超时，可显式重试入库。";
@@ -134,6 +172,11 @@ async function loadDocuments() {
   finally { fetchingDocuments = false; }
   if (!active) return false;
   documents.value = rows;
+  for (const row of rows) {
+    if (isPdfDocument(row) && pageSelections.value[row.id] == null) {
+      pageSelections.value[row.id] = 1;
+    }
+  }
   if (needsPoll(documents.value)) {
     startPoll();
   } else {
@@ -294,4 +337,8 @@ async function onRetry(row) {
 }
 
 :deep(.filename-cell .cell) { color: #29463d; font-weight: 600; }
+.student-open { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.student-open .el-link { font-weight: 600; }
+.page-input { width: 118px; }
+.subtle { font-size: 12px; color: #65736e; }
 </style>
