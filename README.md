@@ -19,7 +19,7 @@
 
 1. 产品骨架可用（权限、入库、dense/hybrid、引用、反馈）；四课真实基线已在隔离库建立：4 门课程、17 份 PDF、385 chunks。R7 单课结果是历史对照，不代替这份四课基线。
 2. Docling 全量解析因线性代数公式页耗时过高已停止；生产 PDF 使用 PyMuPDF + 页级质量门禁（R7B-L1…L3、R7B-5、R7B-6B/6C、R7B-7 已完成）。不续跑旧 Docling 任务、不新增解析器依赖。当前答案评价未经独立人工复核；Hybrid 只完成检索对照，尚未证明相对 Dense 有增益。
-3. **下一项是 R8 真人三角色联合验收**。当前演示库为 `univ_course_rag_r7b6_real`，根 `.env` 仍可能指向旧库；切库必须按 [NEXT-SESSION](docs/NEXT-SESSION.md) 和 [validation](docs/validation.md) 的说明进程级设置。其余进度以 [NEXT-SESSION](docs/NEXT-SESSION.md) 为准。
+3. **R8 已正式通过；下一项是 P7-3 受控数据库与文件恢复验证**，通过后进入 R9 冻结。当前演示库为 `univ_course_rag_r7b6_real`，根 `.env` 仍可能指向旧库；服务启动必须按 [NEXT-SESSION](docs/NEXT-SESSION.md) 与 [workflow](docs/workflow.md) 进程级明确切库。其余进度以 [NEXT-SESSION](docs/NEXT-SESSION.md) 为准。
 
 ## 运行入口
 
