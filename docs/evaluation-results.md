@@ -15,7 +15,8 @@
 | 新版真实模型连通/预算与校准 | SiliconFlow BAAI/bge-m3 与 DeepSeek `deepseek-v4-flash` 实际调用；沿用默认余弦阈值 0.45，**未校准** |
 | 四课基线与检索对照 | Dense 对 28 题完成检索及有限生成；Hybrid 完成 28 题检索但未生成答案；Hybrid 与 Dense 的预期文档/页命中计数相同，尚未证明 Hybrid 增益 |
 | 真实费用 | 已记录供应商返回的 Token 用量与耗时；**未查账单，人民币费用未知** |
-| R8 用户与开发者内部联合验收 | **正式通过（2026-10-17）**；API 等价 + UI 四点已登记；此前 UI 与 C4 系统失败重试仍缺 |
+| R8 用户与开发者内部联合验收 | **正式通过（2026-10-17）**；API 关键路径 + UI 四点均已登记，非开发者独立试用不在本次结论内 |
+| P7-3 数据库与文件恢复子项 | **通过（2026-10-18）**；四课真实基线 dump 在独立库恢复，全部 public 表行数、17 份上传 PDF 与 17 份解析产物来源身份核验通过；P7 整体仍部分完成 |
 
 <a id="current-parameters"></a>
 <!-- 保留现有代码注释的跳转目标；不保留原阶段报告或旧结果。 -->
@@ -250,6 +251,18 @@ MIT OCW [使用条件](https://ocw.mit.edu/pages/privacy-and-terms-of-use/)为 C
 - **P3 教师覆盖警告：** 心理课资料列表可见「已入库（覆盖不全）」与「文本覆盖不完整…」，未粉饰为完整多模态成功。
 - **P4 C4：** 停止后端后出现失败与「重试本次问题」；将草稿改为诱饵后点重试，请求体仍为已提交问句、不含诱饵；随后后端已恢复。
 - **正式 R8：** **通过。** PHIL-T02 仍按命中≠答案正确观察。未 Vision/rerank；未 push。
+
+### P7-3 受控数据库与文件恢复演练（2026-10-18）
+
+- **源库：** `univ_course_rag_r7b6_real`，migration `0011`，4 课 / 17 份资料 / 385 chunks；索引身份 `siliconflow|BAAI/bge-m3|1024|v1`。
+- **数据库备份：** custom-format `pg_dump`，`database/r7b7-baseline.dump`，1,694,724 bytes；SHA-256 `6d0af9309c56d12a1fa2837017096aa215595861c082256f7684220d42ce809a`。`pg_restore -l` 生成 68 行归档目录。
+- **恢复目标：** 全新隔离库 `univ_course_rag_r9_restore_20261018`，通过 `pg_restore --no-owner --role=univ` 恢复；migration `0011`，pgvector `0.8.7`。恢复后 4/17/385/17（课程/资料/Chunk/入库任务），Embedding 身份正确，`source_metadata` 为空的 Chunk 为 0，pgvector 最近邻 smoke 返回 5 条。
+- **全部 public 表行数与源库一致：** `alembic_version=1`、`chunks=385`、`course_members=8`、`courses=4`、`documents=17`、`ingest_jobs=17`、`query_logs=9`、`sessions=18`、`users=3`。
+- **上传文件：** 17/17 PDF 恢复至独立文件目录，共 14,706,011 bytes；storage boundary、SHA-256、PDF 页数全部通过，无缺失或哈希不一致。
+- **解析产物：** R7B-L3 冻结产物 412 个文件 / 466,895 bytes；17/17 来源的 `meta.json`、`FREEZE_OK.json`、`pages.jsonl`、`quality.json` 存在，来源路径与 SHA-256 匹配。
+- **隔离：** 源库仍 `0011|4|17|385|17`；旧库仍 `1|4|257`；Fake 库仍 `4|4|74`。只修改隔离恢复库的 17 条 `storage_path`，未改源库；无云调用、无全量重入库。
+- **证据目录（Git 忽略区）：** `corpus/local/r9-recovery-2026-10-18/`，含 dump、文件与解析产物、包清单、恢复脚本/操作步骤、`restore-result.json` 和 `RESTORE-RESULTS.md`。
+- **边界：** 这证明当前数据库与文件包可在隔离目标恢复，不证明通用 RAG 事实正确率或独立试用通过。R7B-7 历史 `RESULT.json` 未记录运行时 Git SHA，不事后猜测该 SHA；R9 冻结将另行记录当前代码版本与依赖环境。
 
 
 ### R8 共验清单与库预检（2026-10-17）
