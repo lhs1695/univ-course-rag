@@ -24,17 +24,10 @@
       <el-button :disabled="uploading || uploadUncertain" @click="retryUpload">重新上传所选文件</el-button>
     </template>
 
-    <el-alert
-      v-if="canManage"
-      class="scope-note"
-      title="入库质量只说明文本是否被抽取和切片，不代表问答一定正确。文本较少的资料仍会保留，请结合引用核对原文。"
-      type="info"
-      :closable="false"
-      show-icon
-    />
+    <p v-if="canManage" class="scope-note">入库质量只说明文本是否被抽取和切片，不代表问答一定正确。文本较少的资料仍会保留，请结合引用核对原文。</p>
 
     <el-table :data="documents" v-loading="loading" empty-text="还没有资料">
-      <el-table-column prop="filename" label="文件" min-width="220" />
+      <el-table-column prop="filename" label="文件" min-width="220" class-name="filename-cell" />
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
           <el-tag
@@ -281,11 +274,22 @@ async function onRetry(row) {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 16px 0;
+  margin: 0 0 16px;
+  padding: 20px;
   flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid #e6ebe8;
+  border-radius: 12px;
 }
 
 .scope-note {
-  margin-bottom: 16px;
+  margin: 16px 0;
+  padding-left: 12px;
+  border-left: 2px solid #c7d5d0;
+  color: #65736e;
+  font-size: 12px;
+  line-height: 1.75;
 }
+
+:deep(.filename-cell .cell) { color: #29463d; font-weight: 600; }
 </style>

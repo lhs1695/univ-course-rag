@@ -18,12 +18,14 @@ function onCitation(event) {
 </script>
 
 <style scoped>
-.answer-markdown { overflow-wrap: anywhere; line-height: 1.95; font-size: 15px; }
+.answer-markdown { overflow-wrap: anywhere; color: #2d413a; line-height: 1.9; font-size: 16px; }
+.answer-markdown :deep(p) { margin: 0 0 1em; }
+.answer-markdown :deep(p:last-child) { margin-bottom: 0; }
 .answer-markdown :deep(pre) { overflow-x: auto; background: #f3f6f4; padding: 12px; border-radius: 6px; line-height: 1.6; }
 .answer-markdown :deep(code) { white-space: pre-wrap; }
 .answer-markdown :deep(table) { display: block; overflow-x: auto; border-collapse: collapse; }
 .answer-markdown :deep(th), .answer-markdown :deep(td) { border: 1px solid #dfe7e2; padding: 6px 10px; }
 .answer-markdown :deep(.inline-citation) { color: #17675f; font-weight: 600; margin: 0 3px; text-decoration: underline; }
 .answer-markdown :deep(.unknown-citation) { color: #805b20; font-size: 12px; }
-.answer-markdown :deep(h1), .answer-markdown :deep(h2), .answer-markdown :deep(h3) { font-size: 17px; }
+.answer-markdown :deep(h1), .answer-markdown :deep(h2), .answer-markdown :deep(h3) { margin: 1.35em 0 .6em; font-size: 18px; }
 </style>

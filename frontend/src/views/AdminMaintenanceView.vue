@@ -1,12 +1,7 @@
 <template>
   <div class="page">
     <header class="page-heading"><p class="eyebrow">管理后台</p><h1>提问日志维护</h1><p class="page-description">按留存窗口预览并处理到期记录，每次仅操作受限的一批。</p></header>
-    <el-alert
-      title="提问日志包含问题原文，只用于留存窗口内的课程学情。维护操作不会展示问题或提问者。"
-      type="info"
-      :closable="false"
-      show-icon
-    />
+    <p class="scope-note">提问日志包含问题原文，只用于留存窗口内的课程学情。维护操作不会展示问题或提问者。</p>
 
     <el-card class="maintenance-card" shadow="never">
       <template #header>到期记录</template>
@@ -112,14 +107,25 @@ async function deleteExpired() {
 
 <style scoped>
 .maintenance-card {
-  margin: 16px 0;
+  margin: 20px 0;
+  border-color: #e6ebe8;
+  border-radius: 12px;
+}
+
+.scope-note {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 2px solid #c7d5d0;
+  color: #65736e;
+  font-size: 12px;
+  line-height: 1.75;
 }
 
 .explanation {
   margin: 0 0 16px;
-  color: #606266;
-  font-size: 14px;
-  line-height: 1.6;
+  color: #65736e;
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .result-grid {

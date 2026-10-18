@@ -29,7 +29,7 @@
 
     <el-alert v-if="failure" :title="failure" type="error" :closable="false" show-icon />
     <template v-else>
-      <div v-if="summary" class="hint" aria-label="统计口径与样本量">
+      <div v-if="summary" class="hint summary-surface" aria-label="统计口径与样本量">
         <p>统计时间：{{ formatTime(windowStart) }}（含）至 {{ formatTime(windowEnd) }}（不含），以服务端记录的提问时间为准。</p>
         <p>学生提交 {{ summary.student_attempts }} 次：有引用回答 {{ summary.cited_answer }}、依据不足 {{ summary.no_evidence }}、失败 {{ summary.failure }}、结果未知 {{ summary.unknown_outcome }}。</p>
         <p>依据不足占比：{{ summary.no_evidence_rate == null ? "暂无可计算样本" : `${(summary.no_evidence_rate * 100).toFixed(1)}%` }}；分母为有引用回答＋依据不足（{{ summary.knowledge_attempts }} 次），失败和未知不进入该分母，也不能称为教学缺口率。</p>
@@ -78,7 +78,7 @@
         <el-button type="primary" :disabled="!canGroup" :loading="grouping" @click="loadGroups">生成候选组</el-button>
       </div>
       <el-alert v-if="groupingFailure" :title="groupingFailure" type="warning" :closable="false" show-icon />
-      <div v-if="groups" class="hint" aria-label="候选分组样本量">
+      <div v-if="groups" class="hint summary-surface" aria-label="候选分组样本量">
         <p>分组窗口：{{ formatTime(groups.window_start) }}（含）至 {{ formatTime(groups.window_end) }}（不含）。阈值 {{ groups.min_similarity }}，尚未校准。合同 {{ groups.grouping_contract }}。</p>
         <p>{{ groups.embedding_called ? "本次调用了嵌入服务。" : "本次没有调用嵌入服务。" }} 嵌入身份：{{ groups.embedding_model || "未返回" }} / {{ groups.embedding_identity || "未返回" }}。身份只说明调用配置，不表示效果已验收。</p>
         <p>可分组学生事件 {{ groups.eligible_attempts }} 次，不同问句 {{ groups.distinct_questions }} 条；已进入多问句候选的问句 {{ groups.grouped_questions }} 条。单例问句 {{ groups.singleton_questions }} 条、单例事件 {{ groups.singleton_attempts }} 次。另有 {{ groups.excluded_attempts }} 次学生事件因失败、结果未知或空问句被排除，不进入候选组。</p>
@@ -266,19 +266,21 @@ onMounted(loadInsights);
 </script>
 
 <style scoped>
-.hint { margin: 16px 0 8px; color: #606266; font-size: 13px; line-height: 1.6; }
-h3, h4 { margin: 16px 0 8px; font-size: 16px; font-weight: 600; }
+.hint { margin: 12px 0 8px; color: #66756f; font-size: 12.5px; line-height: 1.75; }
+h3, h4 { margin: 28px 0 8px; font-size: 16px; font-weight: 600; }
 h4 { font-size: 15px; }
-.second { margin-top: 28px; }
+.second { margin-top: 30px; }
 .window-filter, .group-controls {
-  margin: 16px 0;
-  padding: 16px;
+  margin: 22px 0 26px;
+  padding: 18px 20px;
   border: 1px solid #e6ebe8;
-  border-radius: 10px;
-  background: #f7f9f8;
+  border-radius: 12px;
+  background: #fff;
 }
-.window-filter legend { padding: 0 6px; color: #213e36; font-weight: 600; }
+.window-filter legend { padding: 0 7px; color: #314a42; font-size: 15px; font-weight: 600; }
 .window-filter .el-button, .group-controls .el-button { margin: 8px 8px 0 0; }
 .group-controls label { display: block; max-width: 360px; color: #213e36; font-size: 14px; }
 .group-controls .el-checkbox { display: flex; margin-top: 12px; white-space: normal; height: auto; }
+.summary-surface { margin: 24px 0 26px; padding: 16px 18px; background: #f8faf9; border-left: 3px solid #c1d3cc; }
+.summary-surface p { margin: 4px 0; }
 </style>

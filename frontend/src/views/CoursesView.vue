@@ -12,7 +12,7 @@
         <span class="role-pill">课内{{ row.membership_role === 'teacher' ? '教师' : '学生' }}</span>
         <h2>{{ row.title }}</h2>
         <p>{{ row.capabilities.can_manage_documents ? '维护本课资料与成员，查看问答反馈。' : '阅读课内资料，在回答中逐条核对来源。' }}</p>
-        <div class="course-card-primary"><el-button type="primary" @click="openAsk(row)">进入问答</el-button><el-button @click="openDocs(row)">课程资料</el-button></div>
+        <div class="course-card-primary"><el-button type="primary" @click="openAsk(row)">进入问答</el-button><el-button plain @click="openDocs(row)">课程资料</el-button></div>
         <div v-if="row.capabilities.can_manage_members || row.capabilities.can_view_insights" class="course-card-secondary">
           <el-button v-if="row.capabilities.can_manage_members" type="primary" text @click="openMembers(row)">本课学生</el-button>
           <el-button v-if="row.capabilities.can_view_insights" type="primary" text @click="openInsights(row)">问答反馈</el-button>
@@ -68,13 +68,15 @@ function openMembers(row) {
 </script>
 
 <style scoped>
-.courses-page { background: transparent; border: 0; padding: 2px 0; }
+.courses-page { padding-top: 2px; }
 .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 22px; padding: 0; margin: 0; list-style: none; }
-.course-card { display: flex; flex-direction: column; align-items: flex-start; padding: 26px; min-width: 0; background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; }
-.course-card h2 { font-size: 21px; margin: 18px 0 10px; overflow-wrap: anywhere; }
-.course-card p { font-size: 13px; color: #596779; margin: 0 0 24px; }
+.course-card { display: flex; flex-direction: column; align-items: flex-start; padding: 24px; min-width: 0; background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; box-shadow: 0 8px 24px rgba(37, 72, 63, .035); }
+.course-card h2 { font-size: 20px; font-weight: 700; margin: 16px 0 8px; overflow-wrap: anywhere; }
+.course-card p { font-size: 13px; color: #65736e; line-height: 1.75; margin: 0 0 24px; }
 .course-card-primary { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; }
 .course-card-primary .el-button + .el-button { margin-left: 0; }
+.course-card-primary .el-button { min-height: 40px; }
+.course-card-primary .el-button--primary { min-width: 110px; font-weight: 600; }
 .course-card-secondary { width: 100%; padding-top: 14px; margin-top: 18px; border-top: 1px solid #e7ede9; }
-.course-card-secondary .el-button { padding-left: 0; padding-right: 0; }
+.course-card-secondary .el-button { padding-left: 0; padding-right: 0; color: #66756f; font-size: 13px; font-weight: 400; }
 </style>

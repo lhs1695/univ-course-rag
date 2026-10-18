@@ -60,9 +60,10 @@ async function onSubmit() {
 <style scoped>
 .hint {
   margin: 0;
-  color: #596779;
+  color: #6a7872;
   font-size: 12px;
+  line-height: 1.75;
 }
-.login-title { font-size: 24px; margin: 0; }
-.login-subtitle { font-size: 13px; font-weight: 400; color: #596779; margin: 8px 0 0; }
+.login-title { color: #1f3b34; font-size: 27px; line-height: 1.3; margin: 0; }
+.login-subtitle { font-size: 13px; font-weight: 400; color: #65736e; margin: 7px 0 0; }
 </style>

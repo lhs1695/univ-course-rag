@@ -100,13 +100,15 @@ async function onRemove(row) {
 
 <style scoped>
 .hint {
-  margin: 16px 0 8px;
-  color: #606266;
-  font-size: 13px;
-  line-height: 1.6;
+  margin: -12px 0 16px;
+  padding-left: 12px;
+  border-left: 2px solid #c7d5d0;
+  color: #65736e;
+  font-size: 12px;
+  line-height: 1.75;
 }
 
 .add-form {
-  margin: 16px 0;
+  margin-bottom: 24px;
 }
 </style>
