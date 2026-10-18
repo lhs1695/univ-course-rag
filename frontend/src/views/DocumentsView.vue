@@ -273,14 +273,16 @@ async function onRetry(row) {
 .doc-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin: 0 0 16px;
-  padding: 20px;
+  padding: 18px 20px;
   flex-wrap: wrap;
   background: #fff;
   border: 1px solid #e6ebe8;
   border-radius: 12px;
 }
+
+.doc-actions .el-button + .el-button { margin-left: 0; }
 
 .scope-note {
   margin: 16px 0;

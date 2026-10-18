@@ -183,7 +183,7 @@ async function askQuestion(text) {
 
 <style scoped>
 .ask-page { padding-top: 2px; }
-.workspace-grid { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(310px, .9fr); gap: 24px; align-items: start; }
+.workspace-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); gap: 28px; align-items: start; }
 .answer-column { min-width: 0; display: grid; gap: 24px; }
 .composer-panel, .response-panel, .evidence-panel { min-width: 0; background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; overflow: hidden; }
 .composer-panel { border-top: 4px solid #17675f; box-shadow: 0 12px 30px rgba(28, 78, 68, .08); }
@@ -199,14 +199,14 @@ async function askQuestion(text) {
 .response-panel { min-height: 300px; }
 .submitted-question { margin: 16px 22px 0; padding: 3px 0 3px 12px; border-left: 3px solid #c8d8d2; color: #56665f; font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; }
 .submitted-question strong { color: #41564e; font-weight: 600; }
-.response-body { padding: 10px 22px 24px; }
+.response-body { padding: 10px 22px 24px; line-height: 1.8; }
 .response-body > .subtle { margin: 8px 0 16px; }
 .evidence-card:focus { outline: 3px solid #17675f; outline-offset: 3px; }
 .workspace-empty { padding: 28px 24px 34px; }
 .workspace-empty h3 { font-size: 15px; margin: 8px 0 8px; font-weight: 600; }
 .workspace-empty p { margin: 0; max-width: 640px; font-size: 12.5px; color: #68766f; line-height: 1.8; }
 .empty-step { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: #8a9b94; }
-.evidence-panel { background: #f8faf9; border-color: #e3e9e6; }
+.evidence-panel { background: #f8faf9; border-color: #e3e9e6; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
 .evidence-panel .panel-heading { padding-top: 19px; }
 .evidence-panel .panel-heading h2 { font-size: 16px; font-weight: 650; }
 .evidence-scope { margin: 14px 22px 16px; padding-bottom: 13px; border-bottom: 1px solid #e2e9e4; }
@@ -220,6 +220,6 @@ async function askQuestion(text) {
 .citation-snippet { margin: 12px 0; padding-left: 12px; border-left: 1px solid #ccd9d4; color: #53635d; font-size: 13px; line-height: 1.75; }
 .evidence-card .el-link { font-size: 13px; }
 .evidence-empty { padding-top: 8px; }
-@media (max-width: 900px) { .workspace-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
-@media (max-width: 500px) { .panel-heading { padding: 18px 16px 0; } .ask-form { margin: 16px; } .composer-footer { align-items: flex-start; } .submitted-question { margin: 14px 16px 0; } .response-body { padding: 6px 16px 20px; } .evidence-scope { margin: 14px 16px; } .evidence-list { padding: 0 14px 16px; } }
+@media (max-width: 900px) { .workspace-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } .evidence-panel { position: static; max-height: none; overflow-y: visible; } }
+@media (max-width: 500px) { .panel-heading { padding: 18px 16px 0; } .ask-form { margin: 16px; } .composer-footer { flex-direction: column; align-items: stretch; } .composer-footer p { max-width: none; } .composer-footer .el-button { width: 100%; } .submitted-question { margin: 14px 16px 0; } .response-body { padding: 6px 16px 20px; } .evidence-scope { margin: 14px 16px; } .evidence-list { padding: 0 14px 16px; } }
 </style>
