@@ -14,11 +14,11 @@
 | --- | --- |
 | `pptx/final-v5.pptx` | 中期汇报 PPT（约 6–8 分钟） |
 | `pptx/speaker-notes-v5.md` | 逐页讲稿提示 |
-| `docs/midterm-demo-runbook.md` | 演示运行卡（切库、启动、固定问句、故障降级） |
+| `docs/midterm-demo-runbook.md` | 指向仓库根正式运行卡的短指针（正文见根 `docs/midterm-demo-runbook.md`） |
 | `screenshots/` | 彩排关键截图（书架、作答+引用、拒答、教师、Admin） |
 | `evidence/` | 彩排 PASS、R9 刷新摘要、rerank 关闭说明、PPT v5 变更说明 |
 
-仓库根还有完整代码与文档；演示操作以本包 + 根目录 `docs/midterm-demo-runbook.md` 为准。
+仓库根还有完整代码与文档；演示操作以本包 + 根目录 `docs/midterm-demo-runbook.md` 为准。系统结构见根目录 [docs/architecture.md](../docs/architecture.md)。
 
 ## 演示口径（务必对齐）
 

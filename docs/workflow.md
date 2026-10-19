@@ -1,6 +1,8 @@
 # 开发与运行工作流
 
-更新：2026-10-18。任务以 [施工计划](implementation-plan.md) 为准，下一步见 [当前交接](NEXT-SESSION.md)。本文件只保留有效操作规则。
+更新：2026-10-19。任务以 [施工计划](implementation-plan.md) 为准，下一步见 [当前交接](NEXT-SESSION.md)。本文件只保留有效操作规则。
+
+> **口径说明（2026-10-19）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；下文若出现 17 份 / `r7b6_real` / `univ_course_rag`，均为 R7B 历史口径。
 
 ## 会话与变更
 
@@ -19,7 +21,7 @@
 
 每项在现有 engineering 或施工计划记录：具体对象与版本/commit、许可、实际采用方式、接入/迁移/维护成本、剩余本地工作和验收。只有参考链接不能算接入；自写须比较现成对象的实际不适配之处。
 
-分词、BM25、重排、解析等算法优先直接复用；本地保留课程授权、ID/索引映射、生命周期、上限与错误适配。**PDF 生产默认路径已是 PyMuPDF 原生文字提取与页级质量门禁；Docling 全量主解析路线已停止。** R7B-L1…L3、R7B-5、R7B-6B/6C、R7B-7、R8 与 P7-3 恢复子项均已完成；R9 冻结身份清单与 PPT v4 初稿已生成，当前下一项是本机 PowerPoint 视觉复核与固定 Demo 彩排，不再启动新的解析器选型循环。具体步骤见 [中期演示运行卡](midterm-demo-runbook.md)。OCR/公式/视觉仅针对确认的具体页面另立任务。R7B 历史实施步骤与门槛见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan) 和 [validation](validation.md#r7b-parser-selection)。复制源码保留原声明；不扩大为通用检索、模型或插件框架。
+分词、BM25、重排、解析等算法优先直接复用；本地保留课程授权、ID/索引映射、生命周期、上限与错误适配。**PDF 生产默认路径已是 PyMuPDF 原生文字提取与页级质量门禁；Docling 全量主解析路线已停止。** R7B-L1…L3、R7B-5、R7B-6B/6C、R7B-7、R8 与 P7-3 恢复子项均已完成；R9 已收口（final-v5 + 彩排 PASS + midterm-handoff）。正式演示库 `univ_course_rag_cn_v2`；具体步骤见 [中期演示运行卡](midterm-demo-runbook.md)。不再启动新的解析器选型循环。OCR/公式/视觉仅针对确认的具体页面另立任务。R7B 历史实施步骤与门槛见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan) 和 [validation](validation.md#r7b-parser-selection)。复制源码保留原声明；不扩大为通用检索、模型或插件框架。
 
 开源“抄作业”以最小复用单元为准：优先调用成熟 API/CLI，其次参考稳定的数据结构或适配代码，最后才复制短小且许可证明确的必要源码。每次复制必须保留原版权/许可证声明并记录来源 commit。不要复制整仓库、默认配置、模型权重或第三方素材；模型和权重的许可单独核对。
 

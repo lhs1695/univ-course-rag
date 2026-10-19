@@ -27,11 +27,11 @@
 
 - Staff 壳恢复宋体标题与完整紫色书签，表单/卡片/表格统一纸白和淡紫描边，课程页签采用紫底白字胶囊；保留管理端表格工作台与原角色入口。学生 `.study-app` 与四页未改。
 - 验收通过：`frontend/npm run build`；Playwright 管理员 `/admin/users`、`/admin/courses`、`/admin/maintenance`、`/admin/system`，教师课程书架/课程资料表/提问页，学生 `/courses` 书架回归；`git diff --check`。截图、日志、PASS 清单见 `corpus/local/demo-staff-study-align-2026-10-19/`（忽略区）。
-- 实现说明：[staff 视觉对齐记录](../frontend/DESIGN-NOTES-STAFF-STUDY-ALIGN.md)。本地提交完成后，继续 PPT 视觉复核与固定 Demo 彩排；不 push。
+- 实现说明：[staff 视觉对齐记录](../frontend/DESIGN-NOTES-STAFF.md)。本地提交完成后，继续 PPT 视觉复核与固定 Demo 彩排；不 push。
 
 ## 2026-10-19 staff/admin F1–F20（本 worktree）
 
-已按会话角色统一 staff 壳，补教师原文入口及 F1–F20 可做项。F10 无改密/停用 API、F12 真实模型连通未验证、F14 浏览器原生 Network 日志均诚实降级，见 [逐项交付](../NOTES-F1-F20.md)。本次未读 .env、未改后端或学生四页核心交互、未 push；原有执行日志/提示词排除提交。按用户要求外层补 build 与 Playwright 三角色/390px 点击验收，静态检查不能替代浏览器验收。本地提交尝试被 Git 元数据目录 index.lock 写权限阻断，未暂存、HEAD 仍为 9246139；外层按逐项交付的文件范围补本地提交。
+已按会话角色统一 staff 壳，补教师原文入口及 F1–F20 可做项。F10 无改密/停用 API、F12 真实模型连通未验证、F14 浏览器原生 Network 日志均诚实降级，见 [逐项交付](archive/NOTES-F1-F20.md)。本次未读 .env、未改后端或学生四页核心交互、未 push；原有执行日志/提示词排除提交。按用户要求外层补 build 与 Playwright 三角色/390px 点击验收，静态检查不能替代浏览器验收。本地提交尝试被 Git 元数据目录 index.lock 写权限阻断，未暂存、HEAD 仍为 9246139；外层按逐项交付的文件范围补本地提交。
 
 
 更新：2026-10-18（Asia/Shanghai，R9 冻结身份清单生成后）。
@@ -72,7 +72,7 @@
 - **R8 正式通过（2026-10-17）：** 证据 `corpus/local/r8-joint-acceptance-2026-10-17/RESULTS.md` + `UI_FOUR_POINTS.json` + `ui-screenshots/`。API 关键路径与 UI 四点（三角色登录、原页 `#page=`、教师覆盖警告文案、C4 断后端后重试已提交问句）均通过。用户授权由执行器本机浏览器代点 UI。
 - **P7-3 受控恢复子项通过（2026-10-18）：** `corpus/local/r9-recovery-2026-10-18/RESTORE-RESULTS.md`、`restore-result.json`、`package-manifest.json`。源库 `univ_course_rag_r7b6_real` custom dump 恢复到隔离库 `univ_course_rag_r9_restore_20261018`；migration 0011、4/17/385、全部 public 表行数、pgvector、17/17 PDF SHA-256/页数/存储边界与 17/17 解析产物来源身份均通过。源库、旧库、Fake 库规模未变；未调用云模型。P7 整体仍部分完成，Demo Reset 与成本/资源专项仍待验。
 - **R9 冻结身份清单已生成（2026-10-18）：** `corpus/local/r9-recovery-2026-10-18/freeze/freeze-manifest.json`，摘要 `freeze/R9-FREEZE-RESULTS.md`。记录当前代码提交 `7426103`、最后代码变更提交、Python/前端依赖快照、0011 迁移、17 份 PDF、412 个解析产物、28 道题集、R7B-7 结果与恢复包哈希。R7B-7 历史运行 SHA 缺失、Python 依赖声明未完全锁定等限制已显式记录。
-- **中期汇报 PPT v4 初稿已生成并完成结构预览（2026-10-18）：** `build/midterm-presentation/output/final-v4.pptx`；讲稿提示 `build/midterm-presentation/output/speaker-notes-v4.md`；结构校验 `build/midterm-presentation/finalizer/final-v4.validation.json` 通过（10 页、16:9、必要指标齐全、无旧阶段术语、形状均在页面边界内）。低分辨率结构预览已复核，R8 两张 UI 图改为关键区域裁切，原始截图不变；本机没有 PowerPoint/LibreOffice 渲染器，最终字体与换行仍需本机 Office 复核。固定演示步骤见 `docs/midterm-demo-runbook.md`。旧版 `final-v3.pptx` 保留。
+- **（历史）中期汇报 PPT v4 初稿（2026-10-18，已被 final-v5 取代）：** `build/midterm-presentation/output/final-v4.pptx`；讲稿提示 `build/midterm-presentation/output/speaker-notes-v4.md`；结构校验 `build/midterm-presentation/finalizer/final-v4.validation.json` 通过（10 页、16:9、必要指标齐全、无旧阶段术语、形状均在页面边界内）。低分辨率结构预览已复核，R8 两张 UI 图改为关键区域裁切，原始截图不变；本机没有 PowerPoint/LibreOffice 渲染器，最终字体与换行仍需本机 Office 复核。固定演示步骤见 `docs/midterm-demo-runbook.md`。旧版 `final-v3.pptx` 保留。
 - **本轮只读运行预检（2026-10-18）：** 后端 `/health`、`/ready` 与 Vite 根页均返回 HTTP 200；`/runtime` 只报告 `database=available`、`migration/index=not_checked`，不暴露实际库名。尚未确认当前后端进程的数据库身份，因此没有提交真实模型问句；正式彩排前必须核实其确实连接 `univ_course_rag_r7b6_real`（4/17/385），不能仅凭健康检查判断。
 - 旧库 `univ_course_rag` 与 Fake 库 `univ_course_rag_r7b6` 未被本卡改写；根 `.env` 可能仍指旧库，服务不会自动连 `r7b6_real`。
 - **Docling 清理已完成：** 主仓适配代码、专属测试、`scripts/r7b1_run_docling_pages.py` 与 optional extra 已删除；Docling 不是生产路径，PyMuPDF 与页级质量门禁保留，历史结论仍见 [evaluation-results](evaluation-results.md#r7b-4-pause)。依赖声明已删，venv 未卸载 Docling 包；corpus/local 全部证据保留（含 R7B-1/R7B-4）。
@@ -85,7 +85,7 @@
 - 新题集 16 道（每课 3 答 + 1 拒答，冻结在忽略区证据目录）：命中预期文档+页 12/12、引用支持 12/12（弱规则，非人工正确率）、拒答 4/4、系统失败 0；DeepSeek `deepseek-v4-flash` 16 次共 32,161 tokens。
 - 演示已进程级切换到 `univ_course_rag_cn_v1` + 新 uploads（未改 `.env`），API 验收三角色登录、student 新四课与资料、PDF 200、问答引用 page 1 均通过。
 - 旧演示库 `univ_course_rag_r7b6_real` 旧四课已删（现 0/0/0，账号保留），旧 uploads 17 份文件已删；备份在 `corpus/local/cn-replace-2026-10-18/backup/`（dump + 17 PDF + SHA-256 清单，恢复方法见证据 `REPORT.md`），保留不删。`univ_course_rag` 与 Fake 库未动。
-- 注意：PPT v4 与旧 Demo 彩排口径仍是旧四课数字/截图，正式汇报前需按新四课更新；勿再把旧库当演示库。
+- 注意：正式口径为中文四课 `univ_course_rag_cn_v2`（4/27/2501）与 final-v5；勿再把 `r7b6_real` 的 17/385 当演示数字。
 
 ## 检索层宽泛问法修复（2026-10-18 已完成，演示已切 cn_v2）
 
@@ -119,7 +119,7 @@
 
 ## 后续顺序
 
-R8 已通过 → **P7-3 数据库与文件恢复子项已通过** → R9 冻结身份清单已生成 → PPT v4 视觉复核与固定 Demo 彩排。Demo Reset、成本/资源限制专项展示仍可待验；P7 整体不标为全部完成。
+R8 已通过 → P7-3 恢复子项已通过 → **R9 已收口**（final-v5 + 彩排 PASS + midterm-handoff）。Demo Reset、成本/资源限制专项展示仍可待验；P7 整体不标为全部完成。
 
 ## 已知限制（带入后续）
 

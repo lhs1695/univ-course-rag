@@ -4,7 +4,7 @@ Date: 2026-10-19 (Asia/Shanghai)
 
 ## Rerank residual
 
-- Working tree: **clean** of uncommitted rerank/wide-recall code (only dirty file is protected `新开题资料.md`).
+- Working tree: **clean** for midterm closeout (rerank residual archived; `新开题资料.md` and docs already committed on `main`).
 - Archive present: `corpus/local/rerank-archive-2026-10-19/` (patch + README).
 - Live demo process: `RERANKER_BACKEND=disabled`, `RETRIEVAL_STRATEGY=dense`, `QUERY_EXPANSION_BACKEND=llm`, DB `univ_course_rag_cn_v2`.
 - Conclusion: **已归档、不启用**；不恢复 patch，不装 rerank 依赖。

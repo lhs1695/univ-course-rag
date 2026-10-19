@@ -15,6 +15,7 @@
 | [validation](docs/validation.md) | 验收方法与通过/失败门槛 |
 | [evaluation-results](docs/evaluation-results.md) | 已跑数字与运行日志登记 |
 | [中期演示运行卡](docs/midterm-demo-runbook.md) | 本机切库、启动、固定问句、故障降级与汇报口径 |
+| [architecture](docs/architecture.md) | 中期架构总览、模块对照与边界 |
 | [中期答辩队友包](midterm-handoff/README.md) | PPT v5、讲稿、彩排截图与口径说明（给答辩队友） |
 
 ## 当前现状（三行）

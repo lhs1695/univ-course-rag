@@ -1,6 +1,8 @@
 # 现行工程合同
 
-更新：2026-10-17。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。R7 有限真实运行及 Docling 停止原因见 [结果登记](evaluation-results.md)。
+更新：2026-10-19。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。R7 有限真实运行及 Docling 停止原因见 [结果登记](evaluation-results.md)。
+
+> **口径说明（2026-10-19）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；下文若出现 17 份 / `r7b6_real` / `univ_course_rag`，均为 R7B 历史口径。
 
 ## 目录
 

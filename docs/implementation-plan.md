@@ -3,14 +3,14 @@
 ## 2026-10-19 当前授权项：staff/admin 壳视觉对齐学生 A
 
 - 复用 Vue 3、Element Plus 与现有 `student.css` / `styles.css` 品牌 token；仅在 `.app-shell` 作用域调整 CSS，不新增依赖，不修改 `studentSurface`、学生四页、API、路由或权限。管理页继续使用列表、表格和表单。
-- 验收：`npm run build` 成功；Playwright 检查管理员四路由、教师书架/资料/提问与学生书架；`git diff --check`；证据与截图见 `corpus/local/demo-staff-study-align-2026-10-19/`。详见 [staff 视觉说明](../frontend/DESIGN-NOTES-STAFF-STUDY-ALIGN.md)。
+- 验收：`npm run build` 成功；Playwright 检查管理员四路由、教师书架/资料/提问与学生书架；`git diff --check`；证据与截图见 `corpus/local/demo-staff-study-align-2026-10-19/`。详见 [staff 视觉说明](../frontend/DESIGN-NOTES-STAFF.md)。
 
 ## 2026-10-19 当前授权项：staff/admin F1–F20
 
-按本次用户任务卡完成角色选壳、教师资料原文入口、反馈降噪及后台操作提示。直接复用现有 Element Plus（^2.11.3）、Vue（^3.5.21）、documentDisplay、api.js 与原生 details；本地工作仅角色分支、文案、样式和确认流程，无新增依赖/后端接口。逐项验收与诚实降级见 [NOTES-F1-F20](../NOTES-F1-F20.md)。静态编译及 diff 检查通过；按用户要求构建/Playwright 留外层。
+按本次用户任务卡完成角色选壳、教师资料原文入口、反馈降噪及后台操作提示。直接复用现有 Element Plus（^2.11.3）、Vue（^3.5.21）、documentDisplay、api.js 与原生 details；本地工作仅角色分支、文案、样式和确认流程，无新增依赖/后端接口。逐项验收与诚实降级见 [NOTES-F1-F20](archive/NOTES-F1-F20.md)。静态编译及 diff 检查通过；按用户要求构建/Playwright 留外层。
 
 
-更新：2026-10-18。R7 单课心理学纯文字对照为历史结果；当前四课基线已在隔离库 `univ_course_rag_r7b6_real` 完成：17 份 PDF、385 chunks，真实 SiliconFlow BAAI/bge-m3 与有限 DeepSeek 生成，结果与指标限制见 [结果登记](evaluation-results.md)。Docling 的 17 份全量冻结于 8/17 停止，已处理约 4.13 小时，线性代数公式密集文件出现 71–94 分钟/4–5 页的不可接受耗时。**当前决策：停止 Docling 作为生产主解析器，不续跑旧任务；生产 PDF 使用 PyMuPDF 轻量路径与页级质量门禁，特殊页面按需处理。** R7B-L1…L3、R7B-5、R7B-6B（Fake）、R7B-6C（真实 embedding 小样本）和 R7B-7（四课基线）均已完成。旧 R7B-1…4 只保留历史证据，不算通过或当前前置。
+更新：2026-10-19。R7 单课心理学与 R7B-7 英文四课库 `univ_course_rag_r7b6_real`（17 份 / 385 chunks）为历史结果；**正式演示库**为中文四课 `univ_course_rag_cn_v2`（27 份 / 2,501 chunks），结果与指标限制见 [结果登记](evaluation-results.md)。Docling 的 17 份全量冻结于 8/17 停止，已处理约 4.13 小时，线性代数公式密集文件出现 71–94 分钟/4–5 页的不可接受耗时。**当前决策：停止 Docling 作为生产主解析器，不续跑旧任务；生产 PDF 使用 PyMuPDF 轻量路径与页级质量门禁，特殊页面按需处理。** R7B-L1…L3、R7B-5、R7B-6B（Fake）、R7B-6C（真实 embedding 小样本）和 R7B-7（四课基线）均已完成。旧 R7B-1…4 只保留历史证据，不算通过或当前前置。
 
 ## 目标与约束
 
@@ -35,7 +35,7 @@
 
 已有 Cookie Session、课程成员权限、Postgres + pgvector、资料上传/原文件读取/入库恢复、学习工作台及基础问答反馈。关键词候选直接复用 jieba/rank_bm25；融合输出完整有界并集；可选重排适配默认关闭；结构切分直接复用 semantic-text-splitter，保存来源字符范围与切分版本。当前 PDF/PPTX/DOCX 链路只抽取已有文字，不做 OCR、版面恢复、图片/图表理解或可靠公式恢复；文件整体文字量提示也不能发现局部漏页。具体边界只在工程合同维护，不重复记录实现过程或历次测试数。
 
-当前默认 dense、重排 disabled。关键词独有候选能参与融合/重排，尚不能自动成为回答依据。历史 R7 单课隔离库与当前 R7B-7 四课库须区分：当前基线库 `univ_course_rag_r7b6_real` 已核验 migration 0011、4 课 / 17 份资料 / 385 chunks；原长期目标库 `univ_course_rag` 仍为 1 课 / 4 份资料 / 257 chunks，未作为当前基线，也未核验其后续迁移需求。Hybrid 的 28 题检索对照与 Dense 命中指标相同，但 Hybrid 未生成答案，不能据此声称混合检索增益。
+当前默认 dense、重排 disabled。关键词独有候选能参与融合/重排，尚不能自动成为回答依据。**正式演示库**为中文四课 `univ_course_rag_cn_v2`（4 课 / 27 份 PDF / 2,501 chunks；线代、概率论与统计学、人力资源、教育学原理）；课件目录 `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/`。历史 R7B-7 英文四课库 `univ_course_rag_r7b6_real`（4 / 17 / 385）仅作对照；旧默认库 `univ_course_rag` 已 DROP，勿再引用。Hybrid 的历史 28 题检索对照与 Dense 命中指标相同，但 Hybrid 未生成答案，不能据此声称混合检索增益。
 
 ## 后续实施
 
@@ -51,10 +51,10 @@
 | R7B | 停止 Docling 全量路线；PyMuPDF 轻量主路径 + 页级门禁；17 份资料、固定题集与四课真实基线 | **已完成（2026-10-17）**：R7B-L1…L3、R7B-5、R7B-6B、R7B-6C、R7B-7 通过；基线指标仅限 AI 预标与弱引用支持规则，阈值/事实正确率未校准或人工复核 |
 | P7 | 中期产品化收口：问答体验、课程/学生生命周期、数据库/文件生命周期、成本/资源限制、运行/恢复/Demo 准备；不扩张核心 RAG 范围 | **部分完成（2026-10-18）**：问答台同句重试、管理员课程编辑/删除 UI、Demo 启动与四类演示说明已交付，R8 正式通过；数据库 dump + 上传资料/解析产物的隔离恢复子项已通过。Demo Reset、成本/资源限制专项验收仍待处理；不把单项通过扩大为 P7 全部完成 |
 | R8 | 内部端到端验收：API 权限/问答路径与 UI 关键闭环；开发者操作不冒充非开发者独立试用 | **正式通过（2026-10-17）**：API 关键路径 + UI 四点通过；证据见 `corpus/local/r8-joint-acceptance-2026-10-17/RESULTS.md`、`UI_FOUR_POINTS.json` 与截图。非开发者独立试用不在本次结论内 |
-| R9 | 对齐代码、依赖、迁移、资料/解析产物、题集、结果与恢复包并验证恢复；之后整理展示材料 | **冻结核对已完成（2026-10-18）**：身份清单 `corpus/local/r9-recovery-2026-10-18/freeze/freeze-manifest.json` 与 PPT v4 初稿已生成；当前待本机 PowerPoint 视觉复核与固定 Demo 彩排 |
+| R9 | 对齐代码、依赖、迁移、资料/解析产物、题集、结果与恢复包并验证恢复；之后整理展示材料 | **已收口（2026-10-19）**：冻结清单已刷新；PPT **final-v5** + 讲稿；固定 Demo **彩排 PASS**；队友材料见 `midterm-handoff/`；运行卡见 [midterm-demo-runbook](midterm-demo-runbook.md)；正式库 `univ_course_rag_cn_v2` |
 | R10 | 更广复杂资料、通用多模态问答与小范围多人试用；远程、多轮、流式按需求另定 | 中期后 |
 
-R6 → P4 → P5/P6 → R7 → R7B-L1…L3 → R7B-5 → R7B-6B/6C → R7B-7 → **R8 正式通过** 均已完成；P7-3 数据库 dump + 上传资料/解析产物隔离恢复子项已于 2026-10-18 通过，R9 冻结身份清单与 PPT v4 初稿已生成。当前下一项是 **本机 PowerPoint 视觉复核与固定 Demo 彩排**，操作步骤见 [中期演示运行卡](midterm-demo-runbook.md)。演示仍须进程级切 `univ_course_rag_r7b6_real`。不续跑 Docling；不默认 Vision/rerank。**一次只推进一项实施卡片，前一项通过条件未通过就不要进入下一项。**
+R6 → P4 → P5/P6 → R7 → R7B-L1…L3 → R7B-5 → R7B-6B/6C → R7B-7 → **R8 正式通过** 均已完成；P7-3 恢复子项已于 2026-10-18 通过；**R9 已收口（2026-10-19）**：final-v5、彩排 PASS、`midterm-handoff/`。正式演示库为 `univ_course_rag_cn_v2`（默认配置已对齐），操作见 [中期演示运行卡](midterm-demo-runbook.md)。不续跑 Docling；不默认 Vision/rerank。历史交付清单见 [docs/archive/NOTES-F1-F20.md](archive/NOTES-F1-F20.md)。**一次只推进一项实施卡片，前一项通过条件未通过就不要进入下一项。**
 
 <a id="docling-稳妥型开工计划"></a>
 <a id="r7b-lightweight-plan"></a>

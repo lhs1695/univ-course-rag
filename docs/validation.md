@@ -1,6 +1,8 @@
 # 验证与中期重跑指南
 
-更新：2026-10-17。R7 有限对照与运行日志见 [evaluation-results](evaluation-results.md)；R7B **当前施工步骤**见 [轻量解析路线计划](implementation-plan.md#r7b-lightweight-plan)。Docling 代表页和全量试验均为历史记录，不能作为当前主解析路线。本文只保留验收方法与通过/失败门槛。操作规则见 [workflow](workflow.md)。
+更新：2026-10-19。R7 有限对照与运行日志见 [evaluation-results](evaluation-results.md)；R7B **当前施工步骤**见 [轻量解析路线计划](implementation-plan.md#r7b-lightweight-plan)。Docling 代表页和全量试验均为历史记录，不能作为当前主解析路线。本文只保留验收方法与通过/失败门槛。操作规则见 [workflow](workflow.md)。
+
+> **口径说明（2026-10-19）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；下文若出现 17 份 / `r7b6_real` / `univ_course_rag`，均为 R7B 历史口径。现场演示步骤以 [中期演示运行卡](midterm-demo-runbook.md) 为准。
 
 <a id="r7b-parser-selection"></a>
 
@@ -135,7 +137,7 @@ Postgres需明确--database postgres --allow-postgres；会临时写入受控库
 
 按顺序核对，任一步失败先停再继续：
 
-1. **数据库**：目标 Postgres 已启动；演示四课真实基线时进程级指向 `univ_course_rag_r7b6_real`（根 `.env` 可能仍指旧库，勿把旧库当 R7B-7 结果）。
+1. **数据库**：目标 Postgres 已启动；正式演示指向 `univ_course_rag_cn_v2`（默认 `.env` / `.env.example` 已对齐；历史 `r7b6_real` 勿当当前演示）。完整步骤见 [中期演示运行卡](midterm-demo-runbook.md)。
 2. **migration**：目标库已到最新 Alembic head（当前合同为 `0011`）。
 3. **backend**：仓库根用 `backend/.venv` 启动 uvicorn（见 [workflow](workflow.md)）。
 4. **frontend**：`npm run dev`；浏览器走 Vite 地址，不直连后端端口登录。
@@ -153,7 +155,7 @@ Postgres需明确--database postgres --allow-postgres；会临时写入受控库
 
 持续标明 Fake/真实模式；未实现的逐主张支持、同义组或主题反馈不伪造展示。录屏不拍入凭据、Cookie、学生身份或私密原文。P7 只提供上述可操作说明与 UI 闭环；**真人共同走通记入 R8**，不把开发者自测冒充联合验收或独立试用。
 
-R9 冻结后已生成中期汇报 PPT v4 初稿与 [中期演示运行卡](midterm-demo-runbook.md)。PPT 已完成结构/页面边界检查和低分辨率结构预览，但当前工作区没有 PowerPoint/LibreOffice 渲染器，最终字体与换行仍需本机 Office 复核。数据库 dump + 上传资料/解析产物隔离恢复实操已于 2026-10-18 通过；Demo Reset、成本/资源限制专项展示仍可单独标为待验，不得将其与恢复实测混为一项。
+R9 已收口：PPT **final-v5**、彩排 PASS、队友包 `midterm-handoff/`；现场操作以 [中期演示运行卡](midterm-demo-runbook.md) 为准。数据库 dump + 上传资料/解析产物隔离恢复实操已于 2026-10-18 通过；Demo Reset、成本/资源限制专项展示仍可单独标为待验，不得将其与恢复实测混为一项。
 
 <a id="usability-test-template"></a>
 <a id="r8-internal-acceptance"></a>
