@@ -1,32 +1,23 @@
 <template>
-  <div class="login-page">
-    <el-card class="login-card" shadow="never">
-      <template #header><div class="login-brand"><span class="brand-mark" aria-hidden="true">课</span><h1 class="login-title">课程知识库</h1></div><p class="login-subtitle">登录后，回到你的课程与资料。</p></template>
-      <el-form :model="form" :aria-describedby="loginError ? 'login-error' : undefined" @submit.prevent="onSubmit">
-        <el-form-item label="用户名">
-          <el-input v-model="form.username" @input="loginError = ''" autocomplete="username" />
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input
-            v-model="form.password"
-            @input="loginError = ''"
-            type="password"
-            show-password
-            autocomplete="current-password"
-          />
-        </el-form-item>
-        <p v-if="loginError" id="login-error" class="login-error" role="alert">{{ loginError }}</p>
-        <el-form-item>
-          <el-button type="primary" native-type="submit" :loading="loading">
-            登录
-          </el-button>
-        </el-form-item>
+  <div class="entry-layout">
+    <section class="entry-story">
+      <div class="entry-heading"><span class="tiny-bookmark" aria-hidden="true"></span><span>你的课内阅读伙伴</span></div>
+      <h1>好问题，<br>值得翻到原文。</h1>
+      <p class="entry-description">把课堂上的疑问带来。<br>在课程资料里寻找答案，也找到答案的出处。</p>
+      <div class="reading-illustration" aria-hidden="true"><div class="illustration-page left-page"><span class="page-title">关于知识的笔记</span><i></i><i></i><i class="highlight-line"></i><i></i><i></i><span class="page-foot">阅读，思考。</span></div><div class="illustration-page right-page"><span class="paper-bookmark"></span><span class="quote-symbol">“</span><span class="paper-quote">有依据，<br>才有进一步<br>思考的起点。</span><i></i><i></i><span class="page-foot">回到原文核对</span></div><span class="illustration-caption">提问 / 阅读 / 核对</span></div>
+    </section>
+    <section class="entry-form" aria-labelledby="login-heading">
+      <span class="welcome-mark" aria-hidden="true">课</span><h2 id="login-heading">回到你的课程</h2><p>登录后，继续探索课堂里的问题。</p>
+      <el-form :model="form" label-position="top" :aria-describedby="loginError ? 'login-error' : undefined" @submit.prevent="onSubmit">
+        <el-form-item label="用户名"><el-input id="username" v-model="form.username" autocomplete="username" placeholder="输入你的用户名" @input="loginError = ''" :disabled="loading" /></el-form-item>
+        <el-form-item label="密码"><el-input id="password" v-model="form.password" type="password" show-password autocomplete="current-password" placeholder="输入密码" @input="loginError = ''" :disabled="loading" /></el-form-item>
+        <p v-if="loginError" id="login-error" class="entry-error" role="alert">{{ loginError }}</p>
+        <el-button class="entry-submit" type="primary" native-type="submit" :disabled="!form.username.trim() || !form.password" :loading="loading">登录课程知识库</el-button>
       </el-form>
-      <p class="hint">使用管理员分配的账号登录。需要加入课程时，请联系本课教师或管理员。</p>
-    </el-card>
+      <p class="entry-help">使用学校分配的账号。还没有账号或课程？<br>请联系本课教师或管理员。</p>
+    </section>
   </div>
 </template>
-
 <script setup>
 import { reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -59,16 +50,3 @@ async function onSubmit() {
   }
 }
 </script>
-
-<style scoped>
-.login-brand { display: flex; align-items: center; gap: 12px; }
-.login-error { color: var(--el-color-danger); font-size: 13px; margin: 0 0 16px; }
-.hint {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.75;
-}
-.login-title { color: #1f3b34; font-size: 27px; line-height: 1.3; margin: 0; }
-.login-subtitle { font-size: 13px; font-weight: 400; color: var(--text-muted); margin: 7px 0 0; }
-</style>

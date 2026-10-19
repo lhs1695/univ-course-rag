@@ -1,5 +1,6 @@
 <template>
-  <div class="page">
+  <StudentDocuments v-if="!canManage" :documents="documents" :loading="loading" :failure="failure" :course-id="courseId" @refresh="refreshDocuments" />
+  <div v-else class="page">
     <header class="page-heading"><p class="eyebrow">课程资源</p><h1>课程资料</h1><p class="page-description">{{ canManage ? '上传、检查入库状态，维护本课问答的资料依据。' : '只读查看本课资料；PDF 可输入页码后打开到对应页，回答引用也可回到原资料核对。' }}</p></header>
 
     <div class="doc-actions">
@@ -100,6 +101,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import StudentDocuments from "../components/StudentDocuments.vue";
 import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";

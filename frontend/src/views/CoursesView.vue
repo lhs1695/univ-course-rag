@@ -1,28 +1,20 @@
 <template>
-  <div class="page courses-page">
-    <header class="page-heading"><p class="eyebrow">课程空间</p><h1>我的课程</h1><p class="page-description">选择一门已加入的课程，查看资料或开始提问。管理入口按你的课内权限显示。</p></header>
-    <el-alert v-if="deniedNotice" :title="deniedNotice" type="warning" show-icon :closable="true" @close="deniedNotice = ''" style="margin-bottom: 16px;" />
-    <template v-if="failure">
-      <el-alert :title="failure" type="error" :closable="false" show-icon />
-      <el-button :loading="loading" @click="loadCourses">重新加载课程</el-button>
-    </template>
-    <div v-else-if="loading" aria-busy="true"><p role="status" class="page-description">正在加载你的课程…</p><el-skeleton :rows="4" animated /></div>
-    <el-empty v-else-if="loaded && courses.length === 0" description="还没有加入任何课程"><p v-if="session.user?.role === 'admin'" class="page-description">管理员默认不加入课程，请到「课程与授权」把自己加入某课后，这里才会出现。</p><p v-else class="page-description">请联系本课教师或管理员加入已有课程。</p><router-link v-if="session.user?.role === 'admin'" to="/admin/courses">前往课程与授权</router-link></el-empty>
-    <ul v-else class="course-grid">
-      <li v-for="row in courses" :key="row.id" class="course-card">
-        <span class="role-pill">课内{{ row.membership_role === 'teacher' ? '教师' : '学生' }}</span>
-        <h2>{{ row.title }}</h2>
-        <p>{{ row.capabilities.can_manage_documents ? '维护本课资料与成员，查看问答反馈。' : '阅读课内资料，在回答中逐条核对来源。' }}</p>
-        <div class="course-card-primary"><el-button type="primary" @click="openAsk(row)">进入问答</el-button><el-button plain @click="openDocs(row)">课程资料</el-button></div>
-        <div v-if="row.capabilities.can_manage_members || row.capabilities.can_view_insights" class="course-card-secondary">
-          <el-button v-if="row.capabilities.can_manage_members" type="primary" text @click="openMembers(row)">本课学生</el-button>
-          <el-button v-if="row.capabilities.can_view_insights" type="primary" text @click="openInsights(row)">问答反馈</el-button>
-        </div>
+  <div class="course-shelf">
+    <header class="shelf-heading"><div><h1>今天，想读懂什么？</h1><p>选择一门课程，把疑问交给资料。</p></div><span v-if="loaded && !failure" class="shelf-count">{{ courses.length }} 门已加入的课程</span></header>
+    <el-alert v-if="deniedNotice" :title="deniedNotice" type="warning" closable @close="deniedNotice = ''"/>
+    <div v-if="failure" class="study-empty" role="alert"><h2>课程暂时没有加载出来</h2><p>{{ failure }}</p><el-button :loading="loading" @click="loadCourses">重新加载</el-button></div>
+    <div v-else-if="loading" class="study-empty" role="status"><p>正在整理你的课程书架…</p><el-skeleton :rows="4" animated/></div>
+    <div v-else-if="!courses.length" class="study-empty"><h2>你的书架还空着</h2><p>联系本课教师或管理员加入课程，然后就可以阅读资料、开始提问。</p><router-link v-if="session.user?.role === 'admin'" to="/admin/courses">课程与授权</router-link></div>
+    <ul v-else class="shelf-list">
+      <li v-for="(row,index) in courses" :key="row.id" class="shelf-course" :class="`book-tone-${index % 4}`">
+        <div class="book-spine" aria-hidden="true"><span>{{ row.title }}</span></div>
+        <div class="book-cover"><span class="book-caption">课程知识库</span><h2>{{ row.title }}</h2><span class="book-bottom">带着问题，回到原文。</span><span class="cover-orbit" aria-hidden="true"></span></div>
+        <div class="book-details"><span class="course-membership">{{ row.membership_role === 'teacher' ? '教师课程' : '已加入课程' }}</span><h3>{{ row.title }}</h3><p>从课堂上的疑问出发，<br>让每一个回答都有资料可循。</p><div class="book-actions"><el-button type="primary" @click="openAsk(row)">开始提问</el-button><button class="text-button" @click="openDocs(row)">浏览资料 <span aria-hidden="true">↗</span></button></div><div class="book-management" v-if="row.capabilities.can_manage_members || row.capabilities.can_view_insights"><button v-if="row.capabilities.can_manage_members" class="quiet-button" @click="openMembers(row)">本课学生</button><button v-if="row.capabilities.can_view_insights" class="quiet-button" @click="openInsights(row)">问答反馈</button></div></div>
       </li>
     </ul>
+    <div class="shelf-footnote"><span class="footnote-symbol" aria-hidden="true">↳</span><p>答案是阅读的起点。<br><span>在回答下方点击引用，即可回到原资料的对应页。</span></p></div>
   </div>
 </template>
-
 <script setup>
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -74,18 +66,3 @@ function openMembers(row) {
   router.push(`/courses/${row.id}/members`);
 }
 </script>
-
-<style scoped>
-.courses-page { padding-top: 2px; }
-.course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 20px; padding: 0; margin: 0; list-style: none; align-items: stretch; }
-.course-card { display: flex; flex-direction: column; align-items: flex-start; height: 100%; padding: 22px 24px; min-width: 0; background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; box-shadow: var(--elev-1); }
-.course-card h2 { font-size: 21px; font-weight: 700; line-height: 1.35; margin: 14px 0 8px; overflow-wrap: anywhere; }
-.course-card p { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin: 0 0 22px; }
-.course-card-primary { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; }
-.course-card-primary .el-button + .el-button { margin-left: 0; }
-.course-card-primary .el-button { min-height: 40px; }
-.course-card-primary .el-button--primary { min-width: 110px; font-weight: 600; }
-.course-card-secondary { width: 100%; padding-top: 14px; margin-top: 18px; border-top: 1px solid #e7ede9; }
-.course-card-secondary .el-button { padding-left: 0; padding-right: 0; color: var(--text-muted); font-size: 13px; font-weight: 400; }
-@media (max-width: 700px) { .course-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; } .course-card { padding: 20px; } }
-</style>
