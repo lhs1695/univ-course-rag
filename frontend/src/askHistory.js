@@ -70,8 +70,8 @@ export function createAskHistory() {
     try {
       const result = await request(`/courses/${courseId}/ask`, { method: 'POST', json, timeoutMs: 300000 });
       if (generation === requestGeneration) round.result = result;
-    } catch {
-      if (generation === requestGeneration) round.failure = answerFailureMessage;
+    } catch (error) {
+      if (generation === requestGeneration) round.failure = error?.message || answerFailureMessage;
     } finally {
       if (generation === requestGeneration) {
         round.pending = false;

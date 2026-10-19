@@ -29,6 +29,7 @@ from app.services.retrieve import (
     _default_min_score,
     _postgres_retrieval_statement,
     has_incompatible_chunks,
+    merge_definition_hits,
     retrieve_chunks,
     retrieve_hybrid_candidates,
 )
@@ -358,6 +359,34 @@ def _scaled_chunk(db: Session, course: Course, embedder: FakeEmbedder, query: st
     db.commit()
     db.refresh(chunk)
     return chunk
+
+
+def test_definition_lexical_merge_is_scoped_bounded_and_deduplicated(db: Session) -> None:
+    course = add_course(db, "Definition")
+    other = add_course(db, "Other")
+    embedder = FakeEmbedder()
+    query = "简述大数定律的含义"
+    dense = _scaled_chunk(db, course, embedder, query, "干扰页", 1.0)
+    support = _scaled_chunk(db, course, embedder, query, "大数定律描述样本均值的收敛。", 0.01)
+    foreign = _scaled_chunk(db, other, embedder, query, "大数定律外课资料", 1.0)
+    old = _scaled_chunk(db, course, embedder, query, "大数定律旧模型资料", 1.0)
+    old.embedding_model = "old-index"
+    db.commit()
+    hits = retrieve_chunks(db, course.id, query, embedder)
+    assert support.id not in {hit.chunk_id for hit in hits}
+    merged = merge_definition_hits(db, course.id, "大数定律", embedder, hits)
+    assert [hit.chunk_id for hit in merged] == [support.id, dense.id]
+    assert not {foreign.id, old.id} & {hit.chunk_id for hit in merged}
+    assert merge_definition_hits(db, course.id, "大数定律", embedder, merged) == merged
+    for page in range(10):
+        chunk = _scaled_chunk(db, course, embedder, query, "大数定律其他页", 0.01)
+        chunk.page = page + 10
+    db.commit()
+    bounded = merge_definition_hits(db, course.id, "大数定律", embedder, hits)
+    assert len(bounded) == 5  # four lexical additions plus the original dense hit
+    assert len({hit.chunk_id for hit in bounded}) == 5
+    assert merge_definition_hits(db, course.id, "", embedder, hits) == hits
+    assert merge_definition_hits(db, course.id, "%_", embedder, hits) == hits
 
 
 def test_retrieval_defaults_remain_dense() -> None:

@@ -50,6 +50,9 @@ def definition_term(query: str) -> str:
         return ""
     patterns = (
         r"^(?:请问|请解释|解释一下)?什么是(.+)$",
+        r"^(?:请)?简述(.+?)的(?:含义|意思)$",
+        r"^(?:请)?解释(?:一下)?(.+?)(?:的(?:含义|意思|定义))?$",
+        r"^(.+?)的(?:含义|意思)(?:是什么|是啥)?$",
         r"^(.+?)的定义(?:是什么|是啥)?$",
         r"^(.+?)(?:是什么|是指什么)$",
         r"^(?:请解释|解释一下)(.+?)的定义$",
@@ -58,6 +61,8 @@ def definition_term(query: str) -> str:
         match = re.fullmatch(pattern, text)
         if match:
             term = match.group(1).strip()
+            if term in {"含义", "意思", "定义", "一下", "它", "这", "这个", "其"}:
+                return ""
             return term if any(char.isalnum() for char in term) else ""
     return ""
 

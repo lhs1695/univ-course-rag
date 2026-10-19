@@ -47,12 +47,15 @@ from app.services.retrieve import (
     RETRIEVAL_FAILED_MESSAGE,
     RETRIEVAL_STRATEGY,
     RETRIEVAL_STRATEGY_MESSAGE,
+    SEARCH_TOP_K,
     RetrievalStrategyError,
     has_incompatible_chunks,
+    merge_definition_hits,
     retrieve_chunks,
     retrieve_expanded_chunks,
 )
 from app.services.upstream import (
+    UPSTREAM_UNAVAILABLE,
     UpstreamUnavailable,
 )
 
@@ -120,13 +123,42 @@ def ask_course(
             settings = get_settings()
             index_mismatch = has_incompatible_chunks(db, access.course.id, embedder)
 
+            def retry_retrieval(operation):
+                try:
+                    return operation()
+                except UpstreamUnavailable as exc:
+                    if exc.error_code != UPSTREAM_UNAVAILABLE:
+                        raise
+                    # One extra attempt only; generation and timeouts are not retried.
+                    logger.warning("ask_retrieval_upstream_retry")
+                    return operation()
+
             def retrieve(query):
-                return retrieve_chunks(
+                return retry_retrieval(lambda: retrieve_chunks(
                     db, access.course.id, query, embedder,
                     strategy=settings.retrieval_strategy,
                     rrf_k=settings.rrf_k,
                     reranker=reranker,
-                )
+                ))
+
+            def supplement(hits):
+                if settings.retrieval_strategy == "dense" and term:
+                    hits = merge_definition_hits(db, access.course.id, term, embedder, hits)
+                if "矩阵" in retrieval_query and "几何意义" in retrieval_query:
+                    extra = []
+                    for keyword in ("列视角", "行视角"):
+                        try:
+                            extra.extend(retrieve(keyword)[:2])
+                        except Exception:  # noqa: BLE001 - optional recall must degrade.
+                            logger.warning("ask_geometry_retrieval_fallback")
+                    seen = set()
+                    merged = []
+                    for hit in [*extra, *hits]:
+                        if hit.chunk_id not in seen:
+                            seen.add(hit.chunk_id)
+                            merged.append(hit)
+                    hits = merged[:SEARCH_TOP_K]
+                return hits
 
             def generate(hits):
                 return generate_answer_result(
@@ -138,14 +170,14 @@ def ask_course(
             def try_expansion(expand=expand_subqueries):
                 try:
                     subs = expand(retrieval_query, llm)
-                    return retrieve_expanded_chunks(
+                    return retry_retrieval(lambda: retrieve_expanded_chunks(
                         db, access.course.id, retrieval_query, embedder, subs,
-                    ) if subs else []
+                    )) if subs else []
                 except Exception:  # noqa: BLE001 - expansion must degrade.
                     logger.warning("ask_query_expansion_fallback")
                     return []
 
-            hits = [] if index_mismatch else retrieve(retrieval_query)
+            hits = [] if index_mismatch else supplement(retrieve(retrieval_query))
             expansion_used = False
             # Definition retry replaces expansion for this question, bounding model calls.
             expansion_enabled = (
@@ -158,7 +190,7 @@ def ask_course(
             ):
                 expanded = try_expansion()
                 if expanded:
-                    hits = expanded
+                    hits = supplement(expanded)
                     expansion_used = True
             if index_mismatch:
                 error_code = EMBEDDING_MISMATCH
@@ -173,7 +205,7 @@ def ask_course(
                     answer = None
                     error_code = NO_EVIDENCE
             if not cited_ids and not index_mismatch and term and term != body.query.strip():
-                hits = retrieve(term)
+                hits = supplement(retrieve(term))
                 if hits:
                     llm_called = True
                     generated = generate(hits)
@@ -187,7 +219,7 @@ def ask_course(
             if not cited_ids and expansion_enabled and calculation:
                 expanded = try_expansion(expand_calculation_subqueries)
                 if expanded:
-                    hits = expanded
+                    hits = supplement(expanded)
                     llm_called = True
                     generated = generate(hits)
                     answer, cited_ids = generated.answer, generated.cited_ids
@@ -198,7 +230,7 @@ def ask_course(
             if not cited_ids and expansion_enabled and not expansion_used:
                 expanded = try_expansion()
                 if expanded:
-                    hits = expanded
+                    hits = supplement(expanded)
                     llm_called = True
                     generated = generate(hits)
                     answer, cited_ids = generated.answer, generated.cited_ids

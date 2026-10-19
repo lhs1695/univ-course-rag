@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createAskHistory, askHistory, answerNotice, answerFailureMessage, roundStatus } from '../src/askHistory.js';
 import { clearDrafts } from '../src/drafts.js';
+import { ApiError } from '../src/api.js';
 
 function deferred() {
   let resolve, reject;
@@ -72,7 +73,7 @@ test('identity changes and logout discard late responses, including logging back
 
 test('failed requests remain in history and unlock the course; refusals supply empty previous answer', async () => {
   const store = createAskHistory();
-  await store.ask('alice', 'a', '失败问题', async () => { throw new Error('private transport details'); });
+  await store.ask('alice', 'a', '失败问题', async () => { throw {}; });
   const state = store.course('alice', 'a');
   assert.equal(state.rounds[0].failure, answerFailureMessage);
   assert.equal(roundStatus(state.rounds[0]), '请求失败');
@@ -82,6 +83,20 @@ test('failed requests remain in history and unlock the course; refusals supply e
   });
   assert.equal(state.rounds.length, 2);
   assert.equal(roundStatus(state.rounds[1]), '待补充上下文');
+});
+
+test('upstream error message survives failure and explicit retry remains available', async () => {
+  const store = createAskHistory();
+  const message = '上游 AI 服务暂时不可用，请稍后重试。';
+  const error = new ApiError(message, 503, 'UPSTREAM_UNAVAILABLE');
+  error.stack = 'private stack';
+  await store.ask('alice', 'a', '问题', async () => { throw error; });
+  const state = store.course('alice', 'a');
+  assert.equal(state.rounds[0].failure, message);
+  assert.equal(state.rounds[0].pending, false);
+  assert.equal(roundStatus(state.rounds[0]), '请求失败');
+  await store.ask('alice', 'a', '问题', async () => ({ answer: '重试成功' }));
+  assert.equal(state.rounds[1].result.answer, '重试成功');
 });
 
 test('context and invalid-question warnings preserve backend messages; system failures remain generic', () => {

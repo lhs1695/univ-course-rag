@@ -175,6 +175,36 @@ def _retrieve_dense(
     return hits
 
 
+def merge_definition_hits(
+    db: DbSession, course_id: UUID, term: str, embedder: Embedder,
+    hits: Sequence[SearchHit],
+) -> list[SearchHit]:
+    """Prepend up to four literal matches, scoped to the active course/index.
+
+    Reuse SQLAlchemy's escaped ILIKE rather than interpreting term as a pattern.
+    Lexical additions have no measured cosine score; zero does not imply admission
+    through the dense threshold. This exception is only for definition evidence.
+    """
+    if not term.strip():
+        return list(hits)
+    rows = db.scalars(
+        select(Chunk)
+        .where(*_chunk_filters(course_id, embedder, ()),
+               Chunk.text.icontains(term.strip(), autoescape=True))
+        .order_by(Chunk.page, Chunk.id)
+        .limit(4)
+    ).all()
+    by_id = {hit.chunk_id: hit for hit in hits}
+    merged = [
+        by_id.get(chunk.id) or _search_hit(
+            chunk.id, chunk.document_id, chunk.page, chunk.text, 0.0,
+        )
+        for chunk in rows
+    ]
+    seen = {hit.chunk_id for hit in merged}
+    return (merged + [hit for hit in hits if hit.chunk_id not in seen])[:SEARCH_TOP_K]
+
+
 def retrieve_expanded_chunks(
     db: DbSession,
     course_id: UUID,

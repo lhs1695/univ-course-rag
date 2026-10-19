@@ -868,10 +868,12 @@ def test_ask_upstream_failure_is_safe_503_and_logged_without_content(
     upload(client, course.id, FIXTURES / "sample.md")
     secret = "provider-body-should-not-be-logged"
 
+    calls = []
     if failure_point == "embedding":
 
         class FailingEmbedder(FakeEmbedder):
             def embed(self, texts: list[str]) -> list[list[float]]:
+                calls.append("embedding")
                 raise UpstreamUnavailable(secret)
 
         app.dependency_overrides[get_embedder] = FailingEmbedder
@@ -879,6 +881,7 @@ def test_ask_upstream_failure_is_safe_503_and_logged_without_content(
 
         class FailingLLM:
             def generate(self, prompt: str) -> str:
+                calls.append("llm")
                 raise UpstreamUnavailable(secret)
 
         app.dependency_overrides[get_llm] = FailingLLM
@@ -887,6 +890,7 @@ def test_ask_upstream_failure_is_safe_503_and_logged_without_content(
         response = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
 
     assert response.status_code == 503
+    assert calls == [failure_point] * (2 if failure_point == "embedding" else 1)
     assert response.json() == {
         "error_code": UPSTREAM_UNAVAILABLE,
         "message": "上游 AI 服务暂时不可用，请稍后重试。",
@@ -901,6 +905,90 @@ def test_ask_upstream_failure_is_safe_503_and_logged_without_content(
     assert secret not in caplog.text
     assert GOLDEN[0]["query"] not in caplog.text
     assert "UPSTREAM_UNAVAILABLE" in caplog.text
+
+
+@pytest.mark.parametrize("failures", [1, 2])
+def test_retrieval_upstream_retry_is_bounded(client, db, failures):
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Transient retrieval")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    upload(client, course.id, FIXTURES / "sample.md")
+
+    class TransientEmbedder(FakeEmbedder):
+        calls = 0
+
+        def embed(self, texts):
+            self.calls += 1
+            if self.calls <= failures:
+                raise UpstreamUnavailable("private provider details")
+            return super().embed(texts)
+
+    embedder = TransientEmbedder()
+    app.dependency_overrides[get_embedder] = lambda: embedder
+    response = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
+    assert embedder.calls == 2
+    assert response.status_code == (200 if failures == 1 else 503)
+    assert response.json()["error_code"] == (None if failures == 1 else UPSTREAM_UNAVAILABLE)
+
+
+def test_definition_lexical_hit_reaches_generation_before_dense_noise(client, db, monkeypatch):
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Law definition")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    embedder = FakeEmbedder()
+    query = "简述大数定律的含义"
+    noise = _scaled_chunk(db, course, embedder, query, "小数定律干扰页", 1.0)
+    support = _scaled_chunk(db, course, embedder, query, "大数定律：样本均值收敛于期望。", 0.01)
+    monkeypatch.setattr("app.api.ask.get_settings", lambda: Settings(_env_file=None))
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    assert response.status_code == 200
+    assert response.json()["error_code"] is None
+    assert response.json()["citations"][0]["chunk_id"] == str(support.id)
+    assert llm.prompts[0].index(f"[Source {support.id}]") < llm.prompts[0].index(
+        f"[Source {noise.id}]",
+    )
+    assert len(llm.prompts) == 1
+
+
+@pytest.mark.parametrize("failed_branch", [None, "列视角", "行视角"])
+def test_matrix_geometry_merges_bounded_views_and_ignores_optional_failure(
+    client, db, monkeypatch, failed_branch,
+):
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Matrix geometry")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    query = "矩阵乘法的几何意义"
+    embedder = FakeEmbedder()
+    noise = _scaled_chunk(db, course, embedder, query, "矩阵目录", 1.0)
+    support = _scaled_chunk(db, course, embedder, query, "列视角与行视角：矩阵乘法表示变换。", 0.01)
+    noise_hit = SearchHit(noise.id, noise.document_id, 4, noise.text, 1.0)
+    support_hit = SearchHit(support.id, support.document_id, 4, support.text, 0.8)
+
+    def retrieve(_db, course_id, text, _embedder, **kwargs):
+        assert course_id == course.id
+        if text == failed_branch:
+            raise UpstreamUnavailable("private optional recall failure")
+        return [noise_hit] if text == query else [support_hit] * 8
+
+    mock = Mock(side_effect=retrieve)
+    monkeypatch.setattr("app.api.ask.retrieve_chunks", mock)
+    monkeypatch.setattr("app.api.ask.get_settings", lambda: Settings(_env_file=None))
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    assert response.status_code == 200
+    assert response.json()["error_code"] is None
+    assert response.json()["citations"][0]["chunk_id"] == str(support.id)
+    assert parse_cited_ids(llm.prompts[0]) == [support.id, noise.id]
+    expected = [query]
+    for text in ("列视角", "行视角"):
+        expected.extend([text] * (2 if text == failed_branch else 1))
+    assert [call.args[2] for call in mock.call_args_list] == expected
 
 
 def test_ask_requires_membership(client: TestClient, db: Session) -> None:
