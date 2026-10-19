@@ -1,7 +1,6 @@
 <template>
   <div class="page">
     <header class="page-heading"><h1>账号管理</h1></header>
-    <el-alert v-if="!accountCapabilities.resetPassword && !accountCapabilities.disable" title="本页可创建账号；改密或停用请联系运维。" type="info" :closable="false" />
     <section class="panel-card">
     <h2>创建账号</h2>
     <el-form :inline="true" :model="form" :disabled="creating" @submit.prevent="onCreate">
@@ -42,7 +41,6 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 
 // Known API contract: GET/POST only; do not probe unsupported write endpoints.
-const accountCapabilities = Object.freeze({ resetPassword: false, disable: false });
 const roleNames = { student: "学生", teacher: "教师", admin: "管理员" };
 function clearForm() { Object.assign(form, { username: "", password: "", role: "student" }); }
 const users = ref([]);

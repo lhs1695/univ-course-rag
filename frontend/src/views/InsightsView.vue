@@ -40,7 +40,6 @@
 
       <section class="panel-card insights-section">
         <h3 class="section-title">学生提交趋势（按本地日期）</h3>
-        <p class="hint">按上海时间的自然日统计；下表只列有学生提交的日期。</p>
         <InsightTrend :points="trend" />
         <el-table :data="activeDays" empty-text="本窗口没有学生提交">
           <el-table-column label="日期" width="140">
@@ -52,24 +51,6 @@
           <el-table-column prop="unknown_outcome" label="结果未知" width="110" />
         </el-table>
       </section>
-
-            <details class="panel-card insights-section">
-        <summary>统计口径说明</summary>
-
-          <p class="hint">有候选但未形成可引用回答也属于依据不足；服务或索引失败不进入待核对表。同词规范化计数不等于同义分组，也不能据此认定教学缺口或学生未掌握。</p>
-          <p class="hint">
-            按提问时的课内学生角色统计，留存上限 {{ retentionDays || "当前配置" }} 天。每次提交（含显式重试）分别计数，不代表人数；以已保存事件为准，记录不覆盖所有失败请求。不展示提问者，也不判断掌握程度或回答正确性。旧记录保持未知，不按当前成员角色补写。
-          </p>
-          <div v-if="summary" class="hint summary-surface" aria-label="统计口径与样本量">
-            <p>统计时间：{{ formatTime(windowStart) }}（含）至 {{ formatTime(windowEnd) }}（不含），以服务端记录的提问时间为准。</p>
-            <p>学生提交 {{ summary.student_attempts }} 次：有引用回答 {{ summary.cited_answer }}、依据不足 {{ summary.no_evidence }}、失败 {{ summary.failure }}、结果未知 {{ summary.unknown_outcome }}。</p>
-            <p>依据不足占比：{{ summary.no_evidence_rate == null ? "暂无可计算样本" : `${(summary.no_evidence_rate * 100).toFixed(1)}%` }}；分母为有引用回答＋依据不足（{{ summary.knowledge_attempts }} 次），失败和未知不进入该分母，也不能称为教学缺口率。</p>
-            <p>窗口内共记录 {{ summary.recorded_attempts }} 次；另有非学生角色 {{ summary.non_student_attempts }} 次、角色未知 {{ summary.unknown_role_attempts }} 次，均不进入学生列表或趋势。</p>
-          </div>
-          <p>统计窗口与当前留存窗口取交集，不读取到期或未来记录；刷新统计不会发送问句。</p>
-          <p>趋势按本地日期（Asia/Shanghai）分桶；无事件的日期为 0，下表只列有提交的日期。候选组未验证，不代表已确认的同义问句。最低成对相似度是组内任意两条问句相似度的最小值，不是同义概率。</p>
-        
-      </details>
 
       <details class="panel-card insights-section">
         <summary>有引用回答的问句（按次数）</summary>
@@ -83,11 +64,6 @@
 
       <details class="panel-card insights-section">
         <summary>相似问句分组（仅供参考，未验证）</summary>
-        <details class="hint"><summary>候选分组说明</summary>
-        <p>
-        把相近的问法放在一起，方便核对；分组默认关闭，相似度阈值尚未校准。只有填写阈值并勾选确认后，才会把当前已应用统计窗口内的学生问句原文发送到已配置的嵌入服务，可能产生费用。请求发出后，离开页面也不能保证调用停止。返回结果只是达到该阈值的候选；单例表示未与其他问句成组。候选组不是已验证同义、教学缺口或学生掌握度。
-        </p>
-        </details>
         <div class="group-controls">
         <label>
           相似度阈值
@@ -103,7 +79,6 @@
         <p>可分组学生事件 {{ groups.eligible_attempts }} 次，不同问句 {{ groups.distinct_questions }} 条；已进入多问句候选的问句 {{ groups.grouped_questions }} 条。单例问句 {{ groups.singleton_questions }} 条、单例事件 {{ groups.singleton_attempts }} 次。另有 {{ groups.excluded_attempts }} 次学生事件因失败、结果未知或空问句被排除，不进入候选组。</p>
         </div>
         <h4>多问句候选</h4>
-        <p class="hint">代表问句是组内真实问句，不是生成的知识点名称。最低成对相似度不是同义概率。</p>
         <el-table :data="candidates" empty-text="本次没有多问句候选">
         <el-table-column type="expand">
           <template #default="{ row }">
@@ -133,7 +108,6 @@
         </el-table-column>
         </el-table>
         <h4>未成组的单例</h4>
-        <p class="hint">同一问句重复多次仍是单例，不表示已经与其他问法合并。</p>
         <el-table :data="singletons" empty-text="本次没有单例">
         <el-table-column label="问句" width="420">
           <template #default="{ row }"><span class="query-clamp">{{ row.representative }}</span></template>
@@ -162,7 +136,6 @@ const loading = ref(false);
 const frequent = ref([]);
 const noEvidence = ref([]);
 const trend = ref([]);
-const retentionDays = ref(null);
 const summary = ref(null);
 const windowStart = ref(null);
 const windowEnd = ref(null);
@@ -232,7 +205,6 @@ async function loadInsights() {
   clearGroups();
   try {
     const data = await api(`/courses/${courseId.value}/insights${appliedQuery.value}`);
-    retentionDays.value = data.retention_days || null;
     frequent.value = data.frequent || [];
     noEvidence.value = data.no_evidence || [];
     trend.value = data.trend || [];

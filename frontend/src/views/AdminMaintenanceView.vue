@@ -29,14 +29,6 @@
         </el-button>
       </div>
     </el-card>
-
-    <el-alert
-      class="maintenance-warning"
-      title="这里只删除当前应用数据库中的记录，不能立即从已有备份、快照或其他外部副本中抹除。"
-      type="warning"
-      :closable="false"
-      show-icon
-    />
   </div>
 </template>
 
@@ -109,7 +101,6 @@ async function deleteExpired() {
   border-radius: var(--radius-panel);
 }
 
-.maintenance-warning { margin-top: 0; }
 .empty-expired { color: var(--text-muted); margin: 12px 0; }
 
 .result-grid {
