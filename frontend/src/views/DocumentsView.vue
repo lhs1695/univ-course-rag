@@ -25,8 +25,6 @@
       <el-button :disabled="uploading || uploadUncertain" @click="retryUpload">重新上传所选文件</el-button>
     </template>
 
-    <p v-if="canManage" class="scope-note">入库质量只说明文本是否被抽取和切片，不代表问答一定正确。文本较少的资料仍会保留，请结合引用核对原文。</p>
-
     <el-table :data="documents" v-loading="loading" empty-text="还没有资料">
       <el-table-column prop="filename" label="文件" min-width="220" class-name="filename-cell" />
       <el-table-column label="状态" width="120">
@@ -329,14 +327,6 @@ async function onRetry(row) {
 
 .doc-actions .el-button + .el-button { margin-left: 0; }
 
-.scope-note {
-  margin: 16px 0;
-  padding-left: 12px;
-  border-left: 2px solid #c7d5d0;
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.75;
-}
 
 :deep(.filename-cell .cell) { color: #29463d; font-weight: 600; }
 .student-open { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
