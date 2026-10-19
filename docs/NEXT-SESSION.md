@@ -1,5 +1,11 @@
 # 当前交接
 
+## 2026-10-19 队友汇报包 + 磁盘清理 + 私人仓推送
+
+- **队友材料**：仓库内 [`midterm-handoff/`](../midterm-handoff/README.md)（PPT v5、讲稿、runbook 副本、彩排截图、R9/ITEM4 摘要）。
+- **GitHub 私人仓**：`https://github.com/lhs1695/univ-course-rag`（已有 remote `origin`）；本回合推送含 handoff 与清理后的 main。
+- **清理**：按清点删除 worktree / 旧证据 / 构建缓存等；**保留** `cn_v2`、`uploads_v2`、main venv/node_modules、`final-v5`（build + handoff）、runbook；**不提交** `新开题资料.md` / `.env`。
+- 勿把旧 17/385 当作当前演示口径。
 ## 2026-10-19 中期收口：彩排 / PPT v5 / R9 刷新 / rerank·m5（本 worktree）
 
 - **彩排 PASS**：`corpus/local/midterm-rehearsal-2026-10-19/`（STATUS.md + results.json + screenshots）。Live 库 `univ_course_rag_cn_v2`（4/27/2501），RERANKER disabled；学生 LA-01 有引用 `#page=`、LA-R 拒答；教师资料/反馈；Admin 系统状态三行表无总判断条。

@@ -1,0 +1,70 @@
+{
+  "started_at": "2026-10-19T22:31:09.312863+08:00",
+  "live": {
+    "pid": 40648,
+    "db": "univ_course_rag_cn_v2",
+    "reranker": "disabled",
+    "retrieval": "dense",
+    "query_exp": "llm",
+    "upload_exists": true
+  },
+  "steps": {
+    "student_la01": {
+      "answered": true,
+      "has_page_hash": true,
+      "hrefs": [
+        "/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content#page=10"
+      ],
+      "popup_url": "http://127.0.0.1:5173/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content#page=10",
+      "answer_preview": "线性代数主要研究向量空间（vector space）以及向量空间之间的线性变换（linear transformations or linear map）。[1]"
+    },
+    "student_la_r": {
+      "refuse_keywords": true,
+      "err_text": "课内资料依据不足，暂时无法据此回答。",
+      "body_has_answer_md": false
+    },
+    "teacher": {
+      "has_low_extract_copy": false,
+      "insights_has_trend_or_table": true,
+      "url": "http://127.0.0.1:5173/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/insights"
+    },
+    "admin_system": {
+      "url": "http://127.0.0.1:5173/admin/system",
+      "has_old_verdict_banner": false,
+      "has_status_rows": true,
+      "snippet": "课\n课程知识库\n账号 · 课程 · 授权\n管理员\nadmin\n退出登录\n账号管理\n课程与授权\n提问日志\n系统状态\n系统状态\n刷新\n数据库\t可连接\n向量模型\t已配置\n生成模型\t已配置\n课程知识库 · 管理"
+    }
+  },
+  "checks": {
+    "health": {
+      "status": "ok"
+    },
+    "ready": {
+      "status": "ok"
+    },
+    "runtime": {
+      "database": "available",
+      "reranking_backend": "disabled",
+      "embedding_status": "configured",
+      "generation_status": "configured"
+    },
+    "db_is_cn_v2": true,
+    "rerank_disabled": true
+  },
+  "notes": [
+    "launch ok {'channel': 'chrome', 'headless': True}",
+    "wait refuse timeout: Page.wait_for_selector: Timeout 180000ms exceeded.\nCall log:\n  - waiting for locator(\".ask-error, .no-evidence, .answer-markdown, [data-testid=ask-error]\") to be visible\n"
+  ],
+  "status": "PASS",
+  "pass_fail": {
+    "db_cn_v2": true,
+    "rerank_off": true,
+    "la01_answered": true,
+    "la01_page_hash": true,
+    "la_r_refuse": true,
+    "teacher_no_low_extract": true,
+    "admin_no_verdict": true,
+    "admin_rows": true
+  },
+  "finished_at": "2026-10-19T22:34:28.041222+08:00"
+}
