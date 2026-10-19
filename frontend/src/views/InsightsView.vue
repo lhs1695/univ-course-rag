@@ -2,7 +2,6 @@
   <div class="page">
     <header class="page-heading">
       <h1>问答反馈</h1>
-      <p class="page-description">查看已保存问答的计数、趋势和待核对问句。</p>
     </header>
 
     <fieldset class="window-filter">

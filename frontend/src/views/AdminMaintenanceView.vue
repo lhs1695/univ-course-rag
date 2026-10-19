@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><h1>提问日志</h1><p class="page-description">预览并清理超过保留期限的提问记录。</p></header>
+    <header class="page-heading"><h1>提问日志</h1></header>
 
     <el-card class="maintenance-card panel-card" shadow="never">
       <template #header>日志清理</template>

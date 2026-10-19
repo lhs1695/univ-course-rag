@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><h1>账号管理</h1><p class="page-description">创建账号，并查看系统角色。</p></header>
+    <header class="page-heading"><h1>账号管理</h1></header>
     <el-alert v-if="!accountCapabilities.resetPassword && !accountCapabilities.disable" title="本页可创建账号；改密或停用请联系运维。" type="info" :closable="false" />
     <section class="panel-card">
     <h2>创建账号</h2>

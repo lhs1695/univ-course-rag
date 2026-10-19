@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">课程管理</p><h1>本课学生</h1><p class="page-description">{{ courseTitle }} · 管理学生的课程访问权限。移出后，学生从下一次请求起无法访问本课。</p></header>
+    <header class="page-heading"><p class="eyebrow">课程管理</p><h1>本课学生</h1><p v-if="courseTitle" class="page-description">{{ courseTitle }}</p></header>
     <p class="hint">请使用已有学生账号加入本课。新建账号与教师授权由管理员处理。</p>
 
     <el-form class="add-form" :inline="true" @submit.prevent="onAdd">
