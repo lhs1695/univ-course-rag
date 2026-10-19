@@ -18,13 +18,13 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" native-type="submit" :loading="creating">创建</el-button>
+        <el-button type="primary" native-type="submit" :loading="creating">创建账号</el-button>
       </el-form-item>
     </el-form>
     </section>
     <section class="panel-card">
     <h2>已有账号</h2>
-    <el-table :data="users" v-loading="loading" empty-text="暂无账号">
+    <el-table :data="users" v-loading="loading" empty-text="还没有账号，可在上方创建教师或学生账号">
       <el-table-column prop="username" label="用户名" />
       <el-table-column label="全局身份" width="120"><template #default="{ row }">{{ { student: '学生', teacher: '教师', admin: '管理员' }[row.role] || row.role }}</template></el-table-column>
     </el-table>

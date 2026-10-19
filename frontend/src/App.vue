@@ -21,11 +21,11 @@
 
   <el-container v-else class="app-shell">
     <el-header class="app-header" v-if="session.user">
-      <router-link class="app-title" to="/courses"><span class="brand-mark" aria-hidden="true">课</span><span>课程知识库<small>有依据，可核对</small></span></router-link>
+      <router-link class="app-title" to="/courses"><span class="staff-bookmark" aria-hidden="true">课</span><span>课程知识库<small>有依据，可核对</small></span></router-link>
       <div class="app-user">
         <span class="role-pill">{{ roleLabel }}</span>
         <span class="username">{{ session.user.username }}</span>
-        <el-button text @click="onLogout">退出</el-button>
+        <el-button text @click="onLogout">退出登录</el-button>
       </div>
     </el-header>
     <nav v-if="session.user" class="global-nav" aria-label="主导航">

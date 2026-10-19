@@ -1,7 +1,7 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">课程管理</p><h1>本课学生</h1><p class="page-description">{{ courseTitle }} · 维护学生的课程访问权限，移出后下一次请求即失权。</p></header>
-    <p class="hint">只能加入已有学生账号，不能在这里创建用户。不改教师成员。</p>
+    <header class="page-heading"><p class="eyebrow">课程管理</p><h1>本课学生</h1><p class="page-description">{{ courseTitle }} · 管理学生的课程访问权限。移出后，学生从下一次请求起无法访问本课。</p></header>
+    <p class="hint">请使用已有学生账号加入本课。新建账号与教师授权由管理员处理。</p>
 
     <el-form class="add-form" :inline="true" @submit.prevent="onAdd">
       <el-form-item label="学生账号">
@@ -12,7 +12,7 @@
       </el-form-item>
     </el-form>
 
-    <el-table :data="students" v-loading="loading" empty-text="还没有学生">
+    <el-table :data="students" v-loading="loading" empty-text="本课还没有学生，可在上方加入已有学生账号">
       <el-table-column prop="username" label="用户名" />
       <el-table-column label="操作" width="120">
         <template #default="{ row }">
@@ -102,7 +102,7 @@ async function onRemove(row) {
 .hint {
   margin: -12px 0 16px;
   padding-left: 12px;
-  border-left: 2px solid #c7d5d0;
+  border-left: 2px solid var(--el-color-primary-light-5);
   color: var(--text-muted);
   font-size: 12px;
   line-height: 1.75;

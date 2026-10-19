@@ -6,7 +6,7 @@
     <el-card class="maintenance-card panel-card" shadow="never">
       <template #header>到期记录</template>
       <p class="explanation">
-        先预览当前最旧的一批，再显式删除。每次操作受服务器批量上限约束，不会扫描或一次删除全部记录。
+        先预览最早到期的一批，核对后再删除。每次仅处理服务器允许的一批，不会扫描或一次删除全部记录。
       </p>
 
       <el-descriptions v-if="result" :column="2" border class="result-grid">
@@ -108,14 +108,14 @@ async function deleteExpired() {
 <style scoped>
 .maintenance-card {
   margin: 20px 0;
-  border-color: #e6ebe8;
-  border-radius: 12px;
+  border-color: var(--line);
+  border-radius: var(--radius-panel);
 }
 
 .scope-note {
   margin: 0;
   padding-left: 12px;
-  border-left: 2px solid #c7d5d0;
+  border-left: 2px solid var(--el-color-primary-light-5);
   color: var(--text-muted);
   font-size: 12px;
   line-height: 1.75;

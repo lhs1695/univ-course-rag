@@ -4,6 +4,11 @@
 
 ## 目标与约束
 
+### 教师 / Admin A 品牌对齐（2026-10-19，用户指定）
+
+- 直接复用现有 Vue 3.5.42 与 Element Plus 2.14.5（lockfile，MIT）表格、表单、按钮和弹层，以及学生 A 的紫色 token / CSS 书签造型；不新增依赖，不复制外部源码。现成业务组件适配本卡，剩余本地工作仅为 CSS、品牌壳和提示文案，总成本限定在前端与交付说明。
+- 保留管理端表格与操作栏；不改 studentSurface、学生模板、学生 CSS、API、权限与上传入库逻辑。验收采用 diff 边界检查与 Vue/CSS 静态解析；按本卡明确要求不在沙箱运行 build，构建与登录后视觉点验交外层。说明见 [设计记录](../frontend/DESIGN-NOTES-STAFF.md)。
+
 ### 批 B 收尾（2026-10-19，用户指定）
 
 - 保留已有 `generate.py` 摘录清洗、`answerMarkdown.js` 公式规则及 `AnswerBody.vue` 样式，不重做批 A。直接复用 KaTeX 0.19.0（npm 发行包/MIT）的 `renderToString` 与 CSS，固定 package/lock；唯一新增直接依赖为 katex，commander 为其传递依赖。沿用 markdown-it ruler 接入，`trust: false`；本地仅处理课程回答中的公式定界符与显示摘录，不复制排版算法。

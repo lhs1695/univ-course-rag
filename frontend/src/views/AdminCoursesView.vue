@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程，选择课程行管理成员。管理员访问课程内容也需显式加入。</p></header>
+    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程，点击课程行管理成员。管理员也需加入课程后才能访问课内内容。</p></header>
     <section class="panel-card">
     <h2>新建课程</h2>
     <el-form :inline="true" @submit.prevent="onCreateCourse">
@@ -58,7 +58,7 @@
           <el-button type="primary" native-type="submit" :loading="adding">加入课程</el-button>
         </el-form-item>
       </el-form>
-      <el-table :data="members">
+      <el-table :data="members" empty-text="本课还没有成员，可在上方选择账号与课内角色加入">
         <el-table-column prop="username" label="用户名" />
         <el-table-column label="课内角色" width="120"><template #default="{ row }">{{ row.role === 'teacher' ? '教师' : '学生' }}</template></el-table-column>
         <el-table-column label="操作" width="100">

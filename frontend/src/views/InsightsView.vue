@@ -32,7 +32,7 @@
       </div>
       <section class="panel-card insights-section">
         <h3 class="section-title">依据不足的问句（待核对）</h3>
-        <el-table :data="noEvidence" v-loading="loading" empty-text="本窗口暂无已登记的依据不足">
+        <el-table :data="noEvidence" v-loading="loading" empty-text="这段时间暂无已登记的依据不足问句">
           <el-table-column label="问句" width="420">
             <template #default="{ row }"><span class="query-clamp">{{ row.query }}</span></template>
           </el-table-column>
@@ -75,7 +75,7 @@
 
       <section class="panel-card insights-section">
         <h3 class="section-title">有引用回答的问句（按次数）</h3>
-        <el-table :data="frequent" v-loading="loading" empty-text="本窗口暂无已登记的有引用回答">
+        <el-table :data="frequent" v-loading="loading" empty-text="这段时间暂无已登记的有引用回答">
           <el-table-column label="问句" width="420">
             <template #default="{ row }"><span class="query-clamp">{{ row.query }}</span></template>
           </el-table-column>
@@ -295,8 +295,8 @@ onMounted(loadInsights);
 
 <style scoped>
 .key-counts { display: flex; flex-wrap: wrap; gap: 16px; margin: 18px 0; }
-.key-counts > div { flex: 1; min-width: 130px; padding: 16px 20px; background: #f8faf9; border: 1px solid #e6ebe8; border-radius: 12px; }
-.key-counts strong { display: block; font-size: 28px; color: #213e36; margin-top: 6px; }
+.key-counts > div { flex: 1; min-width: 130px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); }
+.key-counts strong { display: block; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-strong); margin-top: 6px; }
 details > summary { cursor: pointer; }
 .hint { margin: 12px 0 8px; color: var(--text-muted); font-size: 12.5px; line-height: 1.75; }
 h3, h4 { margin: 28px 0 8px; font-size: 16px; font-weight: 600; }
@@ -305,15 +305,15 @@ h4 { font-size: 15px; }
 .window-filter, .group-controls {
   margin: 22px 0 26px;
   padding: 18px 20px;
-  border: 1px solid #e6ebe8;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
 }
-.window-filter legend { padding: 0 7px; color: #314a42; font-size: 15px; font-weight: 600; }
+.window-filter legend { padding: 0 7px; color: var(--text-strong); font-size: 15px; font-weight: 600; }
 .window-filter .el-button, .group-controls .el-button { margin: 8px 8px 0 0; }
-.group-controls label { display: block; max-width: 360px; color: #213e36; font-size: 14px; }
+.group-controls label { display: block; max-width: 360px; color: var(--text-strong); font-size: 14px; }
 .group-controls .el-checkbox { display: flex; margin-top: 12px; white-space: normal; height: auto; }
-.summary-surface { margin: 24px 0 26px; padding: 16px 18px; background: #f8faf9; border-left: 3px solid #c1d3cc; }
+.summary-surface { margin: 24px 0 26px; padding: 16px 18px; background: var(--surface-subtle); border-left: 3px solid var(--el-color-primary-light-5); }
 .summary-surface p { margin: 4px 0; }
 .insights-section { margin: 20px 0; }
 .section-title { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
