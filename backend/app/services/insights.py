@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import and_, case, func, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import Session as DbSession
 
 from app.models.course import CourseMemberRole
@@ -69,6 +69,8 @@ def aggregate_course_insights(
     listed_query = case((and_(
         QueryLog.member_role_at_ask == CourseMemberRole.student.value,
         QueryLog.outcome.in_([QueryOutcome.cited_answer.value, QueryOutcome.no_evidence.value]),
+        # Missing-context follow-ups and meaningless inputs are not reviewable course questions.
+        or_(QueryLog.error_code.is_(None), QueryLog.error_code.not_in(["NEEDS_CONTEXT", "INVALID_QUESTION"])),
     ), QueryLog.query), else_=None)
     # One statement keeps totals and lists consistent if another attempt commits meanwhile.
     # Do not load identities or non-student/unknown question text.
