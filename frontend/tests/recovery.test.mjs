@@ -6,6 +6,7 @@ const { api, ApiError } = await import('../src/api.js');
 const { session, refreshMe, logout } = await import('../src/session.js');
 const { courseAccess } = await import('../src/courseAccess.js');
 const { questionDraft, clearDrafts } = await import('../src/drafts.js');
+const { askHistory } = await import('../src/askHistory.js');
 const { default: viteConfig } = await import('../vite.config.js');
 const reply = (body, status = 200) => new Response(JSON.stringify(body), { status });
 const user = { id: 'synthetic-user', role: 'teacher' };
@@ -94,10 +95,12 @@ test('401 revokes session while a missing document does not revoke course member
 test('a late identity response cannot resurrect a logged-out session', async () => {
   let finish;
   session.user = user;
+  await askHistory.ask(user.id, 'course-one', 'synthetic private question', async () => ({ answer: 'private' }));
   globalThis.fetch = async path => path === '/auth/me'
     ? new Promise(resolve => { finish = resolve; }) : new Response(null, { status: 204 });
   const pending = refreshMe();
   await logout();
+  assert.equal(askHistory.course(user.id, 'course-one').rounds.length, 0);
   finish(reply(user));
   await pending;
   assert.equal(session.user, null);
