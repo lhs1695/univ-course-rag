@@ -90,6 +90,23 @@ test('401 revokes session while a missing document does not revoke course member
   await assert.rejects(api('/courses/course-one'), ApiError);
   assert.equal(session.user, null);
   assert.equal(courseAccess.course, null);
+  assert.equal(session.error.status, 401);
+});
+
+test('cold-start 401 is clean, protected-session 401 persists until logout', async () => {
+  session.user = null;
+  session.error = null;
+  globalThis.fetch = async () => reply({}, 401);
+  assert.equal(await refreshMe(), false);
+  assert.equal(session.error, null);
+  session.user = user;
+  await assert.rejects(api('/courses/course-one'), ApiError);
+  assert.equal(session.error.status, 401);
+  await assert.rejects(api('/courses/course-one/documents'), ApiError);
+  assert.equal(session.error.status, 401);
+  globalThis.fetch = async () => new Response(null, { status: 204 });
+  await logout();
+  assert.equal(session.error, null);
 });
 
 test('a late identity response cannot resurrect a logged-out session', async () => {

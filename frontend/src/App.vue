@@ -10,13 +10,13 @@
       </div>
     </el-header>
     <nav v-if="session.user" class="global-nav" aria-label="主导航">
-      <router-link to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': !route.path.startsWith('/admin') }">我的课程</router-link>
       <template v-if="isAdmin">
         <router-link to="/admin/users">账号管理</router-link>
         <router-link to="/admin/courses">课程与授权</router-link>
         <router-link to="/admin/maintenance">日志维护</router-link>
         <router-link to="/admin/system">系统状态</router-link>
       </template>
+      <router-link to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': !route.path.startsWith('/admin') }">我的课程</router-link>
     </nav>
     <el-main id="main-content" tabindex="-1">
       <nav v-if="pageAllowed && currentCourse" class="course-nav" aria-label="当前课程导航">
@@ -55,7 +55,10 @@ const isAdmin = computed(() => session.user?.role === "admin");
 const roleLabel = computed(() => ({ admin: "管理员", teacher: "教师", student: "学生" }[session.user?.role] || ""));
 const currentCourse = computed(() => courseAccess.course?.id === route.params.courseId ? courseAccess.course : null);
 const recovering = ref(false);
-const recoveryError = computed(() => session.error || courseAccess.error);
+const recoveryError = computed(() => {
+  const error = session.error || courseAccess.error;
+  return route.meta.public && error?.status === 401 ? null : error;
+});
 const pageAllowed = computed(() => {
   if (route.meta.public) return true;
   if (!session.user) return false;

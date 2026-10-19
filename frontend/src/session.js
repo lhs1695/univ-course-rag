@@ -13,10 +13,13 @@ let authVersion = 0;
 
 window.addEventListener("access-denied", ({ detail }) => {
   if (detail.status === 401) {
+    const wasLoggedIn = Boolean(session.user);
     authVersion += 1;
     session.user = null;
     session.ready = true;
-    session.error = { status: 401, message: "会话已失效，请重新登录；问句草稿仅在本页内存保留。" };
+    session.error = wasLoggedIn
+      ? { status: 401, message: "会话已失效，请重新登录；问句草稿仅在本页内存保留。" }
+      : (session.error?.status === 401 ? session.error : null);
     clearCourseAccess();
   } else if (detail.status === 403 && detail.path.startsWith("/admin/")) {
     refreshMe();

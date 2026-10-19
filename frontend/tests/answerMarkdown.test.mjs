@@ -47,7 +47,8 @@ test('tables and nested lists use the package renderer', () => {
 test('inline dollar math renders within Chinese text', () => {
   const html = renderAnswer('平方为 $x^2$。');
   assert.match(html, /class="katex"/);
-  assert.match(html, /<msup>/);
+  assert.match(html, /class="katex-html"/);
+  assert.doesNotMatch(html, /katex-mathml|<math|<annotation|aria-hidden/);
   assert.doesNotMatch(html, /katex-display|katex-error/);
 });
 
@@ -61,7 +62,8 @@ test('display dollar math renders across lines', () => {
 test('backslash parentheses render inline math', () => {
   const html = renderAnswer(String.raw`平方为 \(x^2\)。`);
   assert.match(html, /class="katex"/);
-  assert.match(html, /<msup>/);
+  assert.match(html, /class="katex-html"/);
+  assert.doesNotMatch(html, /katex-mathml|<math|<annotation|aria-hidden/);
   assert.doesNotMatch(html, /katex-error/);
 });
 

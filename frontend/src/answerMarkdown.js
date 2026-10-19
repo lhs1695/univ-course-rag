@@ -8,10 +8,11 @@ function renderMath(tokens, index) {
   const token = tokens[index];
   try {
     const html = katex.renderToString(token.content, {
-      displayMode: token.type === 'math_block', throwOnError: false, trust: false,
+      output: 'html', displayMode: token.type === 'math_block', throwOnError: false, trust: false,
     });
     // KaTeX returns an error span for invalid TeX when throwOnError is false.
-    if (!html.includes('class="katex-error"')) return html;
+    // HTML-only output has no MathML alternative; keep its visual text accessible.
+    if (!html.includes('class="katex-error"')) return html.replace(' aria-hidden="true"', '');
   } catch {
     // Unexpected parser failures must remain inert text as well.
   }

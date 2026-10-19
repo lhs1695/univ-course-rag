@@ -1,4 +1,3 @@
-import { ElMessage } from "element-plus";
 import { createRouter, createWebHistory } from "vue-router";
 import { refreshMe, session } from "./session";
 import { clearCourseAccess, refreshCourseAccess } from "./courseAccess";
@@ -43,7 +42,6 @@ router.beforeEach(async (to, from) => {
   }
   if (to.meta.admin && session.user?.role !== "admin") {
     sessionStorage.setItem("accessDeniedFlash", "你没有访问这个页面的权限");
-    ElMessage.warning("你没有访问这个页面的权限");
     return "/courses";
   }
   if (to.params.courseId) {
@@ -52,7 +50,6 @@ router.beforeEach(async (to, from) => {
       if (!course || (to.meta.capability && !course.capabilities[to.meta.capability])) {
         clearCourseAccess();
         sessionStorage.setItem("accessDeniedFlash", "你没有访问这个页面的权限");
-        ElMessage.warning("你没有访问这个页面的权限");
         return "/courses";
       }
     } catch (error) {
@@ -62,7 +59,6 @@ router.beforeEach(async (to, from) => {
       }
       if (session.user) {
         sessionStorage.setItem("accessDeniedFlash", "你没有访问这个页面的权限");
-        ElMessage.warning("你没有访问这个页面的权限");
       }
       return session.user ? "/courses" : "/login";
     }
