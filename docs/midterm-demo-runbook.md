@@ -11,11 +11,11 @@
 ## 演示前检查
 
 1. 启动本机 PostgreSQL；目标库必须是 `univ_course_rag_cn_v2`，migration `0011`，规模 **4 门课 / 27 份 PDF / 2,501 chunks**。课程名：线性代数、概率论与统计学、人力资源管理、教育学原理。
-2. 在启动后端的 PowerShell 终端中，**进程级**设置：
-   - `DATABASE_URL`：保留本机原连接串，只把数据库名改成 `univ_course_rag_cn_v2`（可用 `corpus/local/demo-merge-2026-10-19/restart-demo.ps1`）。
-   - `UPLOAD_DIR`：指向 `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2`。
-   - `QUERY_EXPANSION_BACKEND=llm`，`RERANKER_BACKEND=disabled`，`RETRIEVAL_STRATEGY=dense`。
-   - **不要**修改 `.env` 并提交密钥。
+2. 确认环境（`.env.example` 默认已是 cn_v2；本机 `.env` 应指向同一库）：
+   - `DATABASE_URL` / `POSTGRES_DB` → `univ_course_rag_cn_v2`。
+   - `UPLOAD_DIR` → `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2`（私人仓已含该树，约 57MB / 27 PDF）。
+   - 演示建议：`QUERY_EXPANSION_BACKEND=llm`，`RERANKER_BACKEND=disabled`，`RETRIEVAL_STRATEGY=dense`。
+   - **不要**把本机 `.env` 密钥提交进 Git；可用 `corpus/local/demo-merge-2026-10-19/restart-demo.ps1` 做进程级覆盖。
 3. 从仓库根启动后端：
 
    ```powershell

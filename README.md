@@ -21,7 +21,17 @@
 
 1. 产品骨架可用（权限、入库、dense、引用、反馈）；**当前正式演示库**为中文新四课 `univ_course_rag_cn_v2`：**4 / 27 / 2,501**（课 / PDF / chunks）。旧英文四课与 `r7b6_real` 的 17/385 仅作历史对照。
 2. Docling 全量解析已停止；生产 PDF 使用 PyMuPDF + 页级质量门禁。演示未启用 rerank；答案评价未经独立人工复核。
-3. **中期收口完成**：彩排 PASS、PPT **final-v5**、R9 刷新、runbook 已切 cn_v2。队友答辩材料见 [midterm-handoff](midterm-handoff/README.md)；运行卡见 [midterm-demo-runbook](docs/midterm-demo-runbook.md)。启动须进程级切到 cn_v2 + uploads_v2，勿改 `.env` 提交密钥。其余以 [NEXT-SESSION](docs/NEXT-SESSION.md) 为准。
+3. **中期收口完成**：彩排 PASS、PPT **final-v5**、R9 刷新、runbook 已对齐 cn_v2。队友答辩材料见 [midterm-handoff](midterm-handoff/README.md)；运行卡见 [midterm-demo-runbook](docs/midterm-demo-runbook.md)。默认库与 `.env.example` 已指向 `univ_course_rag_cn_v2`；课件在 `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/`（约 57MB / 27 PDF，私人仓已纳入）。勿把本机 `.env` 密钥提交进 Git。其余以 [NEXT-SESSION](docs/NEXT-SESSION.md) 为准。
+
+## 中期课件位置
+
+| 项 | 值 |
+| --- | --- |
+| 路径 | `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/` |
+| 规模 | 4 课 / 27 PDF / 约 57 MB |
+| 课程 | 线性代数、概率论与统计学、人力资源管理、教育学原理 |
+| 环境变量 | `UPLOAD_DIR` 指向上述目录；`DATABASE_URL` / `POSTGRES_DB` 使用 `univ_course_rag_cn_v2` |
+| 说明 | 本机 DB 的 `storage_path` 为绝对路径；克隆后若需打开引用 PDF，保持该相对目录并设置 `UPLOAD_DIR`，或按需重入库。证据类其它 `corpus/local/` 内容仍被忽略。 |
 
 ## 运行入口
 

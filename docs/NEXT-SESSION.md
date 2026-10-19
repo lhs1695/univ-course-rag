@@ -1,5 +1,14 @@
 # 当前交接
 
+## 2026-10-19 默认库 cn_v2 + 文档对齐 + 课件进仓
+
+- **旧库**：已 `DROP DATABASE univ_course_rag`（心理学残留）；仅保留演示库 `univ_course_rag_cn_v2`（4 / 27 / 2,501）。
+- **默认配置**：`.env.example` / 本机 `.env` / `docker-compose` 默认库名改为 `univ_course_rag_cn_v2`；补充 `UPLOAD_DIR=corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2`。
+- **课件进仓**：gitignore 例外跟踪上述 `uploads_v2/**`（27 PDF）；其它 `corpus/local/**` 仍忽略。私人仓可直接拿到课件。
+- **文档**：`AGENTS.md`、`新开题资料.md`、`README.md`、runbook、handoff 口径对齐中文四课；废弃英文四课 17/385 与财务会计/宏观作当前口径。
+- DB `storage_path` 仍为本机绝对路径；克隆侧打开引用 PDF 需设 `UPLOAD_DIR` 或重入库。
+
+
 ## 2026-10-19 队友汇报包 + 磁盘清理 + 私人仓推送
 
 - **队友材料**：仓库内 [`midterm-handoff/`](../midterm-handoff/README.md)（PPT v5、讲稿、runbook 副本、彩排截图、R9/ITEM4 摘要）。

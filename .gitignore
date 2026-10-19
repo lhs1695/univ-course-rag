@@ -13,7 +13,12 @@ build/
 .coverage
 htmlcov/
 backend/data/
-corpus/local/
+# Ignore local evidence by default; track midterm CN course PDFs only
+corpus/local/**
+!corpus/local/cn-replace-2026-10-18/
+!corpus/local/cn-replace-2026-10-18/rechunk/
+!corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/
+!corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/**
 .playwright-mcp/
 
 

@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-univ}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-univ}
-      POSTGRES_DB: ${POSTGRES_DB:-univ_course_rag}
+      POSTGRES_DB: ${POSTGRES_DB:-univ_course_rag_cn_v2}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
