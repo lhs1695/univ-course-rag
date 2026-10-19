@@ -1,5 +1,13 @@
 # 当前交接
 
+## 2026-10-19 中期收口：彩排 / PPT v5 / R9 刷新 / rerank·m5（本 worktree）
+
+- **彩排 PASS**：`corpus/local/midterm-rehearsal-2026-10-19/`（STATUS.md + results.json + screenshots）。Live 库 `univ_course_rag_cn_v2`（4/27/2501），RERANKER disabled；学生 LA-01 有引用 `#page=`、LA-R 拒答；教师资料/反馈；Admin 系统状态三行表无总判断条。
+- **Runbook**：`docs/midterm-demo-runbook.md` 已改为 cn_v2 + 中文四课固定问句。
+- **PPT v5**：`build/midterm-presentation/output/final-v5.pptx` + `speaker-notes-v5.md`；构建脚本 `build_v5.py`；结构校验 `finalizer/final-v5.validation.json` passed。相对 v4：数字/课名切到 cn_v2，第 7 页改用彩排截图。本机无 PowerPoint 渲染，**字体换行需用户 Office 打开复核**。
+- **R9 刷新**：`corpus/local/r9-freeze-refresh-2026-10-19/`（freeze-manifest.json + RESULTS.md）。supersede 旧 `r9-recovery-2026-10-18/freeze/`。
+- **项4**：rerank 残留已归档不启用（`rerank-archive-2026-10-19/`）；m5 可列 NO_EVIDENCE=0，见 rehearsal `ITEM4-RERANK-M5.md`。未 push；勿动 `新开题资料.md`。
+
 ## 2026-10-19 staff/admin 壳视觉对齐学生 A（本 worktree）
 
 - Staff 壳恢复宋体标题与完整紫色书签，表单/卡片/表格统一纸白和淡紫描边，课程页签采用紫底白字胶囊；保留管理端表格工作台与原角色入口。学生 `.study-app` 与四页未改。
@@ -85,15 +93,14 @@
 | P7 | 代码/文档已入 Git；提示词草稿可在 `corpus/local/p7-productization-2026-10-17/` |
 | R8 | `corpus/local/r8-joint-acceptance-2026-10-17/`（清单+API+UI 四点；**正式通过**） |
 
-## 下一项：PPT 视觉复核与固定 Demo 彩排
+## 下一项：本机 Office 打开 final-v5 + 人工再彩排
 
-1. 在本机 PowerPoint 打开 `build/midterm-presentation/output/final-v4.pptx`，检查真实字体、换行、截图可读性与页面留白；旧版 v3 保留，不覆盖。
-2. 按 `docs/midterm-demo-runbook.md` 与 `build/midterm-presentation/output/speaker-notes-v4.md` 彩排固定流程：正常回答与原页、资料外问题拒答、教师覆盖警告、服务失败重试、撤权/串课边界。
-3. 以冻结清单 `freeze-manifest.json` 中 `code.commit` 为代码基准；未提交的 `新开题资料.md` 继续排除在冻结提交外，不清理两个脏 worktree。
-4. 只展示已验证范围与边界：答案指标是 AI 预标/弱引用支持规则，不是人工事实正确率；Hybrid 未跑生成；费用未查账单；R7B-7 历史运行 SHA 缺失、Python 依赖声明未完全锁定。PHIL-T02 继续按「命中≠答案正确」展示，不粉饰。
-5. 演示使用 `univ_course_rag_r7b6_real`，不要把隔离恢复库 `univ_course_rag_r9_restore_20261018` 当演示库；不重新入库、不临场换模型、不默认调用云模型。
+1. 用 PowerPoint 打开 `build/midterm-presentation/output/final-v5.pptx`，检查字体、换行、截图可读性；v4 保留不覆盖。
+2. 按更新后的 `docs/midterm-demo-runbook.md` 再人工走一遍（cn_v2 / LA-01 / LA-R）。
+3. 冻结刷新见 `corpus/local/r9-freeze-refresh-2026-10-19/`；旧 r7b6_real 冻结仅历史对照。
+4. 仍只展示弱规则指标，不宣称人工事实正确率；演示库必须是 `univ_course_rag_cn_v2`。
 
-不默认 push；不续跑 Docling；不默认 Vision/rerank。
+不默认 push；不启用 rerank；不重入库。
 
 ## 后续顺序
 
