@@ -16,3 +16,6 @@ backend/data/
 corpus/local/
 .playwright-mcp/
 
+
+# UI trial skills kit (keep skill sources; skip heavy binaries)
+.agents/skills/impeccable/scripts/bin/
