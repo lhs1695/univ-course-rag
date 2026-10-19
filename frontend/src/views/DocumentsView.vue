@@ -39,8 +39,10 @@
       <el-table-column label="操作" min-width="280">
         <template #default="{ row }">
           <div v-if="row.job_status === 'succeeded'" class="student-open">
+            <label v-if="isPdfDocument(row)" :for="`document-page-${row.id}`">页码</label>
             <el-input
               v-if="isPdfDocument(row)"
+              :id="`document-page-${row.id}`"
               v-model="pageSelections[row.id]"
               inputmode="numeric"
               @blur="correctPage(row)"
@@ -50,9 +52,9 @@
               :aria-label="`打开页码：${row.filename}`"
             />
             <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">
-              {{ isPdfDocument(row) ? '打开该页 ↗' : '打开资料 ↗' }}
+              {{ isPdfDocument(row) ? '打开 PDF' : '打开资料' }}
             </el-link>
-            <small v-if="isPdfDocument(row)" class="subtle">页码范围看左侧页数；将在新窗口打开 PDF</small>
+            <small v-if="isPdfDocument(row)" class="subtle">新窗口打开，可调整页码</small>
           </div>
           <span v-else class="subtle">暂不可打开</span>
         </template>
@@ -164,10 +166,10 @@ function statusType(status) {
 
 function statusLabel(status) {
   const labels = {
-    pending: "等待中",
+    pending: "处理中",
     running: "处理中",
-    succeeded: "成功",
-    failed: "失败",
+    succeeded: "已入库",
+    failed: "暂不可用",
   };
   return labels[status] || status;
 }
@@ -343,14 +345,15 @@ async function onRetry(row) {
   margin: 16px 0;
   padding-left: 12px;
   border-left: 2px solid #c7d5d0;
-  color: #65736e;
+  color: var(--text-muted);
   font-size: 12px;
   line-height: 1.75;
 }
 
 :deep(.filename-cell .cell) { color: #29463d; font-weight: 600; }
 .student-open { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.student-open small { flex-basis: 100%; }
 .student-open .el-link { font-weight: 600; }
 .page-input { width: 118px; }
-.subtle { font-size: 12px; color: #65736e; }
+.subtle { font-size: 12px; color: var(--text-muted); }
 </style>

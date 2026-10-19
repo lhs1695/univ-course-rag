@@ -1,6 +1,8 @@
 <template>
   <div class="page">
     <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程，选择课程行管理成员。管理员访问课程内容也需显式加入。</p></header>
+    <section class="panel-card">
+    <h2>新建课程</h2>
     <el-form :inline="true" @submit.prevent="onCreateCourse">
       <el-form-item label="标题">
         <el-input v-model="newTitle" />
@@ -9,7 +11,10 @@
         <el-button type="primary" native-type="submit" :loading="creating">创建课程</el-button>
       </el-form-item>
     </el-form>
+    </section>
 
+    <section class="panel-card">
+    <h2>课程列表</h2>
     <el-table
       ref="courseTable"
       row-key="id"
@@ -27,9 +32,11 @@
         </template>
       </el-table-column>
     </el-table>
+    </section>
 
     <template v-if="selected">
-      <h3>成员 · {{ selected.title }}</h3>
+      <section class="panel-card">
+      <h2>成员 · {{ selected.title }}</h2>
       <el-form :inline="true" @submit.prevent="onAddMember">
         <el-form-item label="用户">
           <el-select v-model="memberUserId" filterable style="width: 200px">
@@ -60,6 +67,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </section>
     </template>
   </div>
 </template>

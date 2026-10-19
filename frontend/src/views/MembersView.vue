@@ -14,7 +14,7 @@
 
     <el-table :data="students" v-loading="loading" empty-text="还没有学生">
       <el-table-column prop="username" label="用户名" />
-      <el-table-column label="" width="120">
+      <el-table-column label="操作" width="120">
         <template #default="{ row }">
           <el-button type="danger" link @click="onRemove(row)">移出</el-button>
         </template>
@@ -103,7 +103,7 @@ async function onRemove(row) {
   margin: -12px 0 16px;
   padding-left: 12px;
   border-left: 2px solid #c7d5d0;
-  color: #65736e;
+  color: var(--text-muted);
   font-size: 12px;
   line-height: 1.75;
 }

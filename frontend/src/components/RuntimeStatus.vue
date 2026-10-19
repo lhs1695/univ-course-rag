@@ -1,5 +1,5 @@
 <template>
-  <details class="runtime-status" :class="{ 'runtime-warning': !healthy }">
+  <details open class="runtime-status" :class="{ 'runtime-warning': !healthy }">
     <summary><span class="status-dot" aria-hidden="true"></span><span>{{ summary }}</span><span class="runtime-hint">运行状态</span></summary>
     <div class="runtime-details"><p>{{ message }}</p><el-button text :loading="loading" @click="loadStatus">刷新运行状态</el-button></div>
   </details>

@@ -3,7 +3,7 @@
     <header class="page-heading"><p class="eyebrow">管理后台</p><h1>提问日志维护</h1><p class="page-description">按留存窗口预览并处理到期记录，每次仅操作受限的一批。</p></header>
     <p class="scope-note">提问日志包含问题原文，只用于留存窗口内的课程学情。维护操作不会展示问题或提问者。</p>
 
-    <el-card class="maintenance-card" shadow="never">
+    <el-card class="maintenance-card panel-card" shadow="never">
       <template #header>到期记录</template>
       <p class="explanation">
         先预览当前最旧的一批，再显式删除。每次操作受服务器批量上限约束，不会扫描或一次删除全部记录。
@@ -116,14 +116,14 @@ async function deleteExpired() {
   margin: 0;
   padding-left: 12px;
   border-left: 2px solid #c7d5d0;
-  color: #65736e;
+  color: var(--text-muted);
   font-size: 12px;
   line-height: 1.75;
 }
 
 .explanation {
   margin: 0 0 16px;
-  color: #65736e;
+  color: var(--text-muted);
   font-size: 13px;
   line-height: 1.7;
 }

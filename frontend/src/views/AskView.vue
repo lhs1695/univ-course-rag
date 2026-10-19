@@ -1,9 +1,8 @@
 <template>
   <div class="page ask-page" :aria-label="`课程问答：${courseTitle}`">
     <header class="page-heading">
-      <p class="eyebrow">学习工作台</p>
-      <h1>把疑问带回课内资料</h1>
-      <p class="page-description">提出具体问题，阅读回答，再在右侧核对引用。所有内容仍需结合原资料判断。</p>
+      <h1>课程问答</h1>
+      <p class="page-description">提出具体问题，从课内资料中寻找依据。</p>
     </header>
 
     <div class="workspace-grid">
@@ -18,7 +17,7 @@
             </el-form-item>
             <p v-if="query.length >= 2000" class="limit-hint" role="status">最多输入 2000 字，超出部分不会保留</p>
             <div class="composer-footer">
-              <p id="question-help" class="subtle">仅依据本课资料作答；问句草稿与本页问答历史仅保存在浏览器内存，刷新页面会清空。</p>
+              <p id="question-help" class="subtle">仅依据本课资料作答，请核对原文；草稿和历史仅保存在内存，刷新即清空。</p>
               <el-button type="primary" native-type="submit" :loading="asking" :disabled="asking || !query.trim()">
                 {{ asking ? '正在组织回答' : '提问' }}
               </el-button>
@@ -27,7 +26,7 @@
         </div>
 
         <section v-if="history.rounds.length" class="history-panel" aria-labelledby="history-title">
-          <div class="panel-heading"><h2 id="history-title">本课问答历史</h2><span class="subtle">选择轮次查看回答与引用；新问题会携带上一轮上下文。刷新页面会清空本页历史</span></div>
+          <div class="panel-heading"><h2 id="history-title">本课问答历史</h2><span class="subtle">选择轮次查看；新问题会携带上一轮上下文</span></div>
           <ol class="history-list">
             <li v-for="(round, index) in history.rounds" :key="round.id">
               <button type="button" :aria-pressed="history.selectedId === round.id" @click="selectRound(round.id)">
@@ -39,8 +38,7 @@
         </section>
 
         <section class="response-panel" :aria-busy="selectedRound?.pending || false" aria-labelledby="response-title">
-          <div class="panel-heading"><h2 id="response-title">课内回答</h2><span v-if="result?.answer" class="status-label">已返回回答 · 请核对证据</span></div>
-          <p v-if="submittedQuery" class="submitted-question"><strong>本次问题：</strong>{{ submittedQuery }}</p>
+          <div class="panel-heading"><h2 id="response-title">课内回答</h2><span v-if="result?.answer" class="status-label">已返回回答</span></div>
           <div v-if="selectedRound?.pending" class="response-body">
             <p role="status" class="subtle">正在检索本课资料并组织回答，请稍候。</p>
             <p v-if="waitSeconds >= 3" role="status" class="subtle">仍在检索/组织回答，已等待 {{ waitSeconds }} 秒</p>
@@ -59,13 +57,11 @@
             <p v-if="notice.type === 'error'" class="subtle">本次回答未能完成，不能据此判断课内资料是否有答案。</p>
           </div>
           <div v-else-if="result?.answer" class="response-body">
-            <p class="subtle">请结合引用核对回答是否有依据，并打开原资料核对。</p>
             <AnswerBody :answer="result.answer" :citations="result.citations" @citation="focusCitation" />
           </div>
           <div v-else class="workspace-empty">
-            <span class="empty-step" aria-hidden="true">01</span>
             <h3>从一个具体问题开始</h3>
-            <p>回答会显示在这里。系统可能依据不足，也可能出错，引用用于帮助你回到原文核对。</p>
+            <p>回答会显示在这里；有依据时会附上资料引用。</p>
           </div>
         </section>
       </section>
@@ -76,18 +72,18 @@
           <p v-if="loadingContext" role="status">正在读取本课资料状态…</p>
           <template v-else-if="contextFailure"><p>{{ contextFailure }}</p><el-button text @click="loadContext">重新加载资料信息</el-button></template>
           <template v-else><p>当前 {{ readyDocumentCount }} 份资料已入库</p><p v-if="readyDocumentCount === 0">暂无成功入库资料，可先到“课程资料”核对。</p></template>
-          <p>引用摘录可能不完整，请打开原资料核对上下文。PDF 链接尝试定位到引用页。</p>
+          <p>PDF 链接可定位到引用页。</p>
         </div>
         <ol v-if="result?.citations?.length" class="evidence-list">
           <li v-for="(citation, index) in result.citations" :key="citation.chunk_id" :id="`source-${citation.chunk_id}`" class="evidence-card" tabindex="-1" :aria-label="`引用 ${index + 1}：${filenameOf(citation.document_id)}`">
-            <div class="source-heading"><span class="source-number">{{ String(index + 1).padStart(2, '0') }}</span><h3>{{ filenameOf(citation.document_id) }}</h3></div>
+            <div class="source-heading"><span class="source-number">{{ String(index + 1).padStart(2, '0') }}</span><h3>{{ citationTitle(filenameOf(citation.document_id)) }}</h3></div>
+            <small class="subtle source-filename">{{ filenameOf(citation.document_id) }}</small>
             <p v-if="citation.page != null" class="source-page">第 {{ citation.page }} 页</p>
-            <blockquote class="citation-snippet">{{ citation.snippet }}</blockquote>
-            <el-link :href="citationUrl(citation)" target="_blank" rel="noopener" type="primary" :aria-label="`查看原资料：${filenameOf(citation.document_id)}（新窗口）`">查看原资料 ↗</el-link>
+            <blockquote class="citation-snippet">{{ cleanExcerpt(citation.snippet, citation.page) }}</blockquote>
+            <el-link :href="citationUrl(citation)" target="_blank" rel="noopener" type="primary" :aria-label="`查看原资料：${filenameOf(citation.document_id)}（新窗口）`">打开原资料</el-link>
           </li>
         </ol>
         <div v-else class="workspace-empty evidence-empty">
-          <span class="empty-step" aria-hidden="true">02</span>
           <h3>{{ result || failure ? '本次没有可展示的引用' : '引用会显示在这里' }}</h3>
           <p>有引用的回答会列出资料名称、可用页码与摘录，便于逐条核对。</p>
         </div>
@@ -104,6 +100,7 @@ import { api } from "../api";
 import { session } from "../session";
 import { questionDraft } from "../drafts";
 import { askHistory, answerNotice, roundStatus } from "../askHistory.js";
+import { cleanExcerpt, citationTitle } from "../citationDisplay.js";
 import AnswerBody from "../components/AnswerBody.vue";
 
 const route = useRoute();
@@ -216,8 +213,8 @@ function askQuestion(text) {
 .ask-page { padding-top: 2px; }
 .workspace-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); gap: 28px; align-items: start; }
 .answer-column { min-width: 0; display: grid; gap: 24px; }
-.composer-panel, .response-panel, .evidence-panel { min-width: 0; background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; overflow: hidden; }
-.composer-panel { border-top: 4px solid #17675f; box-shadow: 0 12px 30px rgba(28, 78, 68, .08); }
+.composer-panel, .response-panel, .evidence-panel { min-width: 0; background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; overflow: hidden; box-shadow: var(--elev-1); }
+.composer-panel { border-top: 4px solid #17675f; box-shadow: var(--elev-1); }
 .history-panel { min-width: 0; background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; }
 .history-list { list-style: none; margin: 16px; padding: 0; display: grid; gap: 8px; max-height: 300px; overflow-y: auto; }
 .history-list button { width: 100%; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px 12px; justify-content: space-between; text-align: left; padding: 10px 12px; background: #f8faf9; border: 1px solid #dfe7e2; border-radius: 6px; color: #41564e; font: inherit; cursor: pointer; }
@@ -227,7 +224,7 @@ function askQuestion(text) {
 .source-heading h3, .citation-snippet, .evidence-card .el-link { overflow-wrap: anywhere; }
 .panel-heading { padding: 21px 22px 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
 .panel-heading h2 { margin: 0; font-size: 18px; font-weight: 700; }
-.subtle, .count-label { font-size: 12px; color: #65736e; line-height: 1.7; }
+.subtle, .count-label { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
 .status-label { font-size: 12px; color: #4d7165; }
 .ask-form { margin: 18px 22px 22px; }
 .ask-form :deep(.el-textarea__inner) { min-height: 118px !important; padding: 13px 14px; line-height: 1.7; border-radius: 9px; }
@@ -235,29 +232,27 @@ function askQuestion(text) {
 .composer-footer p { margin: 0; max-width: 70%; }
 .composer-footer .el-button { min-width: 94px; min-height: 40px; }
 .response-panel { min-height: 300px; }
-.submitted-question { margin: 16px 22px 0; padding: 3px 0 3px 12px; border-left: 3px solid #c8d8d2; color: #56665f; font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; }
-.submitted-question strong { color: #41564e; font-weight: 600; }
 .response-body { padding: 10px 22px 24px; line-height: 1.8; }
 .response-body > .subtle { margin: 8px 0 16px; }
-.evidence-card:focus { outline: 3px solid #17675f; outline-offset: 3px; }
+.evidence-card:focus { outline: 2px solid #17675f; outline-offset: 3px; }
 .workspace-empty { padding: 28px 24px 34px; }
 .workspace-empty h3 { font-size: 15px; margin: 8px 0 8px; font-weight: 600; }
-.workspace-empty p { margin: 0; max-width: 640px; font-size: 12.5px; color: #68766f; line-height: 1.8; }
-.empty-step { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: #8a9b94; }
+.workspace-empty p { margin: 0; max-width: 640px; font-size: 12.5px; color: var(--empty-text); line-height: 1.8; }
 .evidence-panel { background: #f8faf9; border-color: #e3e9e6; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
 .evidence-panel .panel-heading { padding-top: 19px; }
 .evidence-panel .panel-heading h2 { font-size: 16px; font-weight: 650; }
 .evidence-scope { margin: 14px 22px 16px; padding-bottom: 13px; border-bottom: 1px solid #e2e9e4; }
-.evidence-scope p { margin: 5px 0; font-size: 12px; color: #6b7873; line-height: 1.7; }
+.evidence-scope p { margin: 5px 0; font-size: 12px; color: var(--text-muted); line-height: 1.7; }
 .evidence-list { padding: 0 20px 22px; margin: 0; list-style: none; display: grid; gap: 12px; }
 .evidence-card { padding: 14px 15px; background: rgba(255, 255, 255, .7); border: 0; border-left: 3px solid #b7cec5; border-radius: 0 7px 7px 0; min-width: 0; }
 .source-heading { display: flex; align-items: flex-start; gap: 10px; }
 .source-heading h3 { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.6; }
 .source-number { color: #487167; font-size: 11px; font-weight: 600; padding-top: 2px; flex-shrink: 0; }
-.source-page { margin: 7px 0 0 30px; color: #718079; font-size: 12px; }
+.source-filename { display: block; margin: 4px 0 0 30px; overflow-wrap: anywhere; }
+.source-page { margin: 7px 0 0 30px; color: var(--text-muted); font-size: 12px; }
 .citation-snippet { margin: 12px 0; padding-left: 12px; border-left: 1px solid #ccd9d4; color: #53635d; font-size: 13px; line-height: 1.75; }
 .evidence-card .el-link { font-size: 13px; }
 .evidence-empty { padding-top: 8px; }
 @media (max-width: 900px) { .workspace-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; } .evidence-panel { position: static; max-height: none; overflow-y: visible; } }
-@media (max-width: 500px) { .panel-heading { padding: 18px 16px 0; } .ask-form { margin: 16px; } .composer-footer { flex-direction: column; align-items: stretch; } .composer-footer p { max-width: none; } .composer-footer .el-button { width: 100%; } .submitted-question { margin: 14px 16px 0; } .response-body { padding: 6px 16px 20px; } .evidence-scope { margin: 14px 16px; } .evidence-list { padding: 0 14px 16px; } }
+@media (max-width: 500px) { .panel-heading { padding: 18px 16px 0; } .ask-form { margin: 16px; } .composer-footer { flex-direction: column; align-items: stretch; } .composer-footer p { max-width: none; } .composer-footer .el-button { width: 100%; } .response-body { padding: 6px 16px 20px; } .evidence-scope { margin: 14px 16px; } .evidence-list { padding: 0 14px 16px; } }
 </style>
