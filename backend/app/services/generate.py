@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -15,6 +17,42 @@ PER_SOURCE_CHARS = 1200
 NO_EVIDENCE = "NO_EVIDENCE"
 NO_EVIDENCE_MESSAGE = "依据不足，当前课内资料未形成可引用的回答。"
 GENERATION_CONTRACT = "batch-a-context-calculation-partial-evidence-v2"
+FORMULA_EXCERPT_NOTICE = "这一页公式较多，文字摘录可能不完整，请打开原资料查看这一页。"
+
+
+def clean_source_excerpt(text: str) -> str:
+    """Clean only the displayed excerpt; never rewrite evidence or stored chunks.
+
+    Non-whitespace characters form the denominator. At least 20% extraction
+    damage (replacement/private/unassigned characters), or 35% math symbols
+    and TeX syntax/commands, makes the excerpt unsuitable for textual display.
+    Ratios are measured before removing damage so broken extraction stays visible.
+    """
+    lines = []
+    for line in text.splitlines():
+        line = line.strip()
+        if re.match(r"^(?:CONTENTS\b|目录)", line, flags=re.IGNORECASE):
+            continue
+        if re.fullmatch(r"(?:[-—–]\s*)?\d+(?:\s*[-—–])?", line):
+            continue
+        if re.fullmatch(r"(?:第\s*\d+\s*页(?:\s*共\s*\d+\s*页)?|page\s+\d+(?:\s+of\s+\d+)?)",
+                        line, flags=re.IGNORECASE):
+            continue
+        lines.append(line)
+    body = "\n".join(lines)
+    visible = [char for char in body if not char.isspace()]
+    damaged = sum(char == "\ufffd" or unicodedata.category(char) in {"Co", "Cn", "Cs"}
+                  for char in visible)
+    # Count each command as syntax, including its name, without double counting.
+    math_body = re.sub(r"\\[a-zA-Z]+", lambda match: "∑" * len(match[0]), body)
+    math_count = sum(unicodedata.category(char) == "Sm" or char in "{}^_"
+                     or "\u0370" <= char <= "\u03ff" for char in math_body)
+    if visible and (damaged / len(visible) >= 0.20 or math_count / len(visible) >= 0.35):
+        return FORMULA_EXCERPT_NOTICE
+    clean = "".join(char for char in body if char != "\ufffd"
+                    and unicodedata.category(char) not in {"Cc", "Cf", "Co", "Cn", "Cs"}
+                    or char in "\n\t\r")
+    return " ".join(clean.split())
 
 
 @dataclass(frozen=True)
@@ -57,7 +95,7 @@ def assemble_ask_context(
             break
         blocks.append(block)
         source_ids.append(hit.chunk_id)
-        source_texts[hit.chunk_id] = body
+        source_texts[hit.chunk_id] = clean_source_excerpt(body)
         used += len(block)
     allowed = ", ".join(str(source_id) for source_id in source_ids)
     parts = [

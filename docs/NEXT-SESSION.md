@@ -4,6 +4,18 @@
 
 ## 当前状态
 
+<a id="batch-b-closeout"></a>
+
+### 批 B 收尾（2026-10-19，代码及定向测试、构建均已验收）
+
+- 已核对原有 diff，保留 `generate.py` 摘录清洗、`answerMarkdown.js` KaTeX 规则、`AnswerBody.vue` 样式，未重做或修改批 A；原有未跟踪 `.codex-prompt-b.txt`、`.codex-prompt-b2.txt` 保留且不纳入提交。
+- `frontend/package.json` 与 lock 均固定 `katex 0.19.0`，本机安装版本一致；唯一新增直接依赖 katex，commander 15.0.0 为其传递依赖。用户指定临时 cache 安装首次 `spawn EPERM`，以同一命令追加 `--ignore-scripts` 成功；前端渲染测试确认发行 JS 可用。
+- `answerMarkdown.test.mjs` 新增美元行内/行间、反斜杠圆括号、普通圆括号内分式、中文括号/普通文本与 script 同段防注入；`test_source_excerpt.py` 新增页脚/页码/CONTENTS、公式密集、中文、替换字符及生成证据/存储原文不变测试。
+- 前端原命令 `node --test frontend/tests/answerMarkdown.test.mjs` 被子进程 `spawn EPERM` 阻断；同文件用 `node --test --test-isolation=none frontend/tests/answerMarkdown.test.mjs` 得 `tests 10 / pass 10 / fail 0`。
+- 本工作树没有 `backend/.venv`，使用主仓 `D:/workspace/univ-course-rag/backend/.venv/Scripts/python.exe` 并设 `PYTHONPATH` 为本工作树 backend。定向 `-m pytest backend/tests/test_source_excerpt.py backend/tests/test_ask.py -q -p no:cacheprovider -k "excerpt or generation_context or context_budget or context_skips or context_clips or generate_filters or generate_without or deleted_hybrid_evidence" --tb=short` 得 `25 passed, 46 deselected in 2.24s`；相关三文件 Ruff 得 `All checks passed!`。
+- 曾尝试上述两测试整文件：不依赖临时目录的测试通过，44 项在临时目录 fixture 遇环境错误；补临时父目录后仍因 pytest 创建的受限目录报 `PermissionError: [WinError 5]`。未修改测试基础设施，改用上述用户允许的摘录/上下文定向范围；不宣称整文件通过。`.tmp/b-excerpt-pytest-2` 受限目录保留，不清理现有依赖或受控资料。
+- 构建验收（bot 补跑）：Codex 沙箱内子进程受 EPERM 限制，bot 在本机工作区 `npm ci` 后 `npm run build` 成功（1669 模块，主 JS 约 1,607.81 kB / gzip 534.77 kB，含 KaTeX 字体资源；仍有 Vite 500 kB 警告）。bot 复跑定向测试：answerMarkdown 10/10、test_source_excerpt.py+test_ask.py 71 passed、ruff 通过。不读 `.env`，不调用云，不重入库，未跑全量回归。
+
 - **P7 UI 三角色收口已落地（本机提交）：** 系统状态迁至管理员 `/admin/system`；学生/教师业务页去掉运维条；Ask 失败人话且「依据不足≠系统故障」。`npm run build` 与前端测试 15/15 通过。下一项仍为 PPT 视觉复核与固定 Demo 彩排，或你指定的 UI 复验。
 
 - 主仓：`main`（存在尚未 push 的本地提交；交接以本机当前工作区为准）。现场用户未提交文件为 `新开题资料.md`（研究笔记，勿误提交、勿随文档对账提交）。
@@ -69,3 +81,4 @@ R8 已通过 → **P7-3 数据库与文件恢复子项已通过** → R9 冻结�
 - 同名 `01_introduction.pdf` 必须带 `course_id` 隔离。
 - PHIL-T02 类「检索命中但生成拒答」属命中≠答案正确，R8 重点观察。
 - 不把 Fake 索引或旧 R7 数字冒充当前四课基线。
+

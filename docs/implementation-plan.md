@@ -4,6 +4,12 @@
 
 ## 目标与约束
 
+### 批 B 收尾（2026-10-19，用户指定）
+
+- 保留已有 `generate.py` 摘录清洗、`answerMarkdown.js` 公式规则及 `AnswerBody.vue` 样式，不重做批 A。直接复用 KaTeX 0.19.0（npm 发行包/MIT）的 `renderToString` 与 CSS，固定 package/lock；唯一新增直接依赖为 katex，commander 为其传递依赖。沿用 markdown-it ruler 接入，`trust: false`；本地仅处理课程回答中的公式定界符与显示摘录，不复制排版算法。
+- 摘录沿用现有 Python 标准库 `re`/`unicodedata` 做有限显示过滤；KaTeX 面向 TeX 排版，无法清洗 PDF 页脚与抽取损坏。保留短小适配器与测试，无新解析器、迁移、重入库或云调用成本。
+- 收尾验收：指定公式/注入测试、摘录噪声/公式密集/中文/替换字符测试，以及生成证据不变测试；只跑 answerMarkdown、摘录/ask、相关 Ruff 和前端构建。当前结果与阻塞见 [最新交接](NEXT-SESSION.md#batch-b-closeout)。
+
 面向高校各类课程，采用开源组件完成有依据、可核对的问答与课程适配。中期交付本机原型，结题争取小范围多人试用。中期前须验证普通文字、扫描页、公式、表格和图片/图表的有限代表样本；不要求建立任意格式、任意复杂页面的通用多模态平台。工程目标是**尽快用成熟开源能力补齐当前解析短板，而不是增加一个新的 RAG 平台**。
 
 用户最新决定优先于本文，本文为唯一施工计划；研究目标见 [新开题资料](../新开题资料.md)，操作见 [workflow](workflow.md)，当前行为见 [engineering](engineering.md)，验收见 [validation](validation.md)。每项先记录具体复用对象、版本/许可与总成本，成熟能力优先直接调用，本地实现需有替代比较。

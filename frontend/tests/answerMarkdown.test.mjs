@@ -43,3 +43,44 @@ test('tables and nested lists use the package renderer', () => {
   assert.match(html, /<table>/);
   assert.equal((html.match(/<ul>/g) || []).length, 2);
 });
+
+test('inline dollar math renders within Chinese text', () => {
+  const html = renderAnswer('平方为 $x^2$。');
+  assert.match(html, /class="katex"/);
+  assert.match(html, /<msup>/);
+  assert.doesNotMatch(html, /katex-display|katex-error/);
+});
+
+test('display dollar math renders across lines', () => {
+  const html = renderAnswer('公式：\n\n$$\nx^2 + y^2 = z^2\n$$');
+  assert.match(html, /class="katex-display"/);
+  assert.match(html, /class="katex"/);
+  assert.doesNotMatch(html, /katex-error/);
+});
+
+test('backslash parentheses render inline math', () => {
+  const html = renderAnswer(String.raw`平方为 \(x^2\)。`);
+  assert.match(html, /class="katex"/);
+  assert.match(html, /<msup>/);
+  assert.doesNotMatch(html, /katex-error/);
+});
+
+test('ordinary parentheses containing TeX render fractions', () => {
+  const html = renderAnswer(String.raw`结果为 (\frac{f(x)}{2})。`);
+  assert.match(html, /class="katex"/);
+  assert.match(html, /class="mfrac"/);
+  assert.doesNotMatch(html, /katex-error/);
+});
+
+test('ordinary Chinese parentheses and plain text remain unchanged', () => {
+  assert.equal(renderAnswer('定义（这是普通中文括号）与(补充说明)。'),
+    '<p>定义（这是普通中文括号）与(补充说明)。</p>\n');
+  assert.equal(renderAnswer('正常中文文本，无公式。'), '<p>正常中文文本，无公式。</p>\n');
+});
+
+test('script remains escaped in the same paragraph as math', () => {
+  const html = renderAnswer('<script>alert(1)</script> 与 $x^2$。');
+  assert.match(html, /class="katex"/);
+  assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script\b/i);
+});
