@@ -20,6 +20,13 @@ def test_excerpt_removes_footer_page_number_and_contents_lines(noise):
     assert clean_source_excerpt(f"第一段正文。\n{noise}\n第二段正文。") == "第一段正文。 第二段正文。"
 
 
+def test_ethiopic_ocr_junk_stripped_or_noticed():
+    junk = "\u123b"
+    assert junk not in clean_source_excerpt(f"normal density {junk} text.")
+    dense = junk * 10 + "x"
+    assert clean_source_excerpt(dense) == FORMULA_EXCERPT_NOTICE
+
+
 @pytest.mark.parametrize("text", [
     r"\frac{x^2}{y_1} + \sum_{i=1}^{n} α_i = β",
     "∑ ∫ √ α β γ = + ×",

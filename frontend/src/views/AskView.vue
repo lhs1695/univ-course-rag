@@ -18,7 +18,7 @@
             </el-form-item>
             <p v-if="query.length >= 2000" class="limit-hint" role="status">最多输入 2000 字，超出部分不会保留</p>
             <div class="composer-footer">
-              <p id="question-help" class="subtle">仅依据本课资料作答；问句草稿仅保存在本页内存。</p>
+              <p id="question-help" class="subtle">仅依据本课资料作答；问句草稿与本页问答历史仅保存在浏览器内存，刷新页面会清空。</p>
               <el-button type="primary" native-type="submit" :loading="asking" :disabled="asking || !query.trim()">
                 {{ asking ? '正在组织回答' : '提问' }}
               </el-button>
@@ -27,7 +27,7 @@
         </div>
 
         <section v-if="history.rounds.length" class="history-panel" aria-labelledby="history-title">
-          <div class="panel-heading"><h2 id="history-title">本课问答历史</h2><span class="subtle">选择轮次查看回答与引用；新问题会携带上一轮上下文</span></div>
+          <div class="panel-heading"><h2 id="history-title">本课问答历史</h2><span class="subtle">选择轮次查看回答与引用；新问题会携带上一轮上下文。刷新页面会清空本页历史</span></div>
           <ol class="history-list">
             <li v-for="(round, index) in history.rounds" :key="round.id">
               <button type="button" :aria-pressed="history.selectedId === round.id" @click="selectRound(round.id)">

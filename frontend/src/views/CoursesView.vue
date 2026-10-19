@@ -1,6 +1,7 @@
 <template>
   <div class="page courses-page">
     <header class="page-heading"><p class="eyebrow">课程空间</p><h1>我的课程</h1><p class="page-description">选择一门已加入的课程，查看资料或开始提问。管理入口按你的课内权限显示。</p></header>
+    <el-alert v-if="deniedNotice" :title="deniedNotice" type="warning" show-icon :closable="true" @close="deniedNotice = ''" style="margin-bottom: 16px;" />
     <template v-if="failure">
       <el-alert :title="failure" type="error" :closable="false" show-icon />
       <el-button :loading="loading" @click="loadCourses">重新加载课程</el-button>
@@ -34,6 +35,12 @@ const courses = ref([]);
 const loading = ref(true);
 const loaded = ref(false);
 const failure = ref("");
+const deniedNotice = ref("");
+const flash = sessionStorage.getItem("accessDeniedFlash");
+if (flash) {
+  deniedNotice.value = flash;
+  sessionStorage.removeItem("accessDeniedFlash");
+}
 
 async function loadCourses() {
   if (loading.value && loaded.value) return;

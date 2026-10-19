@@ -49,7 +49,7 @@
               class="page-input"
               :aria-label="`打开页码：${row.filename}`"
             />
-            <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`">
+            <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">
               {{ isPdfDocument(row) ? '打开该页 ↗' : '打开资料 ↗' }}
             </el-link>
             <small v-if="isPdfDocument(row)" class="subtle">页码范围看左侧页数；将在新窗口打开 PDF</small>
@@ -132,6 +132,13 @@ function correctPage(row) {
 
 function studentOpenUrl(row) {
   return documentContentUrl(courseId.value, row, pageSelections.value[row.id] ?? 1);
+}
+
+function openStudentDocument(row, event) {
+  if (!isPdfDocument(row)) return;
+  correctPage(row);
+  event.preventDefault();
+  window.open(studentOpenUrl(row), "_blank", "noopener");
 }
 
 function jobFailure(code) {
