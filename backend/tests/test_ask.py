@@ -55,6 +55,106 @@ def evidence_hit(text: str = "检索摘要") -> SearchHit:
     return SearchHit(uuid4(), uuid4(), None, text, 1.0)
 
 
+@pytest.mark.parametrize("calc_result", ["cited", "uncited", "empty", "failure", "refused"])
+def test_calculation_method_retry_keeps_gate_and_bounds_calls(
+    client, db, monkeypatch, calc_result,
+):
+    query = "一个袋子里有 3 个红球和 2 个白球，随机摸出一个球是红球的概率是多少？请给出计算过程。"
+    method_query = "古典概型中事件概率的计算公式"
+
+    class MethodEmbedder(FakeEmbedder):
+        def embed(self, texts):
+            return [([0.0, 1.0] if text == method_query else [1.0, 0.0])
+                    + [0.0] * 1022 for text in texts]
+
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Calculation retry")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    embedder = MethodEmbedder()
+    app.dependency_overrides[get_embedder] = lambda: embedder
+    for _ in range(8):
+        _scaled_chunk(db, course, embedder, query, "概率章节目录", 1.0)
+    method = _scaled_chunk(db, course, embedder, query, "古典概型：P(A)=k/n。", 1.0)
+    method.embedding = [0.6, 0.8] + [0.0] * 1022
+    method.page = 55
+    below = _scaled_chunk(db, course, embedder, query, "不应准入的方法页", 1.0)
+    below.embedding = [0.1, 0.995] + [0.0] * 1022
+    db.commit()
+    assert method.id not in {
+        hit.chunk_id for hit in retrieve_chunks(db, course.id, query, embedder)
+    }
+    monkeypatch.setattr("app.api.ask.get_settings", lambda: Settings(
+        _env_file=None, query_expansion_backend="llm",
+    ))
+
+    class MethodLLM:
+        def __init__(self):
+            self.calls = []
+            self.prompts = []
+
+        def generate(self, prompt):
+            self.prompts.append(prompt)
+            if prompt.startswith("把下面计算题"):
+                self.calls.append("calc")
+                if calc_result == "failure":
+                    raise RuntimeError("expansion unavailable")
+                return "" if calc_result == "empty" else method_query
+            if prompt.startswith("把下面宽泛"):
+                self.calls.append("generic")
+                return method_query
+            self.calls.append("generate")
+            assert str(below.id) not in prompt
+            if f"[Source {method.id}]" not in prompt or calc_result == "refused":
+                return NO_EVIDENCE
+            if calc_result == "uncited" and "generic" not in self.calls:
+                return NO_EVIDENCE
+            return f"P(A)=3/(3+2)=3/5。 [Source {method.id}]"
+
+    llm = MethodLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    assert response.status_code == 200
+    body = response.json()
+    if calc_result == "refused":
+        assert body["error_code"] == NO_EVIDENCE
+        assert body["answer"] is None
+        assert body["citations"] == []
+    else:
+        assert body["error_code"] is None
+        assert "3/5" in body["answer"]
+        assert [(hit["chunk_id"], hit["page"]) for hit in body["citations"]] == [
+            (str(method.id), 55),
+        ]
+    expected = ["generate", "calc"]
+    if calc_result not in {"empty", "failure"}:
+        expected.append("generate")
+    if calc_result != "cited":
+        expected.extend(["generic", "generate"])
+    assert llm.calls == expected
+
+
+@pytest.mark.parametrize("query", ["什么是教学？", "第三章的主题是什么", "如何解线性方程组"])
+def test_non_calculation_never_calls_calculation_expansion(client, db, monkeypatch, query):
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "No calculation expansion")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    _scaled_chunk(db, course, FakeEmbedder(), query, "课程目录", 1.0)
+    monkeypatch.setattr("app.api.ask.get_settings", lambda: Settings(
+        _env_file=None, query_expansion_backend="llm",
+    ))
+    calc = Mock(side_effect=AssertionError("non-calculation must skip calc expansion"))
+    monkeypatch.setattr("app.api.ask.expand_calculation_subqueries", calc)
+    llm = FakeLLM(scripted=NO_EVIDENCE)
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    assert response.status_code == 200
+    assert response.json()["error_code"] == NO_EVIDENCE
+    assert response.json()["citations"] == []
+    calc.assert_not_called()
+
+
 @pytest.mark.parametrize(("query", "code", "message", "extra"), [
     ("为什么？", "NEEDS_CONTEXT", NEEDS_CONTEXT_MESSAGE, {}),
     ("它呢？", "NEEDS_CONTEXT", NEEDS_CONTEXT_MESSAGE, {"previous_answer": "只有回答"}),

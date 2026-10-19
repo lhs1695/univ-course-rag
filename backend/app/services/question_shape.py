@@ -18,6 +18,13 @@ def is_meaningless_question(query: str) -> bool:
     return not any(char.isalnum() for char in query)
 
 
+def is_calculation_question(query: str) -> bool:
+    """Require both an explicit number and a calculation-intent word."""
+    return bool(re.search(r"[\d零〇一二两三四五六七八九十百千万亿]", query)) and any(
+        word in query for word in ("求", "计算", "概率", "是多少", "等于", "值")
+    )
+
+
 def is_contextual_followup(query: str) -> bool:
     """Only short demonstratives or explicit subjectless question templates qualify."""
     text = query.strip().rstrip("?？!！。 ")

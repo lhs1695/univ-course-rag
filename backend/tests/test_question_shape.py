@@ -2,9 +2,24 @@ import pytest
 from app.services.question_shape import (
     definition_term,
     evidence_context_order,
+    is_calculation_question,
     is_contextual_followup,
     is_meaningless_question,
 )
+
+
+@pytest.mark.parametrize(("query", "expected"), [
+    ("一个袋子里有 3 个红球和 2 个白球，随机摸出一个球是红球的概率是多少？请给出计算过程。", True),
+    ("袋中有三个红球和两个白球，求摸出红球的概率。", True),
+    ("计算 1+2", True), ("三加二等于多少？", True),
+    ("F(0)的值", True), ("２个球的概率是多少？", True),
+    ("什么是数学期望？", False), ("什么是教学？", False),
+    ("第三章的主题是什么", False), ("第3章的主题是什么", False),
+    ("概率的定义是什么？", False), ("如何计算数学期望？", False),
+    ("", False),
+])
+def test_is_calculation_question(query, expected):
+    assert is_calculation_question(query) is expected
 
 
 @pytest.mark.parametrize("query", ["？！…", "@#$%^&*", "   ", "∑∞×÷=🙂"])

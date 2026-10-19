@@ -12,6 +12,7 @@ from app.services.embedder import FakeEmbedder
 from app.services.generate import NO_EVIDENCE
 from app.services.llm import FakeLLM, get_llm
 from app.services.query_expansion import (
+    expand_calculation_subqueries,
     expand_subqueries,
     is_broad_procedural,
     parse_subqueries,
@@ -47,6 +48,31 @@ def test_expand_subqueries_and_exact_prompt():
         "把下面宽泛的学生问题改写成2个更具体的检索子问题，每行一个，只输出子问题，不要编号，不要解释。要求：子问题必须指向具体的求解方法、算法步骤或判定准则，避免只问定义；如果该问题在教材中通常对应一种具体方法，应在子问题中写出该方法的名称。\n问题：原问题"
     ]
     assert expand_subqueries("问题", Mock(generate=Mock(side_effect=RuntimeError))) == []
+
+
+def test_expand_calculation_subqueries_prompt_and_bounded_parser():
+    query = "3个红球和2个白球，求红球概率"
+    llm = FakeLLM(scripted=(
+        f"{query}\n1. 古典概型中事件概率的计算公式？\n"
+        "- 古典概型中事件概率的计算公式？\n• 等可能事件的概率公式\n第三个子问题"
+    ))
+    assert expand_calculation_subqueries(query, llm) == [
+        "古典概型中事件概率的计算公式？", "等可能事件的概率公式",
+    ]
+    assert len(llm.prompts) == 1
+    prompt = llm.prompts[0]
+    assert "最多2个" in prompt
+    assert "只输出指向方法/公式/定理名称的子问题" in prompt
+    assert "不要带原题的具体数字（包括中文数字）" in prompt
+    assert prompt.endswith(f"计算题：{query}")
+
+
+@pytest.mark.parametrize("result", ["", "  ", RuntimeError(), UpstreamUnavailable()])
+def test_calculation_expansion_failure_or_empty_degrades(result):
+    llm = Mock(generate=Mock(side_effect=result) if isinstance(result, Exception)
+               else Mock(return_value=result))
+    assert expand_calculation_subqueries("计算1+2", llm) == []
+    llm.generate.assert_called_once()
 
 
 class GeometryEmbedder(FakeEmbedder):

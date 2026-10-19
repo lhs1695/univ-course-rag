@@ -22,13 +22,18 @@ from app.services.generate import (
 )
 from app.services.keyword import KeywordLimitExceeded
 from app.services.llm import LLM, get_llm
-from app.services.query_expansion import expand_subqueries, is_broad_procedural
+from app.services.query_expansion import (
+    expand_calculation_subqueries,
+    expand_subqueries,
+    is_broad_procedural,
+)
 from app.services.question_shape import (
     INVALID_QUESTION,
     INVALID_QUESTION_MESSAGE,
     NEEDS_CONTEXT,
     NEEDS_CONTEXT_MESSAGE,
     definition_term,
+    is_calculation_question,
     is_contextual_followup,
     is_meaningless_question,
 )
@@ -130,9 +135,9 @@ def ask_course(
                     previous_answer=body.previous_answer if previous_question else None,
                 )
 
-            def try_expansion():
+            def try_expansion(expand=expand_subqueries):
                 try:
-                    subs = expand_subqueries(retrieval_query, llm)
+                    subs = expand(retrieval_query, llm)
                     return retrieve_expanded_chunks(
                         db, access.course.id, retrieval_query, embedder, subs,
                     ) if subs else []
@@ -146,7 +151,11 @@ def ask_course(
             expansion_enabled = (
                 settings.query_expansion_backend == "llm" and not index_mismatch and not term
             )
-            if expansion_enabled and hits and is_broad_procedural(retrieval_query):
+            calculation = not followup and is_calculation_question(body.query)
+            if (
+                expansion_enabled and not calculation and hits
+                and is_broad_procedural(retrieval_query)
+            ):
                 expanded = try_expansion()
                 if expanded:
                     hits = expanded
@@ -173,6 +182,19 @@ def ask_course(
                 error_code = None if cited_ids else NO_EVIDENCE
                 if not cited_ids:
                     answer = None
+            # Calculation exercises get one method/formula retry before the generic retry.
+            # Both reuse the original-query cosine gate; neither changes evidence admission.
+            if not cited_ids and expansion_enabled and calculation:
+                expanded = try_expansion(expand_calculation_subqueries)
+                if expanded:
+                    hits = expanded
+                    llm_called = True
+                    generated = generate(hits)
+                    answer, cited_ids = generated.answer, generated.cited_ids
+                    source_texts = generated.source_texts
+                    error_code = None if cited_ids else NO_EVIDENCE
+                    if not cited_ids:
+                        answer = None
             if not cited_ids and expansion_enabled and not expansion_used:
                 expanded = try_expansion()
                 if expanded:
