@@ -1,6 +1,12 @@
 <template>
   <a class="skip-link" href="#main-content" @click.prevent="focusMain">跳到主要内容</a>
-  <el-container class="app-shell">
+  <StudentShell v-if="session.user?.role === 'student' && !route.meta.public" @logout="onLogout">
+    <template v-if="recoveryError"><el-alert :title="recoveryError.message" type="warning" :closable="false"/><el-button v-if="recoveryError.status !== 401" :loading="recovering" @click="retryConnection">重试连接</el-button></template>
+    <router-view v-if="pageAllowed" :key="`${route.fullPath}:${courseAccess.revision}`"/>
+    <div v-else class="study-empty"><p>访问权限已变化，请重新选择课程或登录。</p><router-link to="/courses">返回课程</router-link></div>
+  </StudentShell>
+  <router-view v-else-if="route.meta.public"/>
+  <el-container v-else class="app-shell">
     <el-header class="app-header" v-if="session.user">
       <router-link class="app-title" to="/courses"><span class="brand-mark" aria-hidden="true">课</span><span>课程知识库<small>有依据，可核对</small></span></router-link>
       <div class="app-user">
@@ -48,6 +54,8 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { logout, refreshMe, session } from "./session";
 import { clearCourseAccess, courseAccess, refreshCourseAccess } from "./courseAccess";
+import StudentShell from './components/StudentShell.vue';
+import './student.css';
 
 const router = useRouter();
 const route = useRoute();

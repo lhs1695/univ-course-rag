@@ -1,7 +1,11 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { h } from 'vue';
 import { refreshMe, session } from "./session";
 import { clearCourseAccess, refreshCourseAccess } from "./courseAccess";
-import LoginView from "./views/LoginView.vue";
+import LoginView from "./views/StudentLoginView.vue";
+import StudentCoursesView from './views/StudentCoursesView.vue';
+import StudentAskView from './views/StudentAskView.vue';
+import StudentDocumentsView from './views/StudentDocumentsView.vue';
 import CoursesView from "./views/CoursesView.vue";
 import AskView from "./views/AskView.vue";
 import DocumentsView from "./views/DocumentsView.vue";
@@ -12,6 +16,8 @@ import AdminCoursesView from "./views/AdminCoursesView.vue";
 import AdminMaintenanceView from "./views/AdminMaintenanceView.vue";
 import AdminSystemStatusView from "./views/AdminSystemStatusView.vue";
 
+const studentPage = (student, legacy) => ({ render: () => h(session.user?.role === 'student' ? student : legacy) });
+
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -21,11 +27,11 @@ export const router = createRouter({
     { path: "/admin/courses", component: AdminCoursesView, meta: { admin: true } },
     { path: "/admin/maintenance", component: AdminMaintenanceView, meta: { admin: true } },
     { path: "/admin/system", component: AdminSystemStatusView, meta: { admin: true } },
-    { path: "/courses", component: CoursesView },
-    { path: "/courses/:courseId/documents", component: DocumentsView },
+    { path: "/courses", component: studentPage(StudentCoursesView, CoursesView) },
+    { path: "/courses/:courseId/documents", component: studentPage(StudentDocumentsView, DocumentsView) },
     { path: "/courses/:courseId/members", component: MembersView, meta: { capability: "can_manage_members" } },
     { path: "/courses/:courseId/insights", component: InsightsView, meta: { capability: "can_view_insights" } },
-    { path: "/courses/:courseId", component: AskView },
+    { path: "/courses/:courseId", component: studentPage(StudentAskView, AskView) },
   ],
 });
 
