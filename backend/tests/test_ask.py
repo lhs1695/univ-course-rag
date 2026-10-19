@@ -286,6 +286,18 @@ def test_generation_context_orders_equal_summary_hits_and_explains_calculation_c
     assert "来源没有适用方法时只输出 NO_EVIDENCE" in context.prompt
     assert "只支持一部分时直接呈现被支持部分，不解释缺失" in context.prompt
     assert "禁止元叙述式自贬" in context.prompt
+    pedagogy = assemble_ask_context(
+        "简述教学过程的基本环节",
+        [definition],
+        {definition.chunk_id: Chunk(text="教学过程分为四个阶段：明了、联想")},
+    )
+    assert "不得仅因未出现「基本环节」四字而输出 NO_EVIDENCE" in pedagogy.prompt
+    course = assemble_ask_context(
+        "什么是课程？",
+        [definition],
+        {definition.chunk_id: Chunk(text="教育内容主要体现为课程")},
+    )
+    assert "不得仅因缺少「课程是……」整句定义而输出 NO_EVIDENCE" in course.prompt
 
 
 @pytest.mark.parametrize("budget_delta, expected_count", [(-1, 0), (0, 1), (1, 1)])

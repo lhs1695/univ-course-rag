@@ -165,6 +165,21 @@ def ask_course(
                             seen.add(hit.chunk_id)
                             merged.append(hit)
                     hits = merged[:SEARCH_TOP_K]
+                # Pedagogy notes use 阶段 for what demo questions call 基本环节.
+                if "教学过程" in retrieval_query and ("环节" in retrieval_query or "阶段" in retrieval_query):
+                    extra = []
+                    for keyword in ("教学过程分为四个阶段", "明了", "联想"):
+                        try:
+                            extra.extend(retrieve(keyword)[:2])
+                        except Exception:  # noqa: BLE001 - optional recall must degrade.
+                            logger.warning("ask_teaching_process_retrieval_fallback")
+                    seen = set()
+                    merged = []
+                    for hit in [*extra, *hits]:
+                        if hit.chunk_id not in seen:
+                            seen.add(hit.chunk_id)
+                            merged.append(hit)
+                    hits = merged[:SEARCH_TOP_K]
                 return hits
 
             def generate(hits):
