@@ -1,28 +1,28 @@
 <template>
   <div class="page ask-page" :aria-label="`课程问答：${courseTitle}`">
     <header class="page-heading">
-      <h1>课程问答</h1>
-      <p class="page-description">提出具体问题，从课内资料中寻找依据。</p>
+      <h1>{{ session.user?.role === 'student' ? '把这个问题，读明白。' : '课程问答' }}</h1>
+      <p class="page-description">在本课资料里寻找线索，再回到原文核对。</p>
     </header>
 
     <div class="workspace-grid">
       <section class="answer-column" aria-label="提问与回答">
         <div class="composer-panel">
-          <div class="panel-heading"><h2 id="question-title">你的问题</h2><span class="subtle">一次聚焦一个疑问</span></div>
+          <div class="panel-heading"><h2 id="question-title">你想弄清楚什么？</h2><span class="subtle">一次聚焦一个疑问</span></div>
           <el-form class="ask-form" aria-labelledby="question-title" @submit.prevent="submitQuestion">
             <el-form-item>
               <el-input v-model="query" id="question-input" aria-label="课程问题" aria-describedby="question-help"
-                type="textarea" :rows="4" maxlength="2000" show-word-limit
+                type="textarea" :rows="3" maxlength="2000" show-word-limit
                 placeholder="例如：这两个概念有什么区别？请结合课内资料说明。" />
             </el-form-item>
             <p v-if="query.length >= 2000" class="limit-hint" role="status">最多输入 2000 字，超出部分不会保留</p>
             <div class="composer-footer">
-              <p id="question-help" class="subtle">仅依据本课资料作答，请核对原文；草稿和历史仅保存在内存，刷新即清空。</p>
+              <p id="question-help" class="subtle">基于本课资料回答 · 草稿与记录刷新后清空</p>
               <el-button type="primary" native-type="submit" :loading="asking" :disabled="asking || !query.trim()">
-                {{ asking ? '正在组织回答' : '提问' }}
+                {{ asking ? '正在查找依据…' : '查找课内依据' }}<StudyArrow v-if="!asking" />
               </el-button>
             </div>
-          </el-form>
+          </el-form><div v-if="!history.rounds.length" class="question-starters"><span>试着这样问</span><button v-for="starter in starters" :key="starter" type="button" @click="query = starter; focusQuestion()">{{ starter }}</button></div>
         </div>
 
         <section v-if="history.rounds.length" class="history-panel" aria-labelledby="history-title">
@@ -38,7 +38,7 @@
         </section>
 
         <section class="response-panel" :aria-busy="selectedRound?.pending || false" aria-labelledby="response-title">
-          <div class="panel-heading"><h2 id="response-title">课内回答</h2><span v-if="result?.answer" class="status-label">已返回回答</span></div>
+          <div class="panel-heading"><h2 id="response-title">阅读回答</h2><span v-if="result?.answer" class="status-label">已返回回答</span></div>
           <div v-if="selectedRound?.pending" class="response-body">
             <p role="status" class="subtle">正在检索本课资料并组织回答，请稍候。</p>
             <p v-if="waitSeconds >= 3" role="status" class="subtle">仍在检索/组织回答，已等待 {{ waitSeconds }} 秒</p>
@@ -56,18 +56,18 @@
             <el-alert :title="notice.message" :type="notice.type" :closable="false" show-icon />
             <p v-if="notice.type === 'error'" class="subtle">本次回答未能完成，不能据此判断课内资料是否有答案。</p>
           </div>
-          <div v-else-if="result?.answer" class="response-body">
+          <div v-else-if="result?.answer" class="response-body"><p class="answered-question">{{ submittedQuery }}</p>
             <AnswerBody :answer="result.answer" :citations="result.citations" @citation="focusCitation" />
           </div>
           <div v-else class="workspace-empty">
-            <h3>从一个具体问题开始</h3>
-            <p>回答会显示在这里；有依据时会附上资料引用。</p>
+            <h3>一个问题，一次深入。</h3>
+            <p>提交问题后，在这里阅读回答。点击文中的引用标记，找到它对应的课件与页码。</p>
           </div>
         </section>
       </section>
 
       <aside class="evidence-panel" aria-labelledby="evidence-title">
-        <div class="panel-heading"><h2 id="evidence-title">核对证据</h2><span class="count-label">{{ result?.citations?.length || 0 }} 条引用</span></div>
+        <div class="panel-heading"><h2 id="evidence-title">回到原文</h2><span class="count-label">{{ result?.citations?.length || 0 }} 条引用</span></div>
         <div class="evidence-scope">
           <p v-if="loadingContext" role="status">正在读取本课资料状态…</p>
           <template v-else-if="contextFailure"><p>{{ contextFailure }}</p><el-button text @click="loadContext">重新加载资料信息</el-button></template>
@@ -80,7 +80,7 @@
             <small class="subtle source-filename">{{ filenameOf(citation.document_id) }}</small>
             <p v-if="citation.page != null" class="source-page">第 {{ citation.page }} 页</p>
             <blockquote class="citation-snippet">{{ cleanExcerpt(citation.snippet, citation.page) }}</blockquote>
-            <el-link :href="citationUrl(citation)" target="_blank" rel="noopener" type="primary" :aria-label="`查看原资料：${filenameOf(citation.document_id)}（新窗口）`">打开原资料</el-link>
+            <el-link :href="citationUrl(citation)" target="_blank" rel="noopener" type="primary" :aria-label="`查看原资料：${filenameOf(citation.document_id)}（新窗口）`">查看原页 <StudyArrow diagonal /></el-link>
           </li>
         </ol>
         <div v-else class="workspace-empty evidence-empty">
@@ -93,6 +93,7 @@
 </template>
 
 <script setup>
+import StudyArrow from "../components/StudyArrow.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
@@ -103,6 +104,8 @@ import { askHistory, answerNotice, roundStatus } from "../askHistory.js";
 import { cleanExcerpt, citationTitle } from "../citationDisplay.js";
 import AnswerBody from "../components/AnswerBody.vue";
 
+const starters = ["请解释一个概念，并给出课件依据。", "这两个概念有什么区别？", "请梳理这一章节的知识联系。"];
+function focusQuestion() { document.getElementById("question-input")?.focus(); }
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
 const courseTitle = ref("");

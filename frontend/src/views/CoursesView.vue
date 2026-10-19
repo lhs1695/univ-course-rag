@@ -1,6 +1,6 @@
 <template>
-  <div class="page courses-page">
-    <header class="page-heading"><p class="eyebrow">课程空间</p><h1>我的课程</h1><p class="page-description">选择一门已加入的课程，查看资料或开始提问。管理入口按你的课内权限显示。</p></header>
+  <div class="page courses-page" :class="{ 'student-courses': session.user?.role === 'student' }">
+    <header v-if="session.user?.role === 'student'" class="catalog-heading"><div><h1>今天，从哪门课开始？</h1><p>选择一门课程，把疑问带进资料里。</p></div><span class="catalog-count">{{ courses.length }} 门已加入课程</span></header><header v-else class="page-heading"><p class="eyebrow">课程空间</p><h1>我的课程</h1><p class="page-description">选择一门已加入的课程，查看资料或开始提问。管理入口按你的课内权限显示。</p></header>
     <el-alert v-if="deniedNotice" :title="deniedNotice" type="warning" show-icon :closable="true" @close="deniedNotice = ''" style="margin-bottom: 16px;" />
     <template v-if="failure">
       <el-alert :title="failure" type="error" :closable="false" show-icon />
@@ -8,6 +8,13 @@
     </template>
     <div v-else-if="loading" aria-busy="true"><p role="status" class="page-description">正在加载你的课程…</p><el-skeleton :rows="4" animated /></div>
     <el-empty v-else-if="loaded && courses.length === 0" description="还没有加入任何课程"><p v-if="session.user?.role === 'admin'" class="page-description">管理员默认不加入课程，请到「课程与授权」把自己加入某课后，这里才会出现。</p><p v-else class="page-description">请联系本课教师或管理员加入已有课程。</p><router-link v-if="session.user?.role === 'admin'" to="/admin/courses">前往课程与授权</router-link></el-empty>
+    <ul v-else-if="session.user?.role === 'student'" class="course-catalog">
+      <li v-for="(row, index) in courses" :key="row.id" class="catalog-row">
+        <span class="catalog-order" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>
+        <div class="catalog-subject"><h2><router-link :to="`/courses/${row.id}`">{{ row.title }}</router-link></h2><p>课程研习 <span> / </span> 有依据，可核对</p></div>
+        <div class="catalog-links"><router-link :to="`/courses/${row.id}/documents`">课程资料</router-link><router-link :to="`/courses/${row.id}`" class="catalog-enter">开始研习 <StudyArrow diagonal /></router-link></div>
+      </li>
+    </ul>
     <ul v-else class="course-grid">
       <li v-for="row in courses" :key="row.id" class="course-card">
         <span class="role-pill">课内{{ row.membership_role === 'teacher' ? '教师' : '学生' }}</span>
@@ -20,10 +27,12 @@
         </div>
       </li>
     </ul>
+    <footer v-if="session.user?.role === 'student'" class="catalog-footer"><strong>从问题到原文。</strong><p>回答提供线索，课件给出依据。点击回答中的引用，即可核对资料原页。</p><span>课程知识库 · 学生研习空间</span></footer>
   </div>
 </template>
 
 <script setup>
+import StudyArrow from "../components/StudyArrow.vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";

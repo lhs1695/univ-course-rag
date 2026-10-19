@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T18:30:00+08:00",
+  "title": "Design System: 课程知识库",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "primary", "displayName": "Deep Study Ink", "canonical": "#233c50", "tonalRamp": ["#101b24", "#192a38", "#233c50", "#36566b", "#537487", "#7895a4", "#a5bac3", "#d2dde0"] },
+      "header-ink": { "role": "secondary", "displayName": "Header Blue", "canonical": "#233e51", "tonalRamp": ["#101c25", "#192c3a", "#233e51", "#36596e", "#53788c", "#7899a8", "#a5bec7", "#d2e0e3"] },
+      "rubric": { "role": "tertiary", "displayName": "Vermilion Rubric", "canonical": "#aa432f", "tonalRamp": ["#32140e", "#541e14", "#762a1d", "#aa432f", "#c65c46", "#d9806c", "#e9aa9c", "#f5d7d0"] },
+      "paper": { "role": "neutral", "displayName": "Warm Paper", "canonical": "#f6f3ec", "tonalRamp": ["#292723", "#514e47", "#79756c", "#a29e94", "#c3c0b7", "#d8d5cd", "#eae7df", "#f6f3ec"] },
+      "warm-field": { "role": "neutral", "displayName": "Reading Field", "canonical": "#fffcf6", "tonalRamp": ["#292722", "#514f47", "#79776f", "#a3a198", "#c4c2b9", "#dad8d0", "#eceae3", "#fffcf6"] },
+      "muted": { "role": "neutral", "displayName": "Quiet Graphite", "canonical": "#5e6970", "tonalRamp": ["#171a1c", "#30363a", "#485158", "#5e6970", "#7b858a", "#9da5a8", "#c3c9ca", "#e5e8e8"] },
+      "rule": { "role": "neutral", "displayName": "Paper Rule", "canonical": "#d6d6ce", "tonalRamp": ["#242522", "#484943", "#6c6d65", "#909188", "#b2b3aa", "#c5c6be", "#d6d6ce", "#eeeeea"] },
+      "evidence-wash": { "role": "neutral", "displayName": "Evidence Sage Wash", "canonical": "#e9ede8", "tonalRamp": ["#252824", "#4a5048", "#70776d", "#969e93", "#b7beb4", "#cbd1c8", "#dce1d9", "#e9ede8"] },
+      "header-text": { "role": "neutral", "displayName": "Ivory Header Text", "canonical": "#eae9df", "tonalRamp": ["#272723", "#4f4e48", "#77766d", "#9f9e95", "#c1c0b8", "#d6d5ce", "#eae9df", "#f8f7f1"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Study Display", "purpose": "Editorial login statement and prominent Chinese headlines." },
+      "headline": { "displayName": "Page Headline", "purpose": "Student page titles." },
+      "title": { "displayName": "Course Title", "purpose": "Course catalog names." },
+      "body": { "displayName": "Task Sans", "purpose": "Reading copy, instructions, and controls." },
+      "label": { "displayName": "Quiet Label", "purpose": "Navigation and compact metadata." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "row-hover", "value": "background 0.2s ease", "purpose": "Softly marks a hovered course catalog row." },
+      { "name": "source-focus", "value": "1s ease-out", "purpose": "Briefly highlights the destination source when focused from a citation." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "900px" },
+      { "name": "mobile", "value": "680px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The blue action used to submit a question or enter the course space.",
+      "html": "<button class=\"ds-button-primary\">查找课内依据 →</button>",
+      "css": ".ds-button-primary { background: #23475e; color: #fff; min-height: 44px; padding: 0 25px; border: 0; border-radius: 2px; font: 500 14px system-ui, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; cursor: pointer; transition: background 0.2s ease; } .ds-button-primary:hover { background: #17384e; } .ds-button-primary:focus-visible { outline: 2px solid #aa432f; outline-offset: 4px; } .ds-button-primary:active { background: #17384e; }"
+    },
+    {
+      "name": "Question Field",
+      "kind": "input",
+      "refersTo": "input-question",
+      "description": "Open writing area for one focused course question.",
+      "html": "<textarea class=\"ds-question-field\" rows=\"3\" placeholder=\"例如：这两个概念有什么区别？请结合课内资料说明。\"></textarea>",
+      "css": ".ds-question-field { display: block; width: 100%; min-height: 118px; padding: 6px 0 26px; border: 0; border-bottom: 1px solid transparent; border-radius: 0; background: transparent; color: #233c50; font: 400 20px/1.8 system-ui, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; resize: vertical; } .ds-question-field::placeholder { color: #5e6970; } .ds-question-field:hover { border-bottom-color: #d6d6ce; } .ds-question-field:focus { border-bottom-color: #aa432f; outline: none; } .ds-question-field:focus-visible { outline: 2px solid #aa432f; outline-offset: 4px; }"
+    },
+    {
+      "name": "Student Course Navigation",
+      "kind": "nav",
+      "refersTo": "nav-course-active",
+      "description": "Minimal course tabs with a vermilion rule for the current destination.",
+      "html": "<nav class=\"ds-course-nav\"><a href=\"#\">问答研习</a><a class=\"ds-active\" href=\"#\" aria-current=\"page\">课程资料</a></nav>",
+      "css": ".ds-course-nav { display: flex; align-items: stretch; gap: 30px; min-height: 49px; border-bottom: 1px solid #d6d6ce; font: 400 14px/1.6 system-ui, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; } .ds-course-nav a { display: flex; align-items: center; padding: 0 5px; border-bottom: 2px solid transparent; color: #233c50; text-decoration: none; } .ds-course-nav a:hover { color: #aa432f; } .ds-course-nav a:focus-visible { outline: 2px solid #aa432f; outline-offset: 3px; } .ds-course-nav a.ds-active { border-bottom-color: #aa432f; color: #aa432f; font-weight: 600; }"
+    },
+    {
+      "name": "Course Row",
+      "kind": "custom",
+      "refersTo": "course-catalog-row",
+      "description": "A ruled course entry with ordinal, serif name, and study links.",
+      "html": "<article class=\"ds-course-row\"><span class=\"ds-order\">01</span><div><h2>课程名称</h2><small>课程研习 / 有依据，可核对</small></div><a href=\"#\">开始研习 ↗</a></article>",
+      "css": ".ds-course-row { display: flex; align-items: center; gap: 32px; padding: 29px 18px 29px 4px; border-bottom: 1px solid #d6d6ce; color: #233c50; transition: background 0.2s ease; } .ds-course-row:hover { background: #eceee8; } .ds-course-row .ds-order { width: 44px; flex: 0 0 auto; color: #737f83; font: italic 26px Georgia, serif; } .ds-course-row h2 { margin: 0 0 6px; font: 500 27px/1.35 'Noto Serif SC', 'Songti SC', SimSun, serif; } .ds-course-row small { color: #5e6970; font: 400 12px/1.6 system-ui, sans-serif; } .ds-course-row a { margin-left: auto; color: #233c50; font: 400 13px/1.6 system-ui, sans-serif; text-decoration: none; } .ds-course-row a:hover { color: #aa432f; text-decoration: underline; } .ds-course-row a:focus-visible { outline: 2px solid #aa432f; outline-offset: 4px; }"
+    },
+    {
+      "name": "Evidence Margin",
+      "kind": "card",
+      "refersTo": "evidence-panel",
+      "description": "A quiet tonal margin that keeps citation details and original-page links together.",
+      "html": "<aside class=\"ds-evidence\"><h3>回到原文</h3><p class=\"ds-page\">第 12 页</p><blockquote>引用摘录在此，便于逐条核对。</blockquote><a href=\"#\">查看原页 ↗</a></aside>",
+      "css": ".ds-evidence { padding: 22px; border-radius: 2px; background: #e9ede8; color: #233c50; font: 400 13px/1.85 system-ui, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; } .ds-evidence h3 { margin: 0; font-size: 16px; font-weight: 500; } .ds-evidence .ds-page { color: #aa432f; font-size: 14px; font-weight: 600; } .ds-evidence blockquote { margin: 12px 0 18px; color: #43555e; } .ds-evidence a { color: #233c50; text-underline-offset: 3px; } .ds-evidence a:hover { color: #aa432f; } .ds-evidence a:focus-visible { outline: 2px solid #aa432f; outline-offset: 4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Course Study Folio",
+    "overview": "The student experience reads like a considered study folio: warm paper, deep blue ink, restrained vermilion marks, and generous room to read. Chinese serif headings give course titles and reflective prompts a literary voice; sans-serif task copy keeps navigation, forms, and evidence easy to scan.\n\nThe interface gives learning a clear sequence. Students browse courses as ruled entries, place a question in a broad writing area, read the answer in the main column, then check its source in a quiet side margin. The login uses the same identity as an editorial two-panel spread. This visual language belongs to the student world; staff surfaces retain their separate styling.",
+    "keyCharacteristics": [
+      "Warm paper and blue ink, with vermilion reserved for active or evidence cues.",
+      "Serif Chinese display paired with practical sans-serif controls and body copy.",
+      "Ruled rows and open reading surfaces instead of a dense tile grid.",
+      "Sources remain visible beside answers and link to the original PDF page."
+    ],
+    "rules": [
+      { "name": "The Citation Margin Rule", "body": "Use the accent to direct attention to active states and source details; keep long answer text and large surfaces in ink and paper tones.", "section": "colors" },
+      { "name": "The Two Voice Rule", "body": "Keep serif styling for identity and reading headlines; use the sans stack for task instructions, controls, and compact metadata.", "section": "typography" },
+      { "name": "The Flat Reading Rule", "body": "Use borders and tonal fields to organize reading; reserve motion and emphasis for direct interaction such as focus, hover, and selected navigation.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the student palette scoped to the student world so staff styling remains independent.",
+      "Do preserve the question → answer → source reading sequence and the direct source-page link.",
+      "Do use serif Chinese type for identity and prominent course headings, with sans-serif copy for controls and task instructions.",
+      "Do stack the answer and evidence margin below 680px."
+    ],
+    "donts": [
+      "Don't turn the student course catalog into a dense card grid.",
+      "Don't use shadows to make the student answer or evidence surfaces float.",
+      "Don't style citations as decoration; their numbering, page, excerpt, and link must remain easy to verify."
+    ]
+  }
+}

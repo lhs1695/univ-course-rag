@@ -1,7 +1,8 @@
 <template>
   <a class="skip-link" href="#main-content" @click.prevent="focusMain">跳到主要内容</a>
-  <el-container class="app-shell">
-    <el-header class="app-header" v-if="session.user">
+  <el-container class="app-shell" :class="{ 'student-world': studentWorld, 'entry-world': route.path === '/login' }">
+    <header v-if="session.user?.role === 'student'" class="study-header"><router-link to="/courses" class="study-brand"><span class="study-seal">课</span>课程知识库</router-link><router-link to="/courses" class="study-home">我的课程</router-link><div class="study-account"><span>{{ session.user.username }}</span><el-button text @click="onLogout">退出登录</el-button></div></header>
+    <el-header class="app-header" v-if="session.user && !studentWorld">
       <router-link class="app-title" to="/courses"><span class="brand-mark" aria-hidden="true">课</span><span>课程知识库<small>有依据，可核对</small></span></router-link>
       <div class="app-user">
         <span class="role-pill">{{ roleLabel }}</span>
@@ -9,7 +10,7 @@
         <el-button text @click="onLogout">退出</el-button>
       </div>
     </el-header>
-    <nav v-if="session.user" class="global-nav" aria-label="主导航">
+    <nav v-if="session.user && !studentWorld" class="global-nav" aria-label="主导航">
       <template v-if="isAdmin">
         <router-link to="/admin/users">账号管理</router-link>
         <router-link to="/admin/courses">课程与授权</router-link>
@@ -19,7 +20,8 @@
       <router-link to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': !route.path.startsWith('/admin') }">我的课程</router-link>
     </nav>
     <el-main id="main-content" tabindex="-1">
-      <nav v-if="pageAllowed && currentCourse" class="course-nav" aria-label="当前课程导航">
+      <div v-if="pageAllowed && currentCourse && studentWorld" class="study-course-bar"><router-link to="/courses" class="back-courses">返回课程目录</router-link><strong>{{ currentCourse.title }}</strong><nav aria-label="当前课程"><router-link :to="`/courses/${currentCourse.id}`" exact-active-class="active">问答研习</router-link><router-link :to="`/courses/${currentCourse.id}/documents`" exact-active-class="active">课程资料</router-link></nav></div>
+      <nav v-if="pageAllowed && currentCourse && !studentWorld" class="course-nav" aria-label="当前课程导航">
         <div class="course-context"><span>当前课程</span><strong>{{ currentCourse.title }}</strong><span class="role-pill">课内{{ currentCourse.membership_role === 'teacher' ? '教师' : '学生' }}</span></div>
         <div class="course-tabs">
           <router-link :to="`/courses/${currentCourse.id}`" exact-active-class="tab-selected">课程问答</router-link>
@@ -51,6 +53,7 @@ import { clearCourseAccess, courseAccess, refreshCourseAccess } from "./courseAc
 
 const router = useRouter();
 const route = useRoute();
+const studentWorld = computed(() => !session.user || session.user.role === "student");
 const isAdmin = computed(() => session.user?.role === "admin");
 const roleLabel = computed(() => ({ admin: "管理员", teacher: "教师", student: "学生" }[session.user?.role] || ""));
 const currentCourse = computed(() => courseAccess.course?.id === route.params.courseId ? courseAccess.course : null);

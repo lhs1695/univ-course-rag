@@ -1,6 +1,6 @@
 <template>
-  <div class="page">
-    <header class="page-heading"><p class="eyebrow">课程资源</p><h1>课程资料</h1><p class="page-description">{{ canManage ? '上传、检查入库状态，维护本课问答的资料依据。' : '只读查看本课资料；PDF 可输入页码后打开到对应页，回答引用也可回到原资料核对。' }}</p></header>
+  <div class="page documents-page">
+    <header class="page-heading"><p v-if="canManage" class="eyebrow">课程资源</p><h1>课程资料</h1><p class="page-description">{{ canManage ? '上传、检查入库状态，维护本课问答的资料依据。' : '这里是回答的出处。阅读课程资料，或输入页码直接打开原页。' }}</p></header>
 
     <div class="doc-actions">
       <el-upload
@@ -26,40 +26,20 @@
 
     <p v-if="canManage" class="scope-note">入库质量只说明文本是否被抽取和切片，不代表问答一定正确。文本较少的资料仍会保留，请结合引用核对原文。</p>
 
-    <el-table v-if="!canManage" :data="documents" v-loading="loading" empty-text="本课还没有可查看的资料">
-      <el-table-column prop="filename" label="文件名" min-width="220" class-name="filename-cell" />
-      <el-table-column label="页数" width="100">
-        <template #default="{ row }">{{ documentPageLabel(row) }}</template>
-      </el-table-column>
-      <el-table-column label="状态" width="130">
-        <template #default="{ row }">
-          <el-tag :type="documentCoverage(row).type">{{ documentCoverage(row).label }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" min-width="280">
-        <template #default="{ row }">
-          <div v-if="row.job_status === 'succeeded'" class="student-open">
-            <label v-if="isPdfDocument(row)" :for="`document-page-${row.id}`">页码</label>
-            <el-input
-              v-if="isPdfDocument(row)"
-              :id="`document-page-${row.id}`"
-              v-model="pageSelections[row.id]"
-              inputmode="numeric"
-              @blur="correctPage(row)"
-              @keydown.enter="correctPage(row)"
-              size="small"
-              class="page-input"
-              :aria-label="`打开页码：${row.filename}`"
-            />
-            <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">
-              {{ isPdfDocument(row) ? '打开 PDF' : '打开资料' }}
-            </el-link>
-            <small v-if="isPdfDocument(row)" class="subtle">新窗口打开，可调整页码</small>
-          </div>
-          <span v-else class="subtle">暂不可打开</span>
-        </template>
-      </el-table-column>
-    </el-table>
+    <section v-if="!canManage" class="document-library" aria-label="课程资料目录" :aria-busy="loading">
+      <div class="library-tools"><span>{{ documents.length }} 份课程资料</span><el-input v-model="search" clearable placeholder="查找资料名称" aria-label="查找资料名称" /></div>
+      <p v-if="loading" role="status">正在读取课程资料…</p>
+      <p v-else-if="!filteredDocuments.length" class="library-empty">{{ documents.length ? '没有匹配的资料，请换个名称试试。' : '本课还没有可查看的资料，请联系本课教师。' }}</p>
+      <article v-for="row in filteredDocuments" :key="row.id" class="document-entry">
+        <span class="document-format">{{ isPdfDocument(row) ? 'PDF' : '文档' }}</span>
+        <div class="document-info"><h2>{{ row.filename }}</h2><p>{{ documentPageLabel(row) }} <span>·</span> {{ documentCoverage(row).label }}</p></div>
+        <div v-if="row.job_status === 'succeeded'" class="document-open">
+          <label v-if="isPdfDocument(row)" :for="`document-page-${row.id}`">第</label><el-input v-if="isPdfDocument(row)" :id="`document-page-${row.id}`" v-model="pageSelections[row.id]" inputmode="numeric" @blur="correctPage(row)" @keydown.enter="correctPage(row)" class="page-input" :aria-label="`打开页码：${row.filename}`" /><span v-if="isPdfDocument(row)">页</span>
+          <el-link :href="studentOpenUrl(row)" target="_blank" rel="noopener" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">打开{{ isPdfDocument(row) ? ' PDF' : '资料' }} <StudyArrow diagonal /></el-link>
+        </div><span v-else class="subtle">资料准备中</span>
+      </article>
+      <p class="library-note">资料在新窗口打开。问答中的引用也会直接带你回到对应页。</p>
+    </section>
 
     <el-table v-else :data="documents" v-loading="loading" empty-text="还没有资料">
       <el-table-column prop="filename" label="文件" min-width="220" class-name="filename-cell" />
@@ -99,6 +79,7 @@
 </template>
 
 <script setup>
+import StudyArrow from "../components/StudyArrow.vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -110,6 +91,8 @@ const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
 const courseTitle = ref("");
 const documents = ref([]);
+const search = ref("");
+const filteredDocuments = computed(() => documents.value.filter(row => row.filename.toLowerCase().includes(search.value.trim().toLowerCase())));
 const loading = ref(true);
 const uploading = ref(false);
 const failure = ref("");
