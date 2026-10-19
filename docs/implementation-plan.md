@@ -1,5 +1,10 @@
 # 当前施工计划
 
+## 2026-10-19 当前授权项：staff/admin 壳视觉对齐学生 A
+
+- 复用 Vue 3、Element Plus 与现有 `student.css` / `styles.css` 品牌 token；仅在 `.app-shell` 作用域调整 CSS，不新增依赖，不修改 `studentSurface`、学生四页、API、路由或权限。管理页继续使用列表、表格和表单。
+- 验收：`npm run build` 成功；Playwright 检查管理员四路由、教师书架/资料/提问与学生书架；`git diff --check`；证据与截图见 `corpus/local/demo-staff-study-align-2026-10-19/`。详见 [staff 视觉说明](../frontend/DESIGN-NOTES-STAFF-STUDY-ALIGN.md)。
+
 ## 2026-10-19 当前授权项：staff/admin F1–F20
 
 按本次用户任务卡完成角色选壳、教师资料原文入口、反馈降噪及后台操作提示。直接复用现有 Element Plus（^2.11.3）、Vue（^3.5.21）、documentDisplay、api.js 与原生 details；本地工作仅角色分支、文案、样式和确认流程，无新增依赖/后端接口。逐项验收与诚实降级见 [NOTES-F1-F20](../NOTES-F1-F20.md)。静态编译及 diff 检查通过；按用户要求构建/Playwright 留外层。

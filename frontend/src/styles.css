@@ -67,7 +67,8 @@ button, input, textarea { font: inherit; }
 .page { width: 100%; min-width: 0; margin: 12px auto 0; padding: 4px 0 0; background: transparent; border: 0; border-radius: 0; }
 .page h1, .page h2, .page h3, .page h4 { color: var(--text-strong); line-height: 1.35; overflow-wrap: break-word; }
 .page h1 { font-size: 30px; font-weight: 700; margin: 0 0 10px; letter-spacing: -.7px; line-height: 1.3; }
-.app-shell .page h1 { font-family: system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 28px; font-weight: 650; letter-spacing: 0; line-height: 1.4; }
+.app-shell .page h1 { font-family: "STSong", "SimSun", "Songti SC", serif; font-size: 30px; font-weight: 500; letter-spacing: -.035em; line-height: 1.4; }
+.app-shell .page-heading h2, .app-shell .el-page-header__content { font-family: "STSong", "SimSun", "Songti SC", serif; font-weight: 500; }
 .page > h2 { font-size: 20px; margin: 0 0 12px; }
 .page h3 { font-size: 16px; margin: 28px 0 12px; }
 .page-description { max-width: 760px; color: var(--text-muted); font-size: 13.5px; margin: 0; line-height: 1.7; }
@@ -79,9 +80,9 @@ button, input, textarea { font: inherit; }
 .course-context { display: flex; flex-wrap: wrap; gap: 5px 10px; align-items: baseline; font-size: 12px; color: var(--text-muted); }
 .course-context strong { font-size: 15px; font-weight: 600; color: var(--brand-ink); overflow-wrap: break-word; min-width: 0; }
 
-.course-tabs { display: flex; flex-wrap: wrap; gap: 6px 24px; margin-top: 7px; }
-.course-tabs a { padding: 7px 0 9px; font-size: 13px; color: var(--text-muted); border-bottom: 2px solid transparent; }
-.course-tabs a.tab-selected { color: var(--brand-violet); border-bottom-color: var(--brand-violet); font-weight: 600; }
+.course-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.course-tabs a { padding: 7px 17px; border-radius: 30px; font-size: 13px; color: var(--text-muted); border-bottom: 0; }
+.course-tabs a.tab-selected { color: #fff; background: var(--brand-violet); font-weight: 600; }
 .runtime-status { background: var(--surface-subtle); border: 1px solid var(--line); border-radius: 8px; color: var(--text-body); font-size: 12px; }
 .runtime-status summary { display: flex; align-items: center; gap: 9px; padding: 10px 14px; cursor: pointer; list-style: none; }
 .runtime-status summary::-webkit-details-marker { display: none; }
@@ -164,10 +165,16 @@ button, input, textarea { font: inherit; }
 /* Shared study components retain their palette when hosted in the staff shell. */
 .app-shell { --ink: var(--brand-ink); --violet: var(--brand-violet); --muted: var(--text-muted); --paper: var(--surface); --lilac: var(--brand-lilac); --pencil: var(--brand-pencil); }
 .app-shell .page h1, .app-shell .page h2, .app-shell .page h3, .app-shell .page h4 { overflow-wrap: break-word; }
+.app-shell .app-header { min-height: 88px; }
+.app-shell .app-title { gap: 13px; font-size: 20px; letter-spacing: .03em; }
 .app-shell .page-description { max-width: 100%; }
 .app-shell .el-table .cell { overflow-wrap: break-word; line-height: 1.55; }
 .app-shell .el-table td.el-table__cell { padding: 9px 0; }
-.app-shell .staff-bookmark { width: 21px; height: 28px; padding-top: 2px; font-size: 13px; background: var(--brand-lilac); color: var(--brand-violet); clip-path: none; border-radius: 3px; }
+.app-shell .staff-bookmark { width: 32px; height: 43px; padding-top: 5px; font-size: 19px; background: var(--brand-violet); color: #fff; clip-path: polygon(0 0,100% 0,100% 100%,50% 83%,0 100%); border-radius: 0; }
+.app-shell .panel-card, .app-shell .page > .el-form, .app-shell .el-card { background: #fff; border-color: var(--line); border-radius: 10px; box-shadow: 0 8px 22px rgba(52, 36, 71, .045); }
+.app-shell .panel-card:has(> .el-form), .app-shell .page > .el-form.panel-card { border-top: 1px solid var(--line); }
+.app-shell .el-table { border-radius: 10px; overflow: hidden; }
+.app-shell .el-table th.el-table__cell { background: #f8f7fb; }
 .app-shell .staff-shelf { margin-top: 24px; }
 .app-shell .shelf-heading { margin: 24px 0; align-items: center; }
 .app-shell .shelf-heading h1 { font-family: "STSong", "SimSun", serif; font-size: 28px; font-weight: 500; margin: 0; }
@@ -194,9 +201,13 @@ button, input, textarea { font: inherit; }
 .selected-course, .account-note { margin: -10px 0 12px; color: var(--text-muted); font-size: 13px; }
 .staff-footer { padding: 12px 28px 22px; color: var(--text-muted); font-size: 12px; text-align: center; }
 @media (max-width: 700px) {
+  .app-shell .app-header { min-height: 80px; }
+  .app-shell .staff-bookmark { width: 28px; height: 38px; padding-top: 4px; font-size: 17px; }
+  .app-shell .app-title { font-size: 16px; gap: 8px; }
   .app-shell .shelf-heading { display: block; }
   .app-shell .shelf-heading h1 { font-size: 25px; }
   .app-shell .course-context strong { flex-basis: 100%; }
-  .app-shell .course-tabs { gap: 0 16px; }
+  .app-shell .course-tabs { gap: 4px; }
+  .app-shell .course-tabs a { padding: 6px 13px; }
   .app-shell .window-filter .el-date-editor { max-width: 100%; }
 }

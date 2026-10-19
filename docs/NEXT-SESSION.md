@@ -1,5 +1,11 @@
 # 当前交接
 
+## 2026-10-19 staff/admin 壳视觉对齐学生 A（本 worktree）
+
+- Staff 壳恢复宋体标题与完整紫色书签，表单/卡片/表格统一纸白和淡紫描边，课程页签采用紫底白字胶囊；保留管理端表格工作台与原角色入口。学生 `.study-app` 与四页未改。
+- 验收通过：`frontend/npm run build`；Playwright 管理员 `/admin/users`、`/admin/courses`、`/admin/maintenance`、`/admin/system`，教师课程书架/课程资料表/提问页，学生 `/courses` 书架回归；`git diff --check`。截图、日志、PASS 清单见 `corpus/local/demo-staff-study-align-2026-10-19/`（忽略区）。
+- 实现说明：[staff 视觉对齐记录](../frontend/DESIGN-NOTES-STAFF-STUDY-ALIGN.md)。本地提交完成后，继续 PPT 视觉复核与固定 Demo 彩排；不 push。
+
 ## 2026-10-19 staff/admin F1–F20（本 worktree）
 
 已按会话角色统一 staff 壳，补教师原文入口及 F1–F20 可做项。F10 无改密/停用 API、F12 真实模型连通未验证、F14 浏览器原生 Network 日志均诚实降级，见 [逐项交付](../NOTES-F1-F20.md)。本次未读 .env、未改后端或学生四页核心交互、未 push；原有执行日志/提示词排除提交。按用户要求外层补 build 与 Playwright 三角色/390px 点击验收，静态检查不能替代浏览器验收。本地提交尝试被 Git 元数据目录 index.lock 写权限阻断，未暂存、HEAD 仍为 9246139；外层按逐项交付的文件范围补本地提交。
