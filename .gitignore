@@ -19,3 +19,9 @@ corpus/local/
 
 # UI trial skills kit (keep skill sources; skip heavy binaries)
 .agents/skills/impeccable/scripts/bin/
+
+.codex-prompt.txt
+
+
+.taste-skill/
+

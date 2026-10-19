@@ -1,7 +1,8 @@
 <template>
   <a class="skip-link" href="#main-content" @click.prevent="focusMain">跳到主要内容</a>
-  <el-container class="app-shell">
-    <el-header class="app-header" v-if="session.user">
+  <el-container class="app-shell" :class="{ 'student-shell': studentExperience, 'entry-shell': route.path === '/login' }">
+    <StudentNavigation v-if="studentExperience && session.user" :course="currentCourse" @logout="onLogout" />
+    <el-header class="app-header" v-if="session.user && !studentExperience">
       <router-link class="app-title" to="/courses"><span class="brand-mark" aria-hidden="true">课</span><span>课程知识库<small>有依据，可核对</small></span></router-link>
       <div class="app-user">
         <span class="role-pill">{{ roleLabel }}</span>
@@ -9,7 +10,7 @@
         <el-button text @click="onLogout">退出</el-button>
       </div>
     </el-header>
-    <nav v-if="session.user" class="global-nav" aria-label="主导航">
+    <nav v-if="session.user && !studentExperience" class="global-nav" aria-label="主导航">
       <template v-if="isAdmin">
         <router-link to="/admin/users">账号管理</router-link>
         <router-link to="/admin/courses">课程与授权</router-link>
@@ -19,7 +20,7 @@
       <router-link to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': !route.path.startsWith('/admin') }">我的课程</router-link>
     </nav>
     <el-main id="main-content" tabindex="-1">
-      <nav v-if="pageAllowed && currentCourse" class="course-nav" aria-label="当前课程导航">
+      <nav v-if="pageAllowed && currentCourse && !studentExperience" class="course-nav" aria-label="当前课程导航">
         <div class="course-context"><span>当前课程</span><strong>{{ currentCourse.title }}</strong><span class="role-pill">课内{{ currentCourse.membership_role === 'teacher' ? '教师' : '学生' }}</span></div>
         <div class="course-tabs">
           <router-link :to="`/courses/${currentCourse.id}`" exact-active-class="tab-selected">课程问答</router-link>
@@ -48,9 +49,11 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { logout, refreshMe, session } from "./session";
 import { clearCourseAccess, courseAccess, refreshCourseAccess } from "./courseAccess";
+import StudentNavigation from "./components/StudentNavigation.vue";
 
 const router = useRouter();
 const route = useRoute();
+const studentExperience = computed(() => route.path === '/login' || session.user?.role === 'student');
 const isAdmin = computed(() => session.user?.role === "admin");
 const roleLabel = computed(() => ({ admin: "管理员", teacher: "教师", student: "学生" }[session.user?.role] || ""));
 const currentCourse = computed(() => courseAccess.course?.id === route.params.courseId ? courseAccess.course : null);

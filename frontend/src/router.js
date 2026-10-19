@@ -11,6 +11,14 @@ import AdminUsersView from "./views/AdminUsersView.vue";
 import AdminCoursesView from "./views/AdminCoursesView.vue";
 import AdminMaintenanceView from "./views/AdminMaintenanceView.vue";
 import AdminSystemStatusView from "./views/AdminSystemStatusView.vue";
+import { defineComponent, h } from "vue";
+import StudentCourses from "./views/student/StudentCourses.vue";
+import StudentAsk from "./views/student/StudentAsk.vue";
+import StudentDocuments from "./views/student/StudentDocuments.vue";
+
+const studentView = (student, legacy) => defineComponent({
+  setup: () => () => h(session.user?.role === 'student' ? student : legacy),
+});
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -21,11 +29,11 @@ export const router = createRouter({
     { path: "/admin/courses", component: AdminCoursesView, meta: { admin: true } },
     { path: "/admin/maintenance", component: AdminMaintenanceView, meta: { admin: true } },
     { path: "/admin/system", component: AdminSystemStatusView, meta: { admin: true } },
-    { path: "/courses", component: CoursesView },
-    { path: "/courses/:courseId/documents", component: DocumentsView },
+    { path: "/courses", component: studentView(StudentCourses, CoursesView) },
+    { path: "/courses/:courseId/documents", component: studentView(StudentDocuments, DocumentsView) },
     { path: "/courses/:courseId/members", component: MembersView, meta: { capability: "can_manage_members" } },
     { path: "/courses/:courseId/insights", component: InsightsView, meta: { capability: "can_view_insights" } },
-    { path: "/courses/:courseId", component: AskView },
+    { path: "/courses/:courseId", component: studentView(StudentAsk, AskView) },
   ],
 });
 
