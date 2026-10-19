@@ -99,6 +99,8 @@ class SearchResponse(BaseModel):
 
 class AskRequest(BaseModel):
     query: str = Field(min_length=1, max_length=2000)
+    previous_question: str | None = Field(default=None, max_length=2000)
+    previous_answer: str | None = Field(default=None, max_length=6000)
 
 
 class CitationOut(BaseModel):

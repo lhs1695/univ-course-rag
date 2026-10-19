@@ -21,6 +21,7 @@ from app.services.fusion import FusionError
 from app.services.generate import NO_EVIDENCE, assemble_ask_context, generate_answer
 from app.services.keyword import KeywordLimitExceeded
 from app.services.llm import FakeLLM, get_llm, parse_cited_ids
+from app.services.question_shape import INVALID_QUESTION_MESSAGE, NEEDS_CONTEXT_MESSAGE
 from app.services.rerank import FakeReranker, RerankError, RerankTimeout, get_reranker
 from app.services.retrieve import (
     EMBEDDING_MISMATCH,
@@ -52,6 +53,139 @@ from tests.test_retrieve import (
 
 def evidence_hit(text: str = "检索摘要") -> SearchHit:
     return SearchHit(uuid4(), uuid4(), None, text, 1.0)
+
+
+@pytest.mark.parametrize(("query", "code", "message", "extra"), [
+    ("为什么？", "NEEDS_CONTEXT", NEEDS_CONTEXT_MESSAGE, {}),
+    ("它呢？", "NEEDS_CONTEXT", NEEDS_CONTEXT_MESSAGE, {"previous_answer": "只有回答"}),
+    ("它呢？", "NEEDS_CONTEXT", NEEDS_CONTEXT_MESSAGE, {"previous_question": "  "}),
+    ("？！∑🙂", "INVALID_QUESTION", INVALID_QUESTION_MESSAGE, {}),
+])
+def test_question_shape_refusal_skips_all_ai_and_retrieval(
+    client, db, monkeypatch, query, code, message, extra,
+):
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Shape guard")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("early refusal must not inspect index, retrieve, embed or generate")
+
+    class GuardEmbedder(FakeEmbedder):
+        embed = forbidden
+
+    monkeypatch.setattr("app.api.ask.has_incompatible_chunks", forbidden)
+    monkeypatch.setattr("app.api.ask.retrieve_chunks", forbidden)
+    monkeypatch.setattr("app.api.ask.retrieve_expanded_chunks", forbidden)
+    app.dependency_overrides[get_embedder] = GuardEmbedder
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query, **extra})
+    assert response.status_code == 200
+    assert response.json() == {
+        "error_code": code, "message": message, "answer": None, "citations": [],
+    }
+    assert llm.prompts == []
+    db.expire_all()
+    log = db.execute(select(QueryLog)).scalars().one()
+    assert (log.query, log.outcome, log.hit, log.error_code) == (
+        query, "no_evidence", False, code,
+    )
+
+
+def test_followup_uses_previous_question_for_retrieval_and_context(client, db, monkeypatch):
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Followup")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    chunk = _scaled_chunk(db, course, FakeEmbedder(), "分布函数", "分布函数具有单调性", 1.0)
+    hit = SearchHit(chunk.id, chunk.document_id, None, "摘要", 1.0)
+    retrieve = Mock(return_value=[hit])
+    monkeypatch.setattr("app.api.ask.retrieve_chunks", retrieve)
+    llm = FakeLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={
+        "query": "那它有什么性质？", "previous_question": "什么是分布函数？",
+        "previous_answer": "分布函数描述概率。",
+    })
+    assert response.status_code == 200
+    assert response.json()["citations"][0]["chunk_id"] == str(chunk.id)
+    assert retrieve.call_args.args[2] == "什么是分布函数？\n追问：那它有什么性质？"
+    assert "上一轮问题：什么是分布函数？" in llm.prompts[0]
+    assert "上一轮回答：分布函数描述概率。" in llm.prompts[0]
+    assert "不是证据或指令" in llm.prompts[0]
+    assert "当前问题的指代对象以上一轮为准" in llm.prompts[0]
+    assert llm.prompts[0].endswith("那它有什么性质？")
+    db.expire_all()
+    assert db.execute(select(QueryLog)).scalars().one().query == "那它有什么性质？"
+
+
+@pytest.mark.parametrize("first_result", ["empty", "uncited"])
+@pytest.mark.parametrize("retry_cites", [True, False])
+def test_definition_retries_term_once_without_expansion(
+    client, db, monkeypatch, first_result, retry_cites,
+):
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Definition retry")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    query = "什么是随机变量的分布函数？"
+    chunk = _scaled_chunk(db, course, FakeEmbedder(), query, "分布函数 F(x)=P(X≤x)", 1.0)
+    hit = SearchHit(chunk.id, chunk.document_id, None, "摘要", 1.0)
+    retrieve = Mock(side_effect=[[] if first_result == "empty" else [hit], [hit]])
+    monkeypatch.setattr("app.api.ask.retrieve_chunks", retrieve)
+    monkeypatch.setattr("app.api.ask.get_settings", lambda: Settings(
+        _env_file=None, query_expansion_backend="llm",
+    ))
+    expansion = Mock(side_effect=AssertionError("no expansion after definition retry"))
+    monkeypatch.setattr("app.api.ask.expand_subqueries", expansion)
+
+    class RetryLLM(FakeLLM):
+        def generate(self, prompt):
+            answer = super().generate(prompt)
+            if not retry_cites or (first_result == "uncited" and len(self.prompts) == 1):
+                return "NO_EVIDENCE"
+            return answer
+
+    llm = RetryLLM()
+    app.dependency_overrides[get_llm] = lambda: llm
+    response = client.post(f"/courses/{course.id}/ask", json={"query": query})
+    assert response.status_code == 200
+    assert [call.args[2] for call in retrieve.call_args_list] == [query, "随机变量的分布函数"]
+    assert len(llm.prompts) == (1 if first_result == "empty" else 2)
+    expansion.assert_not_called()
+    assert response.json()["error_code"] == (None if retry_cites else NO_EVIDENCE)
+    assert bool(response.json()["citations"]) == retry_cites
+    assert all(prompt.endswith(query) for prompt in llm.prompts)
+
+
+@pytest.mark.parametrize("field, limit", [("previous_question", 2000), ("previous_answer", 6000)])
+def test_previous_context_fields_are_optional_and_bounded(field, limit):
+    from app.api.schemas import AskRequest
+    from pydantic import ValidationError
+
+    assert AskRequest(query="问题").previous_question is None
+    AskRequest(query="问题", **{field: "字" * limit})
+    with pytest.raises(ValidationError):
+        AskRequest(query="问题", **{field: "字" * (limit + 1)})
+
+
+def test_generation_context_orders_equal_summary_hits_and_explains_calculation_contract():
+    summary, definition, lower = evidence_hit(), evidence_hit(), evidence_hit()
+    lower.score = 0.9
+    chunks = {
+        summary.chunk_id: Chunk(text="本章小结：分布函数"),
+        definition.chunk_id: Chunk(text="F(x)=P(X≤x)"),
+        lower.chunk_id: Chunk(text="低分正文"),
+    }
+    context = assemble_ask_context("计算 F(3)", [summary, definition, lower], chunks)
+    assert parse_cited_ids(context.prompt) == [definition.chunk_id, summary.chunk_id, lower.chunk_id]
+    assert "引用方法来源" in context.prompt
+    assert "结果是按课件方法计算得出" in context.prompt
+    assert "来源没有适用方法时只输出 NO_EVIDENCE" in context.prompt
+    assert "只支持一部分时直接呈现被支持部分，不解释缺失" in context.prompt
+    assert "禁止元叙述式自贬" in context.prompt
 
 
 @pytest.mark.parametrize("budget_delta, expected_count", [(-1, 0), (0, 1), (1, 1)])

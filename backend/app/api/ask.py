@@ -23,6 +23,15 @@ from app.services.generate import (
 from app.services.keyword import KeywordLimitExceeded
 from app.services.llm import LLM, get_llm
 from app.services.query_expansion import expand_subqueries, is_broad_procedural
+from app.services.question_shape import (
+    INVALID_QUESTION,
+    INVALID_QUESTION_MESSAGE,
+    NEEDS_CONTEXT,
+    NEEDS_CONTEXT_MESSAGE,
+    definition_term,
+    is_contextual_followup,
+    is_meaningless_question,
+)
 from app.services.rerank import Reranker, get_reranker
 from app.services.retrieve import (
     EMBEDDING_MISMATCH,
@@ -89,62 +98,92 @@ def ask_course(
     llm_called = False
     upstream_failure = None
     failure_status = None
+    followup = is_contextual_followup(body.query)
+    previous_question = (body.previous_question or "").strip() if followup else ""
+    retrieval_query = (
+        f"{previous_question}\n追问：{body.query.strip()}"
+        if previous_question else body.query
+    )
+    # Reuse the existing retrieval/generation adapters. These small rules need no new dependency.
+    term = definition_term(body.query) if not followup else ""
+    if is_meaningless_question(body.query):
+        error_code = INVALID_QUESTION
+    elif followup and not previous_question:
+        error_code = NEEDS_CONTEXT
     try:
-        settings = get_settings()
-        index_mismatch = has_incompatible_chunks(db, access.course.id, embedder)
-        hits = (
-            []
-            if index_mismatch
-            else retrieve_chunks(
-                db,
-                access.course.id,
-                body.query,
-                embedder,
-                strategy=settings.retrieval_strategy,
-                rrf_k=settings.rrf_k,
-                reranker=reranker,
-            )
-        )
-        def try_expansion():
-            try:
-                subs = expand_subqueries(body.query, llm)
-                return retrieve_expanded_chunks(
-                    db, access.course.id, body.query, embedder, subs,
-                ) if subs else []
-            except Exception:  # noqa: BLE001 - expansion must degrade; generation stays outside.
-                logger.warning("ask_query_expansion_fallback")
-                return []
+        if error_code is None:
+            settings = get_settings()
+            index_mismatch = has_incompatible_chunks(db, access.course.id, embedder)
 
-        expansion_used = False
-        expansion_enabled = settings.query_expansion_backend == "llm" and not index_mismatch
-        if expansion_enabled and hits and is_broad_procedural(body.query):
-            expanded = try_expansion()
-            if expanded:
-                hits = expanded
-                expansion_used = True
-        if index_mismatch:
-            error_code = EMBEDDING_MISMATCH
-        elif not hits:
-            error_code = NO_EVIDENCE
-        else:
-            llm_called = True
-            generated = generate_answer_result(db, body.query, hits, llm)
-            answer, cited_ids = generated.answer, generated.cited_ids
-            source_texts = generated.source_texts
-            if not cited_ids:
-                answer = None
+            def retrieve(query):
+                return retrieve_chunks(
+                    db, access.course.id, query, embedder,
+                    strategy=settings.retrieval_strategy,
+                    rrf_k=settings.rrf_k,
+                    reranker=reranker,
+                )
+
+            def generate(hits):
+                return generate_answer_result(
+                    db, body.query, hits, llm,
+                    previous_question=previous_question or None,
+                    previous_answer=body.previous_answer if previous_question else None,
+                )
+
+            def try_expansion():
+                try:
+                    subs = expand_subqueries(retrieval_query, llm)
+                    return retrieve_expanded_chunks(
+                        db, access.course.id, retrieval_query, embedder, subs,
+                    ) if subs else []
+                except Exception:  # noqa: BLE001 - expansion must degrade.
+                    logger.warning("ask_query_expansion_fallback")
+                    return []
+
+            hits = [] if index_mismatch else retrieve(retrieval_query)
+            expansion_used = False
+            # Definition retry replaces expansion for this question, bounding model calls.
+            expansion_enabled = (
+                settings.query_expansion_backend == "llm" and not index_mismatch and not term
+            )
+            if expansion_enabled and hits and is_broad_procedural(retrieval_query):
+                expanded = try_expansion()
+                if expanded:
+                    hits = expanded
+                    expansion_used = True
+            if index_mismatch:
+                error_code = EMBEDDING_MISMATCH
+            elif not hits:
                 error_code = NO_EVIDENCE
-        if not cited_ids and expansion_enabled and not expansion_used:
-            expanded = try_expansion()
-            if expanded:
-                hits = expanded
+            else:
                 llm_called = True
-                generated = generate_answer_result(db, body.query, hits, llm)
+                generated = generate(hits)
                 answer, cited_ids = generated.answer, generated.cited_ids
                 source_texts = generated.source_texts
+                if not cited_ids:
+                    answer = None
+                    error_code = NO_EVIDENCE
+            if not cited_ids and not index_mismatch and term and term != body.query.strip():
+                hits = retrieve(term)
+                if hits:
+                    llm_called = True
+                    generated = generate(hits)
+                    answer, cited_ids = generated.answer, generated.cited_ids
+                    source_texts = generated.source_texts
                 error_code = None if cited_ids else NO_EVIDENCE
                 if not cited_ids:
                     answer = None
+            if not cited_ids and expansion_enabled and not expansion_used:
+                expanded = try_expansion()
+                if expanded:
+                    hits = expanded
+                    llm_called = True
+                    generated = generate(hits)
+                    answer, cited_ids = generated.answer, generated.cited_ids
+                    source_texts = generated.source_texts
+                    error_code = None if cited_ids else NO_EVIDENCE
+                    if not cited_ids:
+                        answer = None
     except KeywordLimitExceeded as exc:
         logger.warning("ask_keyword_limit resource=%s", exc.resource)
         error_code = KEYWORD_LIMIT
@@ -163,7 +202,7 @@ def ask_course(
     duration_ms = int((time.perf_counter() - started) * 1000)
     citations = _citations(access.course.id, hits, cited_ids, source_texts)
     outcome = (
-        QueryOutcome.no_evidence if error_code == NO_EVIDENCE
+        QueryOutcome.no_evidence if error_code in {NO_EVIDENCE, NEEDS_CONTEXT, INVALID_QUESTION}
         else QueryOutcome.failure if error_code is not None
         else QueryOutcome.cited_answer
     )
@@ -196,6 +235,8 @@ def ask_course(
     elif failure_status is not None:
         response.status_code = failure_status
     failure_messages = {
+        NEEDS_CONTEXT: NEEDS_CONTEXT_MESSAGE,
+        INVALID_QUESTION: INVALID_QUESTION_MESSAGE,
         EMBEDDING_MISMATCH: EMBEDDING_MISMATCH_MESSAGE,
         NO_EVIDENCE: NO_EVIDENCE_MESSAGE,
         KEYWORD_LIMIT: KEYWORD_LIMIT_MESSAGE,
