@@ -986,7 +986,7 @@ def test_matrix_geometry_merges_bounded_views_and_ignores_optional_failure(
     assert response.json()["citations"][0]["chunk_id"] == str(support.id)
     assert parse_cited_ids(llm.prompts[0]) == [support.id, noise.id]
     expected = [query]
-    for text in ("列视角", "行视角"):
+    for text in ("列视角", "行视角", "四种理解"):
         expected.extend([text] * (2 if text == failed_branch else 1))
     assert [call.args[2] for call in mock.call_args_list] == expected
 

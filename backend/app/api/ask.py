@@ -144,9 +144,16 @@ def ask_course(
             def supplement(hits):
                 if settings.retrieval_strategy == "dense" and term:
                     hits = merge_definition_hits(db, access.course.id, term, embedder, hits)
+                    # Compound "…的几何意义" rarely appears literally; also merge the head noun.
+                    if term.endswith("的几何意义") and len(term) > 5:
+                        head = term[: -len("的几何意义")].strip()
+                        if head:
+                            hits = merge_definition_hits(
+                                db, access.course.id, head, embedder, hits,
+                            )
                 if "矩阵" in retrieval_query and "几何意义" in retrieval_query:
                     extra = []
-                    for keyword in ("列视角", "行视角"):
+                    for keyword in ("列视角", "行视角", "四种理解"):
                         try:
                             extra.extend(retrieve(keyword)[:2])
                         except Exception:  # noqa: BLE001 - optional recall must degrade.
