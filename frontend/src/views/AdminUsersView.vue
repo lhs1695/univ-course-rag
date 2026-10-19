@@ -26,7 +26,9 @@
     </section>
     <section class="panel-card">
     <h2>已有账号</h2>
-    <el-table :data="users" v-loading="loading" empty-text="还没有账号，可在上方创建教师或学生账号">
+    <p class="page-description" style="margin-top:0">演示种子账号：admin / teacher / student（密码见部署说明）。下方可按用户名筛选。</p>
+    <el-input v-model="userFilter" clearable placeholder="按用户名筛选" style="max-width: 280px; margin-bottom: 12px" aria-label="按用户名筛选账号" />
+    <el-table :data="filteredUsers" v-loading="loading" empty-text="还没有账号，可在上方创建教师或学生账号">
       <el-table-column prop="username" label="用户名" />
       <el-table-column label="全局身份" width="120"><template #default="{ row }">{{ { student: '学生', teacher: '教师', admin: '管理员' }[row.role] || row.role }}</template></el-table-column>
     </el-table>
@@ -35,7 +37,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 
@@ -44,6 +46,12 @@ const accountCapabilities = Object.freeze({ resetPassword: false, disable: false
 const roleNames = { student: "学生", teacher: "教师", admin: "管理员" };
 function clearForm() { Object.assign(form, { username: "", password: "", role: "student" }); }
 const users = ref([]);
+const userFilter = ref("");
+const filteredUsers = computed(() => {
+  const q = userFilter.value.trim().toLowerCase();
+  if (!q) return users.value;
+  return users.value.filter((row) => String(row.username || "").toLowerCase().includes(q));
+});
 const loading = ref(true);
 const creating = ref(false);
 const form = reactive({ username: "", password: "", role: "student" });

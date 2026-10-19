@@ -35,21 +35,6 @@
             <template #default="{ row }">{{ formatTime(row.last_asked_at) }}</template>
           </el-table-column>
         </el-table>
-        <details class="hint">
-          <summary>统计口径说明</summary>
-          <p class="hint">有候选但未形成可引用回答也属于依据不足；服务或索引失败不进入待核对表。同词规范化计数不等于同义分组，也不能据此认定教学缺口或学生未掌握。</p>
-          <p class="hint">
-            按提问时的课内学生角色统计，留存上限 {{ retentionDays || "当前配置" }} 天。每次提交（含显式重试）分别计数，不代表人数；以已保存事件为准，记录不覆盖所有失败请求。不展示提问者，也不判断掌握程度或回答正确性。旧记录保持未知，不按当前成员角色补写。
-          </p>
-          <div v-if="summary" class="hint summary-surface" aria-label="统计口径与样本量">
-            <p>统计时间：{{ formatTime(windowStart) }}（含）至 {{ formatTime(windowEnd) }}（不含），以服务端记录的提问时间为准。</p>
-            <p>学生提交 {{ summary.student_attempts }} 次：有引用回答 {{ summary.cited_answer }}、依据不足 {{ summary.no_evidence }}、失败 {{ summary.failure }}、结果未知 {{ summary.unknown_outcome }}。</p>
-            <p>依据不足占比：{{ summary.no_evidence_rate == null ? "暂无可计算样本" : `${(summary.no_evidence_rate * 100).toFixed(1)}%` }}；分母为有引用回答＋依据不足（{{ summary.knowledge_attempts }} 次），失败和未知不进入该分母，也不能称为教学缺口率。</p>
-            <p>窗口内共记录 {{ summary.recorded_attempts }} 次；另有非学生角色 {{ summary.non_student_attempts }} 次、角色未知 {{ summary.unknown_role_attempts }} 次，均不进入学生列表或趋势。</p>
-          </div>
-          <p>统计窗口与当前留存窗口取交集，不读取到期或未来记录；刷新统计不会发送问句。</p>
-          <p>趋势按本地日期（Asia/Shanghai）分桶；无事件的日期为 0，下表只列有提交的日期。候选组未验证，不代表已确认的同义问句。最低成对相似度是组内任意两条问句相似度的最小值，不是同义概率。</p>
-        </details>
       </section>
 
       <section class="panel-card insights-section" aria-live="polite"><h3 class="section-title">备课建议</h3><p>{{ teachingSuggestion }}</p></section>
@@ -68,6 +53,24 @@
           <el-table-column prop="unknown_outcome" label="结果未知" width="110" />
         </el-table>
       </section>
+
+            <details class="panel-card insights-section">
+        <summary>统计口径说明</summary>
+
+          <p class="hint">有候选但未形成可引用回答也属于依据不足；服务或索引失败不进入待核对表。同词规范化计数不等于同义分组，也不能据此认定教学缺口或学生未掌握。</p>
+          <p class="hint">
+            按提问时的课内学生角色统计，留存上限 {{ retentionDays || "当前配置" }} 天。每次提交（含显式重试）分别计数，不代表人数；以已保存事件为准，记录不覆盖所有失败请求。不展示提问者，也不判断掌握程度或回答正确性。旧记录保持未知，不按当前成员角色补写。
+          </p>
+          <div v-if="summary" class="hint summary-surface" aria-label="统计口径与样本量">
+            <p>统计时间：{{ formatTime(windowStart) }}（含）至 {{ formatTime(windowEnd) }}（不含），以服务端记录的提问时间为准。</p>
+            <p>学生提交 {{ summary.student_attempts }} 次：有引用回答 {{ summary.cited_answer }}、依据不足 {{ summary.no_evidence }}、失败 {{ summary.failure }}、结果未知 {{ summary.unknown_outcome }}。</p>
+            <p>依据不足占比：{{ summary.no_evidence_rate == null ? "暂无可计算样本" : `${(summary.no_evidence_rate * 100).toFixed(1)}%` }}；分母为有引用回答＋依据不足（{{ summary.knowledge_attempts }} 次），失败和未知不进入该分母，也不能称为教学缺口率。</p>
+            <p>窗口内共记录 {{ summary.recorded_attempts }} 次；另有非学生角色 {{ summary.non_student_attempts }} 次、角色未知 {{ summary.unknown_role_attempts }} 次，均不进入学生列表或趋势。</p>
+          </div>
+          <p>统计窗口与当前留存窗口取交集，不读取到期或未来记录；刷新统计不会发送问句。</p>
+          <p>趋势按本地日期（Asia/Shanghai）分桶；无事件的日期为 0，下表只列有提交的日期。候选组未验证，不代表已确认的同义问句。最低成对相似度是组内任意两条问句相似度的最小值，不是同义概率。</p>
+        
+      </details>
 
       <details class="panel-card insights-section">
         <summary>有引用回答的问句（按次数）</summary>

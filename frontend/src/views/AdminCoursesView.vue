@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程，下方成员区默认显示第一门课程，点击课程行切换。管理员也需加入课程后才能访问课内内容。</p></header>
+    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程；下方成员区默认显示第一门课程。可用「加入并进入」以课内教师身份打开资料页（未加入时会先加入）。</p></header>
     <section class="panel-card">
     <h2>新建课程</h2>
     <el-form :inline="true" @submit.prevent="onCreateCourse">
@@ -25,8 +25,9 @@
       @current-change="onSelectCourse"
     >
       <el-table-column prop="title" label="课程" min-width="120" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="320" fixed="right">
         <template #default="{ row }">
+          <el-button type="primary" link :disabled="courseBusy || enteringId === row.id" :loading="enteringId === row.id" @click.stop="onJoinAndEnter(row)">加入并进入</el-button>
           <el-button type="primary" link :disabled="courseBusy" @click.stop="onRenameCourse(row)">重命名</el-button>
           <el-button class="course-delete" text :disabled="courseBusy" @click.stop="onDeleteCourse(row)">删除…</el-button>
         </template>
@@ -75,10 +76,14 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
+import { session } from "../session";
 
+const router = useRouter();
 const courses = ref([]);
+const enteringId = ref("");
 const courseTable = ref(null);
 const courseBusy = ref(false);
 const users = ref([]);
@@ -209,6 +214,44 @@ async function onDeleteCourse(row) {
     if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     courseBusy.value = false;
+  }
+}
+
+
+async function onJoinAndEnter(row) {
+  if (!row?.id || enteringId.value) return;
+  const selfId = session.user?.id;
+  if (!selfId) {
+    ElMessage.error("当前会话无效，请重新登录");
+    return;
+  }
+  enteringId.value = row.id;
+  try {
+    let rows = members.value;
+    if (selected.value?.id !== row.id) {
+      rows = await api(`/admin/courses/${row.id}/members`);
+    }
+    const mine = rows.find((m) => m.user_id === selfId);
+    if (!mine) {
+      await api(`/admin/courses/${row.id}/members`, {
+        method: "POST",
+        json: { user_id: selfId, role: "teacher" },
+      });
+      ElMessage.success("已以课内教师加入，正在进入资料页");
+      if (selected.value?.id === row.id) await loadMembers(row.id);
+    } else {
+      ElMessage.success(mine.role === "teacher" ? "已是本课教师，正在进入" : "已是本课成员，正在进入");
+    }
+    await router.push(`/courses/${row.id}/documents`);
+  } catch (error) {
+    if (error.status === 409) {
+      ElMessage.success("已是本课成员，正在进入");
+      await router.push(`/courses/${row.id}/documents`);
+    } else if (error.status !== 401) {
+      ElMessage.error(error.message);
+    }
+  } finally {
+    enteringId.value = "";
   }
 }
 

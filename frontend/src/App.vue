@@ -21,7 +21,7 @@
 
   <el-container v-else class="app-shell">
     <el-header class="app-header" v-if="session.user">
-      <router-link class="app-title" to="/courses"><span class="staff-bookmark" aria-hidden="true">课</span><span>课程知识库<small>有依据，可核对</small></span></router-link>
+      <router-link class="app-title" :to="homePath"><span class="staff-bookmark" aria-hidden="true">课</span><span>课程知识库<small>有依据，可核对</small></span></router-link>
       <div class="app-user">
         <span class="role-pill">{{ roleLabel }}</span>
         <span class="username">{{ session.user.username }}</span>
@@ -35,7 +35,7 @@
         <router-link to="/admin/maintenance">日志维护 · 高级</router-link>
         <router-link to="/admin/system">系统状态</router-link>
       </template>
-      <router-link to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': !route.path.startsWith('/admin') }">我的课程</router-link>
+      <router-link v-else to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': route.path === '/courses' }">我的课程</router-link>
     </nav>
     <el-main id="main-content" tabindex="-1">
       <nav v-if="pageAllowed && currentCourse" class="course-nav" aria-label="当前课程导航">
@@ -55,7 +55,7 @@
       <router-view v-if="pageAllowed" :key="`${route.fullPath}:${courseAccess.revision}`" />
       <template v-else-if="!recoveryError">
         <el-alert title="访问权限已变化，请重新选择课程或登录。" type="warning" :closable="false" />
-        <el-button @click="router.push(session.user ? '/courses' : '/login')">返回</el-button>
+        <el-button @click="router.push(session.user ? (session.user.role === 'admin' ? '/admin/users' : '/courses') : '/login')">返回</el-button>
       </template>
     </el-main>
   </el-container>
@@ -72,6 +72,7 @@ const router = useRouter();
 const route = useRoute();
 const studentSurface = computed(() => route.path === "/login" || (session.user?.role === "student" && route.path.startsWith("/courses")));
 const isAdmin = computed(() => session.user?.role === "admin");
+const homePath = computed(() => (session.user?.role === "admin" ? "/admin/users" : "/courses"));
 const roleLabel = computed(() => ({ admin: "管理员", teacher: "教师", student: "学生" }[session.user?.role] || ""));
 const currentCourse = computed(() => courseAccess.course?.id === route.params.courseId ? courseAccess.course : null);
 const recovering = ref(false);

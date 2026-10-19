@@ -1,6 +1,6 @@
 <template>
   <div class="reading-desk" :aria-label="`课程问答：${courseTitle}`">
-    <header class="desk-heading"><h1>{{ history.rounds.length ? '沿着问题，继续阅读。' : '把没想明白的，写下来。' }}</h1><p>在{{ courseTitle || '本课' }}资料中找答案，每一条依据都可以翻回原页。</p></header>
+    <header class="desk-heading"><h1>{{ deskTitle }}</h1><p>{{ deskSubtitle }}</p></header>
     <section class="question-sheet" aria-labelledby="question-title">
       <div class="question-sheet-label"><h2 id="question-title">我想问</h2><span>{{ readyDocumentCount }} 份可检索资料</span></div>
       <el-form @submit.prevent="submitQuestion">
@@ -22,7 +22,7 @@
         <p v-else class="source-empty">本次没有可展示的引用，请调整问题或核对课程资料。</p>
       </section>
     </article>
-    <section v-else class="before-reading"><span class="open-book-icon" aria-hidden="true">⌑</span><div><h2>答案之后，还有原文。</h2><p>回答中的引用连接着课程资料。<br>点开页码，看看原文是怎样说的。</p></div></section>
+    <section v-else class="before-reading"><span class="open-book-icon" aria-hidden="true">⌑</span><div><h2>{{ emptyTitle }}</h2><p v-if="isLearnerAsk">回答中的引用连接着课程资料。<br>点开页码，看看原文是怎样说的。</p><p v-else>试问结果若依据不足，请回到资料页补充或检查入库状态。</p></div></section>
     <div class="desk-context"><p v-if="loadingContext" role="status">正在读取资料状态…</p><p v-else-if="contextFailure">{{ contextFailure }} <button class="text-button" @click="loadContext">重新加载</button></p><p v-else-if="!readyDocumentCount">本课还没有可检索资料。请先<router-link :to="`/courses/${courseId}/documents`">查看课程资料</router-link>，或联系教师。</p></div>
   </div>
 </template>
@@ -64,6 +64,17 @@ const result = computed(() => selectedRound.value?.result);
 const failure = computed(() => selectedRound.value?.failure);
 const submittedQuery = computed(() => selectedRound.value?.question);
 const notice = computed(() => answerNotice(result.value));
+const isLearnerAsk = computed(() => session.user?.role === "student");
+const deskTitle = computed(() => {
+  if (!isLearnerAsk.value) {
+    return history.value.rounds.length ? "继续试问，核对依据。" : "试问本课资料能否答";
+  }
+  return history.value.rounds.length ? "沿着问题，继续阅读。" : "把没想明白的，写下来。";
+});
+const deskSubtitle = computed(() => isLearnerAsk.value
+  ? `在${courseTitle.value || "本课"}资料中找答案，每一条依据都可以翻回原页。`
+  : `用教师视角试问「${courseTitle.value || "本课"}」：检查回答是否有引用、资料是否够用。`);
+const emptyTitle = computed(() => isLearnerAsk.value ? "答案之后，还有原文。" : "先试问，再回资料核对。");
 const now = ref(Date.now());
 const waitSeconds = computed(() => selectedRound.value?.pending
   ? Math.max(0, Math.floor((now.value - selectedRound.value.startedAt) / 1000)) : 0);
