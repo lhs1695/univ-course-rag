@@ -45,9 +45,6 @@
             <div>
               {{ documentQualityLabel(row) }}
             </div>
-            <el-text v-if="row.quality_warning === 'LOW_EXTRACTED_TEXT'" type="warning">
-              抽取文本较少，问答依据可能不完整
-            </el-text>
           </template>
           <span v-else>—</span>
         </template>
