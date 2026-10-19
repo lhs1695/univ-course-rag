@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-family: system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   color: #1e293b;
   font-synthesis: none;
   --workspace-bg: #f4f6f5;
@@ -8,7 +8,12 @@
   --line: #e6ebe8;
   --text-strong: #1f3b34;
   --text-body: #344b44;
-  --text-muted: #65736e;
+  --text-muted: #4f5f58;
+  --elev-1: 0 4px 16px rgba(31, 59, 52, .05);
+  --elev-2: 0 12px 30px rgba(31, 59, 52, .08);
+  --disabled-bg: #e6ebe8;
+  --disabled-text: #58655f;
+  --empty-text: #4f5f58;
   --radius-panel: 12px;
   --content-max: 1200px;
   --content-gutter: 28px;
@@ -26,7 +31,7 @@
   --el-color-danger: #b73f3d;
   --el-text-color-primary: #1f3b34;
   --el-text-color-regular: #455a53;
-  --el-text-color-secondary: #65736e;
+  --el-text-color-secondary: #4f5f58;
   --el-text-color-placeholder: #78857f;
   --el-border-color: #d7e0dc;
   --el-border-color-lighter: #e6ebe8;
@@ -37,8 +42,8 @@ html, body, #app { margin: 0; min-height: 100%; background: var(--workspace-bg);
 body { font-size: 15px; line-height: 1.7; color: var(--text-body); }
 a { color: #17675f; text-decoration: none; }
 button, input, textarea { font: inherit; }
-:focus-visible { outline: 3px solid #17675f; outline-offset: 4px; }
-.el-input__inner:focus-visible, .el-textarea__inner:focus-visible { outline: 3px solid #17675f; outline-offset: 3px; }
+:focus-visible { outline: 2px solid #17675f; outline-offset: 4px; }
+.el-input__inner:focus-visible, .el-textarea__inner:focus-visible { outline: 2px solid #17675f; outline-offset: 3px; }
 .skip-link { position: absolute; top: 0; left: 20px; z-index: 3000; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap; background: #fff; border-radius: 8px; }
 .skip-link:focus { position: fixed; top: 12px; clip-path: none; width: auto; height: auto; padding: 12px 20px; border: 2px solid #17675f; }
 .app-shell { min-height: 100vh; }
@@ -48,25 +53,25 @@ button, input, textarea { font: inherit; }
 .brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #17675f; color: #fff; font-size: 18px; }
 .app-user { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; font-size: 13px; color: var(--text-muted); }
 .username { max-width: 180px; overflow-wrap: anywhere; }
-.role-pill { border: 1px solid #e0e7e3; border-radius: 999px; padding: 2px 8px; font-size: 11px; line-height: 1.6; color: #60716a; background: transparent; font-weight: 400; white-space: nowrap; }
+.role-pill { border: 1px solid #e0e7e3; border-radius: 999px; padding: 2px 8px; font-size: 11px; line-height: 1.6; color: var(--text-muted); background: transparent; font-weight: 400; white-space: nowrap; }
 .global-nav { display: flex; flex-wrap: wrap; gap: 4px 24px; padding: 0 max(var(--content-gutter), calc((100vw - var(--content-max)) / 2)); background: #fff; border-bottom: 1px solid var(--line); }
-.global-nav a { display: block; padding: 9px 1px 8px; border-bottom: 2px solid transparent; color: #60716a; font-size: 13px; }
+.global-nav a { display: block; padding: 9px 1px 8px; border-bottom: 2px solid transparent; color: var(--text-muted); font-size: 13px; }
 .global-nav a.nav-selected, .global-nav a.router-link-exact-active { color: #145d55; border-bottom-color: #17675f; font-weight: 600; }
 .el-main { width: 100%; max-width: calc(var(--content-max) + (var(--content-gutter) * 2)); align-self: center; padding: 20px var(--content-gutter) 64px; overflow: visible; min-width: 0; }
 .page { width: 100%; min-width: 0; margin: 12px auto 0; padding: 4px 0 0; background: transparent; border: 0; border-radius: 0; }
 .page h1, .page h2, .page h3, .page h4 { color: var(--text-strong); line-height: 1.35; overflow-wrap: anywhere; }
-.page h1 { font-size: 30px; font-weight: 720; margin: 0 0 10px; letter-spacing: -.7px; line-height: 1.3; }
+.page h1 { font-size: 30px; font-weight: 700; margin: 0 0 10px; letter-spacing: -.7px; line-height: 1.3; }
 .page > h2 { font-size: 20px; margin: 0 0 12px; }
 .page h3 { font-size: 16px; margin: 28px 0 12px; }
 .page-description { max-width: 760px; color: var(--text-muted); font-size: 13.5px; margin: 0; line-height: 1.7; }
 .page-heading { margin-bottom: var(--section-gap); }
-.page-heading .eyebrow { color: #5f776f; font-size: 12px; letter-spacing: 1px; font-weight: 600; margin: 0 0 6px; }
+.page-heading .eyebrow { color: var(--text-muted); font-size: 12px; letter-spacing: 1px; font-weight: 600; margin: 0 0 6px; }
 .page-heading h1 { margin: 0 0 8px; }
 .page-heading p { margin-bottom: 0; }
 .course-nav { margin-top: 4px; padding: 10px 2px 0; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
 .course-context { display: flex; flex-wrap: wrap; gap: 5px 10px; align-items: baseline; font-size: 12px; color: var(--text-muted); }
 .course-context strong { font-size: 15px; font-weight: 600; color: #30483f; overflow-wrap: anywhere; min-width: 0; }
-.course-context .role-pill { border: 0; padding: 0; }
+
 .course-tabs { display: flex; flex-wrap: wrap; gap: 6px 24px; margin-top: 7px; }
 .course-tabs a { padding: 7px 0 9px; font-size: 13px; color: var(--text-muted); border-bottom: 2px solid transparent; }
 .course-tabs a.tab-selected { color: #17675f; border-bottom-color: #17675f; font-weight: 600; }
@@ -99,7 +104,7 @@ button, input, textarea { font: inherit; }
 .el-text { line-height: 1.7; }
 .el-empty { padding: 32px 16px; }
 .login-page { min-height: 74vh; display: grid; place-items: center; padding: 40px 0; }
-.login-card { width: min(100%, 430px); border: 1px solid #dfe7e3; border-radius: 18px; padding: 8px; background: #fff; box-shadow: 0 18px 50px rgba(31, 59, 52, .08); }
+.login-card { width: min(100%, 430px); border: 1px solid #dfe7e3; border-radius: 18px; padding: 8px; background: #fff; box-shadow: var(--elev-2); }
 .login-card .el-card__header { padding: 26px 26px 18px; color: var(--text-strong); border-bottom-color: #eef2f0; }
 .login-card .el-card__body { padding: 22px 26px 26px; }
 .login-card .el-form { margin-top: 0; }
@@ -108,24 +113,26 @@ button, input, textarea { font: inherit; }
 .login-card .el-button { width: 100%; }
 .citation-snippet { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
 @media (max-width: 700px) {
-  .app-header { padding: 10px 16px; gap: 12px; align-items: flex-start; }
+  .app-header { padding: 7px 16px; gap: 6px; align-items: flex-start; }
   .app-title { font-size: 16px; gap: 8px; }
-  .app-title small { font-size: 10px; letter-spacing: 1px; }
+  .app-title small { display: none; }
   .brand-mark { width: 32px; height: 34px; border-radius: 9px; font-size: 17px; }
   .app-user { gap: 6px; flex-wrap: wrap; max-width: 48%; font-size: 12px; }
   .username { max-width: 95px; }
   .global-nav { padding: 0 16px; gap: 0 22px; }
   .global-nav a { font-size: 13px; padding: 8px 0; }
-  .el-main { padding: 16px 16px 40px; }
+  .el-main { padding: 10px 16px 40px; }
+  .page-heading { margin-bottom: 16px; }
+  .page-heading .eyebrow { display: none; }
   .app-user { max-width: none; }
-  .page { padding: 2px 4px 0; margin-top: 16px; }
+  .page { padding: 2px 4px 0; margin-top: 10px; }
   .page h1 { font-size: 26px; }
   .page > h2 { font-size: 19px; }
   .page > .el-form { padding: 16px 12px 0; }
   .el-form--inline .el-form-item { display: flex; margin-right: 0; }
   .el-form--inline .el-form-item__content { min-width: 0; }
   .el-form--inline .el-input, .el-form--inline .el-select { max-width: 100%; }
-  .course-nav { padding: 9px 4px 0; }
+  .course-nav { padding: 4px 4px 0; }
   .course-tabs { gap: 0 20px; }
   .runtime-status summary { align-items: flex-start; font-size: 11px; }
   .el-page-header__content { font-size: 19px; }
@@ -133,3 +140,10 @@ button, input, textarea { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+.panel-card { min-width: 0; margin: 0 0 var(--section-gap); padding: var(--panel-padding); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); box-shadow: var(--elev-1); }
+.panel-card > h2 { font-size: 18px; }
+.panel-card > h2, .panel-card > h3 { margin-top: 0; margin-bottom: 18px; }
+.panel-card:has(> .el-form), .page > .el-form.panel-card { border-top: 3px solid var(--el-color-primary); box-shadow: var(--elev-1); }
+.el-button--primary.is-disabled, .el-button--primary.is-disabled:hover { background: var(--disabled-bg); border-color: var(--disabled-bg); color: var(--disabled-text); }
+@media (max-width: 700px) { .panel-card { padding: 16px; } }
