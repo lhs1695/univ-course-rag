@@ -1,74 +1,16 @@
 <template>
-  <div class="login-page">
-    <el-card class="login-card" shadow="never">
-      <template #header><div class="login-brand"><span class="brand-mark" aria-hidden="true">课</span><h1 class="login-title">课程知识库</h1></div><p class="login-subtitle">登录后，回到你的课程与资料。</p></template>
-      <el-form :model="form" :aria-describedby="loginError ? 'login-error' : undefined" @submit.prevent="onSubmit">
-        <el-form-item label="用户名">
-          <el-input v-model="form.username" @input="loginError = ''" autocomplete="username" />
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input
-            v-model="form.password"
-            @input="loginError = ''"
-            type="password"
-            show-password
-            autocomplete="current-password"
-          />
-        </el-form-item>
-        <p v-if="loginError" id="login-error" class="login-error" role="alert">{{ loginError }}</p>
-        <el-form-item>
-          <el-button type="primary" native-type="submit" :loading="loading">
-            登录
-          </el-button>
-        </el-form-item>
-      </el-form>
-      <p class="hint">使用管理员分配的账号登录。需要加入课程时，请联系本课教师或管理员。</p>
-    </el-card>
+  <div class="study-login study-app">
+    <section class="study-login-story"><div class="study-brand"><StudyIcon /><span>课程知识库<small>有依据，可核对</small></span></div><div class="study-login-message"><span class="study-kicker">属于你的课程学习空间</span><h1>好问题，<br>值得有出处的回答。</h1><p>从课内资料出发，把每一次疑问，<br>变成有据可循的理解。</p><div class="study-paper"><div class="study-paper-title"><StudyIcon name="book" /><span>一条完整的学习路径</span></div><ol><li><b>01</b><span>提出问题<small>聚焦正在学习的课程</small></span></li><li><b>02</b><span>阅读回答<small>理解内容，也看见依据</small></span></li><li><b>03</b><span>核对原文<small>沿着引用，回到资料的那一页</small></span></li></ol><span class="study-paper-page">每一步，都离理解更近一点。</span></div></div><p class="study-login-bottom">课程内的知识，有迹可循。</p></section>
+    <section class="study-login-form"><div class="study-login-form-inner"><p class="study-kicker">欢迎回来</p><h2>登录你的学习空间</h2><p class="study-muted">使用已分配的账号，继续课程学习。</p><form @submit.prevent="submit"><label for="study-username">用户名</label><input id="study-username" v-model="form.username" autocomplete="username" required placeholder="请输入用户名" :aria-invalid="Boolean(error)" @input="error = ''" /><div class="study-password-label"><label for="study-password">密码</label><button type="button" :aria-pressed="showPassword" @click="showPassword = !showPassword">{{ showPassword ? '隐藏密码' : '显示密码' }}</button></div><input id="study-password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required placeholder="请输入密码" :aria-describedby="error ? 'study-login-error' : undefined" :aria-invalid="Boolean(error)" @input="error = ''" /><p v-if="error" id="study-login-error" class="study-error" role="alert">{{ error }}</p><button class="study-button study-primary" type="submit" :disabled="loading">{{ loading ? '正在登录…' : '进入课程知识库' }}<StudyIcon name="arrow" /></button></form><div class="study-login-help"><strong>还没有账号或课程？</strong><p>请联系本课教师或管理员分配账号与课程。登录后仅显示你已加入的课程。</p></div></div><span class="study-login-privacy">课内资料 · 专注学习 · 核对原文</span></section>
   </div>
 </template>
-
 <script setup>
-import { reactive, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { login, session } from "../session";
-
-const router = useRouter();
-const route = useRoute();
-const loading = ref(false);
-const loginError = ref("");
-const form = reactive({ username: "", password: "" });
-
-async function onSubmit() {
-  if (loading.value) return;
-  loading.value = true;
-  loginError.value = "";
-  try {
-    await login(form.username.trim(), form.password);
-    const next = typeof route.query.next === "string" ? route.query.next : "";
-    if (next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/login")) {
-      await router.replace(next);
-    } else if (session.user?.role === "admin") {
-      await router.replace("/admin/users");
-    } else {
-      await router.replace("/courses");
-    }
-  } catch (error) {
-    loginError.value = error.status === 401 ? "用户名或密码不正确，请重新输入。" : error.message;
-  } finally {
-    loading.value = false;
-  }
-}
+import { reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { login, session } from '../session';
+import StudyIcon from '../components/StudyIcon.vue';
+import '../student.css';
+const route = useRoute(), router = useRouter();
+const form = reactive({ username: '', password: '' }), loading = ref(false), error = ref(''), showPassword = ref(false);
+async function submit() { if (loading.value) return; loading.value = true; error.value = ''; try { await login(form.username.trim(), form.password); const next = typeof route.query.next === 'string' ? route.query.next : ''; await router.replace(next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/login') ? next : session.user?.role === 'admin' ? '/admin/users' : '/courses'); } catch (e) { error.value = e.message; } finally { loading.value = false; } }
 </script>
-
-<style scoped>
-.login-brand { display: flex; align-items: center; gap: 12px; }
-.login-error { color: var(--el-color-danger); font-size: 13px; margin: 0 0 16px; }
-.hint {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.75;
-}
-.login-title { color: #1f3b34; font-size: 27px; line-height: 1.3; margin: 0; }
-.login-subtitle { font-size: 13px; font-weight: 400; color: var(--text-muted); margin: 7px 0 0; }
-</style>

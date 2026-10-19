@@ -1,4 +1,6 @@
 <template>
+  <StudentWorkspace v-if="session.user?.role === 'student' && !route.meta.public" />
+  <template v-else>
   <a class="skip-link" href="#main-content" @click.prevent="focusMain">跳到主要内容</a>
   <el-container class="app-shell">
     <el-header class="app-header" v-if="session.user">
@@ -40,6 +42,7 @@
       </template>
     </el-main>
   </el-container>
+  </template>
 </template>
 
 <script setup>
@@ -48,6 +51,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { logout, refreshMe, session } from "./session";
 import { clearCourseAccess, courseAccess, refreshCourseAccess } from "./courseAccess";
+import StudentWorkspace from "./components/StudentWorkspace.vue";
 
 const router = useRouter();
 const route = useRoute();
