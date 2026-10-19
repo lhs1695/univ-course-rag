@@ -6,7 +6,7 @@
       <el-button :loading="loading" @click="loadCourses">重新加载课程</el-button>
     </template>
     <div v-else-if="loading" aria-busy="true"><p role="status" class="page-description">正在加载你的课程…</p><el-skeleton :rows="4" animated /></div>
-    <el-empty v-else-if="loaded && courses.length === 0" description="还没有加入任何课程"><p class="page-description">请联系本课教师或管理员加入已有课程。</p></el-empty>
+    <el-empty v-else-if="loaded && courses.length === 0" description="还没有加入任何课程"><p v-if="session.user?.role === 'admin'" class="page-description">管理员默认不加入课程，请到「课程与授权」把自己加入某课后，这里才会出现。</p><p v-else class="page-description">请联系本课教师或管理员加入已有课程。</p><router-link v-if="session.user?.role === 'admin'" to="/admin/courses">前往课程与授权</router-link></el-empty>
     <ul v-else class="course-grid">
       <li v-for="row in courses" :key="row.id" class="course-card">
         <span class="role-pill">课内{{ row.membership_role === 'teacher' ? '教师' : '学生' }}</span>
@@ -26,6 +26,7 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
+import { session } from "../session";
 import { api } from "../api";
 
 const router = useRouter();

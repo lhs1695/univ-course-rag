@@ -41,3 +41,8 @@ export function documentContentUrl(courseId, document, page = 1) {
   if (!isPdfDocument(document)) return base;
   return `${base}#page=${clampDocumentPage(page, document)}`;
 }
+
+export function documentQualityLabel(document) {
+  const unit = isPdfDocument(document) ? "页内容" : isPptxDocument(document) ? "张幻灯片内容" : "个内容单元";
+  return `共 ${document.source_unit_count} ${unit} · 抽取约 ${document.extracted_char_count} 字 · 已切成 ${document.chunk_count} 段供检索`;
+}

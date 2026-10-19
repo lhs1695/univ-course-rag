@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import and_, case, func, select
@@ -11,6 +11,7 @@ from app.models.course import CourseMemberRole
 from app.models.query_log import QueryLog, QueryOutcome
 
 NORMALIZE_MAX_CHARS = 200
+SHANGHAI = timezone(timedelta(hours=8), name="Asia/Shanghai")
 
 
 def normalize_query(text: str) -> str:
@@ -23,30 +24,31 @@ def _utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
-def _utc_day(column, dialect: str):
+def _local_day(column, dialect: str):
     # One expression is reused in SELECT and GROUP BY so list totals and the
     # daily series come from the same statement.
     if dialect == "postgresql":
-        return func.date_trunc("day", func.timezone("UTC", column))
+        return func.date_trunc("day", func.timezone("Asia/Shanghai", column))
     if dialect == "sqlite":
-        return func.substr(column, 1, 10)
+        # Drop subsecond digits so SQLite cannot round across local midnight.
+        return func.date(func.substr(column, 1, 19), "+8 hours")
     raise RuntimeError(f"Unsupported insights day bucket dialect: {dialect}")
 
 
 def _bucket_start(value: datetime | str) -> datetime:
     if isinstance(value, str):
         year, month, day = (int(part) for part in value[:10].split("-"))
-        return datetime(year, month, day, tzinfo=UTC)
-    moment = _utc(value)
-    return datetime(moment.year, moment.month, moment.day, tzinfo=UTC)
+        return datetime(year, month, day, tzinfo=SHANGHAI)
+    # SQL returns a naive wall-clock midnight in Asia/Shanghai.
+    return datetime(value.year, value.month, value.day, tzinfo=SHANGHAI)
 
 
-def _utc_days(window_start: datetime, window_end: datetime):
-    start = _utc(window_start)
-    end = _utc(window_end)
-    day = datetime(start.year, start.month, start.day, tzinfo=UTC)
+def _local_days(window_start: datetime, window_end: datetime):
+    start = _utc(window_start).astimezone(SHANGHAI)
+    end = _utc(window_end).astimezone(SHANGHAI)
+    day = datetime(start.year, start.month, start.day, tzinfo=SHANGHAI)
     last_instant = end - timedelta(microseconds=1)
-    last = datetime(last_instant.year, last_instant.month, last_instant.day, tzinfo=UTC)
+    last = datetime(last_instant.year, last_instant.month, last_instant.day, tzinfo=SHANGHAI)
     while day <= last:
         yield day
         day += timedelta(days=1)
@@ -70,7 +72,7 @@ def aggregate_course_insights(
     ), QueryLog.query), else_=None)
     # One statement keeps totals and lists consistent if another attempt commits meanwhile.
     # Do not load identities or non-student/unknown question text.
-    bucket = _utc_day(QueryLog.created_at, db.get_bind().dialect.name)
+    bucket = _local_day(QueryLog.created_at, db.get_bind().dialect.name)
     counts = db.execute(
         select(
             QueryLog.member_role_at_ask, QueryLog.outcome, listed_query, bucket,
@@ -131,7 +133,7 @@ def aggregate_course_insights(
         for query, group in no_evidence_groups.items()
     ]
     no_evidence.sort(key=lambda row: (-row["last_asked_at"].timestamp(), -row["count"], row["query"]))
-    covered = set(_utc_days(window_start, window_end))
+    covered = set(_local_days(window_start, window_end))
     trend = [
         {"bucket_start": day, **trend_counts[day]}
         for day in sorted(covered | set(trend_counts))

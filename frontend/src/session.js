@@ -52,7 +52,10 @@ export async function login(username, password) {
     method: "POST",
     json: { username, password },
   });
-  if (version === authVersion) session.user = user;
+  if (version === authVersion) {
+    session.user = user;
+    session.ready = true;
+  }
   session.error = null;
 }
 
@@ -61,6 +64,7 @@ export async function logout() {
   await api("/auth/logout", { method: "POST" });
   if (version !== authVersion) return;
   session.user = null;
+  session.ready = true;
   session.error = null;
   clearDrafts();
   clearCourseAccess();

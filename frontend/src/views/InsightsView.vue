@@ -5,9 +5,6 @@
       <h1>问答反馈</h1>
       <p class="page-description">查看已保存问答的计数、趋势和待核对问句。候选分组不是已验证同义、教学缺口或学生掌握程度。</p>
     </header>
-    <p class="hint">
-      按提问时的课内学生角色统计，留存上限 {{ retentionDays || "当前配置" }} 天。每次提交（含显式重试）分别计数，不代表人数；以已保存事件为准，记录不覆盖所有失败请求。不展示提问者，也不判断掌握程度或回答正确性。旧记录保持未知，不按当前成员角色补写。
-    </p>
 
     <fieldset class="window-filter">
       <legend>统计时间</legend>
@@ -24,24 +21,46 @@
       <el-button @click="applyWindow">按此时间统计</el-button>
       <el-button @click="resetWindow">使用留存窗口</el-button>
       <el-button :loading="loading" @click="loadInsights">刷新统计</el-button>
-      <p class="hint">开始时刻包含，结束时刻不包含。服务端只保留与当前留存窗口的交集，不读取到期或未来记录。这里只请求统计，不会发送问句。</p>
     </fieldset>
 
     <el-alert v-if="failure" :title="failure" type="error" :closable="false" show-icon />
     <template v-else>
-      <div v-if="summary" class="hint summary-surface" aria-label="统计口径与样本量">
-        <p>统计时间：{{ formatTime(windowStart) }}（含）至 {{ formatTime(windowEnd) }}（不含），以服务端记录的提问时间为准。</p>
-        <p>学生提交 {{ summary.student_attempts }} 次：有引用回答 {{ summary.cited_answer }}、依据不足 {{ summary.no_evidence }}、失败 {{ summary.failure }}、结果未知 {{ summary.unknown_outcome }}。</p>
-        <p>依据不足占比：{{ summary.no_evidence_rate == null ? "暂无可计算样本" : `${(summary.no_evidence_rate * 100).toFixed(1)}%` }}；分母为有引用回答＋依据不足（{{ summary.knowledge_attempts }} 次），失败和未知不进入该分母，也不能称为教学缺口率。</p>
-        <p>窗口内共记录 {{ summary.recorded_attempts }} 次；另有非学生角色 {{ summary.non_student_attempts }} 次、角色未知 {{ summary.unknown_role_attempts }} 次，均不进入学生列表或趋势。</p>
+      <div v-if="summary" class="key-counts" aria-label="关键统计">
+        <div>学生提交<strong>{{ summary.student_attempts }}</strong></div>
+        <div>有引用回答<strong>{{ summary.cited_answer }}</strong></div>
+        <div>依据不足<strong>{{ summary.no_evidence }}</strong></div>
       </div>
+      <h3 class="second">依据不足的问句（待核对）</h3>
+      <p class="hint">有候选但未形成可引用回答也属于依据不足；服务或索引失败不进入本表。同词规范化计数不等于同义分组，也不能据此认定教学缺口或学生未掌握。</p>
+      <el-table :data="noEvidence" v-loading="loading" empty-text="本窗口暂无已登记的依据不足">
+        <el-table-column prop="query" label="问句" min-width="280" />
+        <el-table-column prop="count" label="次数" width="100" />
+        <el-table-column label="最近时间" width="200">
+          <template #default="{ row }">{{ formatTime(row.last_asked_at) }}</template>
+        </el-table-column>
+      </el-table>
 
-      <h3>学生提交趋势（UTC 日）</h3>
-      <p class="hint">每个柱是一个 UTC 自然日，与提问时间的时区换算一致。四项之和等于本窗口学生提交次数；没有事件的日期在图中为 0，不是缺失样本。下表只列出有学生提交的日期。</p>
+      <details class="hint">
+        <summary>统计口径说明</summary>
+        <p class="hint">
+          按提问时的课内学生角色统计，留存上限 {{ retentionDays || "当前配置" }} 天。每次提交（含显式重试）分别计数，不代表人数；以已保存事件为准，记录不覆盖所有失败请求。不展示提问者，也不判断掌握程度或回答正确性。旧记录保持未知，不按当前成员角色补写。
+        </p>
+        <div v-if="summary" class="hint summary-surface" aria-label="统计口径与样本量">
+          <p>统计时间：{{ formatTime(windowStart) }}（含）至 {{ formatTime(windowEnd) }}（不含），以服务端记录的提问时间为准。</p>
+          <p>学生提交 {{ summary.student_attempts }} 次：有引用回答 {{ summary.cited_answer }}、依据不足 {{ summary.no_evidence }}、失败 {{ summary.failure }}、结果未知 {{ summary.unknown_outcome }}。</p>
+          <p>依据不足占比：{{ summary.no_evidence_rate == null ? "暂无可计算样本" : `${(summary.no_evidence_rate * 100).toFixed(1)}%` }}；分母为有引用回答＋依据不足（{{ summary.knowledge_attempts }} 次），失败和未知不进入该分母，也不能称为教学缺口率。</p>
+          <p>窗口内共记录 {{ summary.recorded_attempts }} 次；另有非学生角色 {{ summary.non_student_attempts }} 次、角色未知 {{ summary.unknown_role_attempts }} 次，均不进入学生列表或趋势。</p>
+        </div>
+        <p>统计窗口与当前留存窗口取交集，不读取到期或未来记录；刷新统计不会发送问句。</p>
+        <p>趋势按本地日期（Asia/Shanghai）分桶；无事件的日期为 0，下表只列有提交的日期。候选组未验证，不代表已确认的同义问句。最低成对相似度是组内任意两条问句相似度的最小值，不是同义概率。</p>
+      </details>
+
+      <h3>学生提交趋势（按本地日期）</h3>
+      <p class="hint">按上海时间的自然日统计；下表只列有学生提交的日期。</p>
       <InsightTrend :points="trend" />
       <el-table :data="activeDays" empty-text="本窗口没有学生提交">
-        <el-table-column label="UTC 日" width="140">
-          <template #default="{ row }">{{ utcDayLabel(row.bucket_start) }}</template>
+        <el-table-column label="日期" width="140">
+          <template #default="{ row }">{{ localDayLabel(row.bucket_start) }}</template>
         </el-table-column>
         <el-table-column prop="cited_answer" label="有引用回答" width="120" />
         <el-table-column prop="no_evidence" label="依据不足" width="110" />
@@ -55,19 +74,9 @@
         <el-table-column prop="count" label="次数" width="100" />
       </el-table>
 
-      <h3 class="second">依据不足的问句（待核对）</h3>
-      <p class="hint">有候选但未形成可引用回答也属于依据不足；服务或索引失败不进入本表。同词规范化计数不等于同义分组，也不能据此认定教学缺口或学生未掌握。</p>
-      <el-table :data="noEvidence" v-loading="loading" empty-text="本窗口暂无已登记的依据不足">
-        <el-table-column prop="query" label="问句" min-width="280" />
-        <el-table-column prop="count" label="次数" width="100" />
-        <el-table-column label="最近时间" width="200">
-          <template #default="{ row }">{{ formatTime(row.last_asked_at) }}</template>
-        </el-table-column>
-      </el-table>
-
-      <h3 class="second">候选同义组（未验证）</h3>
+      <h3 class="second">相似问句分组（仅供参考，未验证）</h3>
       <p class="hint">
-        语义分组默认关闭，阈值没有已校准的默认值。只有填写阈值并勾选确认后，才会把当前已应用统计窗口内的学生问句原文发送到已配置的嵌入服务，可能产生费用。请求发出后，离开页面也不能保证调用停止。返回结果只是达到该阈值的候选；单例表示未与其他问句成组。候选组不是已验证同义、教学缺口或学生掌握度。
+        把相近的问法放在一起，方便核对；分组默认关闭，相似度阈值尚未校准。只有填写阈值并勾选确认后，才会把当前已应用统计窗口内的学生问句原文发送到已配置的嵌入服务，可能产生费用。请求发出后，离开页面也不能保证调用停止。返回结果只是达到该阈值的候选；单例表示未与其他问句成组。候选组不是已验证同义、教学缺口或学生掌握度。
       </p>
       <div class="group-controls">
         <label>
@@ -127,7 +136,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { api } from "../api";
-import { utcDayLabel } from "../insightTrend";
+import { localDayLabel } from "../insightTrend";
 import InsightTrend from "../components/InsightTrend.vue";
 
 const route = useRoute();
@@ -266,6 +275,10 @@ onMounted(loadInsights);
 </script>
 
 <style scoped>
+.key-counts { display: flex; flex-wrap: wrap; gap: 16px; margin: 18px 0; }
+.key-counts > div { flex: 1; min-width: 130px; padding: 16px 20px; background: #f8faf9; border: 1px solid #e6ebe8; border-radius: 12px; }
+.key-counts strong { display: block; font-size: 28px; color: #213e36; margin-top: 6px; }
+details > summary { cursor: pointer; }
 .hint { margin: 12px 0 8px; color: #66756f; font-size: 12.5px; line-height: 1.75; }
 h3, h4 { margin: 28px 0 8px; font-size: 16px; font-weight: 600; }
 h4 { font-size: 15px; }

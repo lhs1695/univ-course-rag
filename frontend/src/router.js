@@ -1,3 +1,4 @@
+import { ElMessage } from "element-plus";
 import { createRouter, createWebHistory } from "vue-router";
 import { refreshMe, session } from "./session";
 import { clearCourseAccess, refreshCourseAccess } from "./courseAccess";
@@ -30,7 +31,7 @@ export const router = createRouter({
 });
 
 router.beforeEach(async (to, from) => {
-  if (!session.ready || !to.meta.public) {
+  if (!session.ready || (session.user && !to.meta.public)) {
     const verified = await refreshMe();
     if (!verified && session.error && session.error.status !== 401) {
       session.retryPath = to.fullPath;
@@ -41,6 +42,7 @@ router.beforeEach(async (to, from) => {
     return { path: "/login", query: { next: to.fullPath } };
   }
   if (to.meta.admin && session.user?.role !== "admin") {
+    ElMessage.warning("你没有访问这个页面的权限");
     return "/courses";
   }
   if (to.params.courseId) {
@@ -48,6 +50,7 @@ router.beforeEach(async (to, from) => {
       const course = await refreshCourseAccess(String(to.params.courseId));
       if (!course || (to.meta.capability && !course.capabilities[to.meta.capability])) {
         clearCourseAccess();
+        ElMessage.warning("你没有访问这个页面的权限");
         return "/courses";
       }
     } catch (error) {
@@ -55,6 +58,7 @@ router.beforeEach(async (to, from) => {
         session.retryPath = to.fullPath;
         return from.matched.length ? false : true;
       }
+      if (session.user) ElMessage.warning("你没有访问这个页面的权限");
       return session.user ? "/courses" : "/login";
     }
   } else {

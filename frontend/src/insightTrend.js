@@ -5,15 +5,21 @@ export const TREND_SERIES = [
   { key: "unknown_outcome", label: "结果未知", color: "#64748b" },
 ];
 
-export function utcDayLabel(value) {
-  const match = String(value ?? "").match(/^(\d{4}-\d{2}-\d{2})/);
-  return match ? match[1] : "";
+export function localDayLabel(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const part = (type) => parts.find((item) => item.type === type).value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
 export function trendChartData(points) {
   const rows = Array.isArray(points) ? points : [];
   return {
-    labels: rows.map((row) => utcDayLabel(row?.bucket_start)),
+    labels: rows.map((row) => localDayLabel(row?.bucket_start)),
     datasets: TREND_SERIES.map((series) => ({
       label: series.label,
       backgroundColor: series.color,
@@ -28,5 +34,5 @@ export function trendChartData(points) {
 export function trendCaption(points) {
   const totals = trendChartData(points).datasets.map((set) => set.data.reduce((sum, value) => sum + value, 0));
   const [cited, missing, failed, unknown] = totals;
-  return `学生提交按 UTC 日计数：有引用回答 ${cited}，依据不足 ${missing}，失败 ${failed}，结果未知 ${unknown}。没有事件的日期为 0。`;
+  return `学生提交按本地日期（Asia/Shanghai）计数：有引用回答 ${cited}，依据不足 ${missing}，失败 ${failed}，结果未知 ${unknown}。没有事件的日期为 0。`;
 }

@@ -5,6 +5,7 @@ import {
   documentContentUrl,
   documentCoverage,
   documentPageLabel,
+  documentQualityLabel,
   isPdfDocument,
 } from "../src/documentDisplay.js";
 
@@ -35,4 +36,11 @@ test("PDF content URL clamps page and non-PDF has no hash", () => {
     documentContentUrl("course-1", { id: "doc-2", filename: "notes.md", source_unit_count: 1 }, 5),
     "/courses/course-1/documents/doc-2/content",
   );
+});
+
+test("quality wording distinguishes PDF pages, slides and content units", () => {
+  const row = { ...pdf, extracted_char_count: 100, chunk_count: 3 };
+  assert.equal(documentQualityLabel(row), "共 12 页内容 · 抽取约 100 字 · 已切成 3 段供检索");
+  assert.match(documentQualityLabel({ ...row, filename: "notes.md" }), /共 12 个内容单元/);
+  assert.match(documentQualityLabel({ ...row, filename: "slides.pptx" }), /共 12 张幻灯片内容/);
 });

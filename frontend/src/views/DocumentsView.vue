@@ -39,19 +39,20 @@
       <el-table-column label="操作" min-width="280">
         <template #default="{ row }">
           <div v-if="row.job_status === 'succeeded'" class="student-open">
-            <el-input-number
+            <el-input
               v-if="isPdfDocument(row)"
               v-model="pageSelections[row.id]"
-              :min="1"
-              :max="row.source_unit_count || 1"
+              inputmode="numeric"
+              @blur="correctPage(row)"
+              @keydown.enter="correctPage(row)"
               size="small"
-              controls-position="right"
               class="page-input"
               :aria-label="`打开页码：${row.filename}`"
             />
-            <el-link :href="studentOpenUrl(row)" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`">
+            <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`">
               {{ isPdfDocument(row) ? '打开该页 ↗' : '打开资料 ↗' }}
             </el-link>
+            <small v-if="isPdfDocument(row)" class="subtle">页码范围看左侧页数；将在新窗口打开 PDF</small>
           </div>
           <span v-else class="subtle">暂不可打开</span>
         </template>
@@ -74,8 +75,7 @@
         <template #default="{ row }">
           <template v-if="row.job_status === 'succeeded' && row.extracted_char_count != null">
             <div>
-              含文本单元 {{ row.source_unit_count }} · 抽取 {{ row.extracted_char_count }} 字 ·
-              {{ row.chunk_count }} 切片
+              {{ documentQualityLabel(row) }}
             </div>
             <el-text v-if="row.quality_warning === 'LOW_EXTRACTED_TEXT'" type="warning">
               抽取文本较少，问答依据可能不完整
@@ -102,7 +102,7 @@ import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 import { courseAccess } from "../courseAccess";
-import { documentContentUrl, documentCoverage, documentPageLabel, isPdfDocument } from "../documentDisplay";
+import { clampDocumentPage, documentQualityLabel, documentContentUrl, documentCoverage, documentPageLabel, isPdfDocument } from "../documentDisplay";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
@@ -119,6 +119,16 @@ const canManage = computed(() => courseAccess.course?.capabilities.can_manage_do
 let pollTimer = null;
 let active = true;
 let fetchingDocuments = false;
+
+function correctPage(row) {
+  const raw = pageSelections.value[row.id];
+  const page = clampDocumentPage(raw, row);
+  pageSelections.value[row.id] = String(page);
+  const entered = Number.parseInt(raw, 10);
+  if (entered < 1 || entered > row.source_unit_count) {
+    ElMessage.info(entered < 1 ? "页码已按第一页打开" : "页码已按最后一页打开");
+  }
+}
 
 function studentOpenUrl(row) {
   return documentContentUrl(courseId.value, row, pageSelections.value[row.id] ?? 1);

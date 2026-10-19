@@ -10,14 +10,14 @@ import { api } from "../api";
 const state = ref(null);
 const failure = ref("");
 const loading = ref(false);
-const label = (value) => ({ fake: "Fake 演示", configured: "已配置（未验证连通）", unavailable: "配置不可用" }[value] || "未知");
+const label = (value) => ({ fake: "Fake 演示", configured: "已填写配置（本页不做连通性验证）", unavailable: "配置不可用" }[value] || "未知");
 const healthy = computed(() => state.value?.database === "available" &&
   [state.value.embedding.status, state.value.generation.status].every(value => value !== "unavailable"));
 const summary = computed(() => failure.value ? "运行状态检查失败"
   : !state.value ? "正在检查运行状态…"
   : `向量：${label(state.value.embedding.status)} · 生成：${label(state.value.generation.status)}${state.value.database !== 'available' ? ' · 数据库不可连接' : ''}`);
 const message = computed(() => failure.value || (state.value
-  ? `进程运行中；数据库${state.value.database === 'available' ? '可连接' : '不可连接'}；向量：${label(state.value.embedding.status)}；生成：${label(state.value.generation.status)}。迁移、索引和真实模型连通性未验证。`
+  ? `进程运行中；数据库${state.value.database === 'available' ? '可连接' : '不可连接'}；向量：${label(state.value.embedding.status)}；生成：${label(state.value.generation.status)}。本页检查配置与数据库状态；要确认模型可用，请在问答页实际提问验证。迁移与索引请结合运维记录核对。`
   : "正在检查本机运行状态…"));
 async function loadStatus() {
   if (loading.value) return;

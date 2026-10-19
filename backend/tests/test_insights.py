@@ -346,10 +346,12 @@ def test_requested_window_is_clipped_to_retention_and_now(client, db, monkeypatc
     assert body["frequent"] == [{"query": "保留", "count": 1}]
 
 
-def _utc_days(start: datetime, end: datetime):
-    day = datetime(start.year, start.month, start.day, tzinfo=UTC)
+def _local_days(start: datetime, end: datetime):
+    local = timezone(timedelta(hours=8))
+    start, end = start.astimezone(local), end.astimezone(local)
+    day = datetime(start.year, start.month, start.day, tzinfo=local)
     last = end - timedelta(microseconds=1)
-    last_day = datetime(last.year, last.month, last.day, tzinfo=UTC)
+    last_day = datetime(last.year, last.month, last.day, tzinfo=local)
     days = []
     while day <= last_day:
         days.append(day)
@@ -357,7 +359,7 @@ def _utc_days(start: datetime, end: datetime):
     return days
 
 
-def test_trend_buckets_student_outcomes_on_utc_days(client, db) -> None:
+def test_trend_buckets_student_outcomes_on_shanghai_days(client, db) -> None:
     teacher = add_user(db, "trend", "pass", UserRole.teacher)
     course = add_course(db, "Trend Course")
     add_member(db, course, teacher, CourseMemberRole.teacher)
@@ -385,8 +387,8 @@ def test_trend_buckets_student_outcomes_on_utc_days(client, db) -> None:
     window_start = datetime.fromisoformat(body["window_start"])
     window_end = datetime.fromisoformat(body["window_end"])
     buckets = [datetime.fromisoformat(row["bucket_start"]) for row in body["trend"]]
-    assert buckets == _utc_days(window_start, window_end)
-    assert buckets[0] == datetime(cited_at.year, cited_at.month, cited_at.day, tzinfo=UTC)
+    assert buckets == _local_days(window_start, window_end)
+    assert buckets[0] == _local_days(cited_at, cited_at + timedelta(seconds=1))[0]
     first = body["trend"][0]
     assert first["cited_answer"] == 1
     assert first["failure"] == 1
@@ -400,3 +402,46 @@ def test_trend_buckets_student_outcomes_on_utc_days(client, db) -> None:
     assert body["summary"]["unknown_role_attempts"] == 1
     assert body["frequent"] == [{"query": "学生有引用", "count": 1}]
     assert body["no_evidence"] == []
+
+
+def test_trend_shanghai_midnight_and_utc_midnight(db) -> None:
+    from app.services.insights import aggregate_course_insights
+
+    teacher = add_user(db, "shanghai-buckets", "pass", UserRole.teacher)
+    course = add_course(db, "Shanghai Buckets")
+    for hour, minute, outcome in [(15, 59, "cited_answer"), (16, 0, "no_evidence"),
+                                  (23, 59, "failure"), (24, 0, "unknown_outcome")]:
+        when = datetime(2026, 10, 15, tzinfo=UTC) + timedelta(hours=hour, minutes=minute)
+        _add_log(db, course_id=course.id, user_id=teacher.id, query="时区边界",
+                 hit=True, error_code=None, created_at=when, outcome=outcome)
+    _add_log(db, course_id=course.id, user_id=teacher.id, query="午夜前一微秒",
+             hit=True, error_code=None, outcome="cited_answer",
+             created_at=datetime(2026, 10, 15, 15, 59, 59, 999999, tzinfo=UTC))
+    db.commit()
+    body = aggregate_course_insights(
+        db, course.id, window_start=datetime(2026, 10, 15, 15, tzinfo=UTC),
+        window_end=datetime(2026, 10, 17, 16, tzinfo=UTC),
+    )
+    assert [row["bucket_start"].isoformat() for row in body["trend"]] == [
+        "2026-10-15T00:00:00+08:00", "2026-10-16T00:00:00+08:00",
+        "2026-10-17T00:00:00+08:00",
+    ]
+    assert body["trend"][0]["cited_answer"] == 2
+    assert body["trend"][1] == {
+        "bucket_start": datetime(2026, 10, 16, tzinfo=timezone(timedelta(hours=8))),
+        "cited_answer": 0, "no_evidence": 1, "failure": 1, "unknown_outcome": 1,
+    }
+    assert all(body["trend"][2][key] == 0
+               for key in ("cited_answer", "no_evidence", "failure", "unknown_outcome"))
+
+
+def test_postgres_trend_bucket_uses_shanghai_timezone() -> None:
+    from app.services.insights import _bucket_start, _local_day
+    from sqlalchemy.dialects import postgresql
+
+    expression = _local_day(QueryLog.created_at, "postgresql")
+    sql = str(expression.compile(dialect=postgresql.dialect(),
+                                 compile_kwargs={"literal_binds": True}))
+    assert "timezone('Asia/Shanghai', query_logs.created_at)" in sql
+    wall_midnight = datetime(2026, 10, 16, tzinfo=UTC).replace(tzinfo=None)
+    assert _bucket_start(wall_midnight).isoformat() == "2026-10-16T00:00:00+08:00"

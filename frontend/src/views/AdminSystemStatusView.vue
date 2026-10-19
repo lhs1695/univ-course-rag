@@ -3,7 +3,7 @@
     <header class="page-heading">
       <p class="eyebrow">管理后台</p>
       <h1>系统状态</h1>
-      <p class="page-description">本页用于运维诊断。配置状态不代表已验证连通，运行状态也不代表问答正确性。</p>
+      <p class="page-description">本页展示运行与配置状态；要确认模型可用，请在问答页实际提问验证。运行状态不代表问答正确性。</p>
     </header>
     <RuntimeStatus />
   </div>
