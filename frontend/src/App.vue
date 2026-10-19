@@ -21,7 +21,7 @@
 
   <el-container v-else class="app-shell">
     <el-header class="app-header" v-if="session.user">
-      <router-link class="app-title" :to="homePath"><span class="staff-bookmark" aria-hidden="true">课</span><span>课程知识库<small>有依据，可核对</small></span></router-link>
+      <router-link class="app-title" :to="homePath"><span class="staff-bookmark" aria-hidden="true">课</span><span>课程知识库<small>{{ isAdmin ? "账号 · 课程 · 授权" : "备课 · 资料 · 学情" }}</small></span></router-link>
       <div class="app-user">
         <span class="role-pill">{{ roleLabel }}</span>
         <span class="username">{{ session.user.username }}</span>
@@ -32,7 +32,7 @@
       <template v-if="isAdmin">
         <router-link to="/admin/users">账号管理</router-link>
         <router-link to="/admin/courses">课程与授权</router-link>
-        <router-link to="/admin/maintenance">日志维护 · 高级</router-link>
+        <router-link to="/admin/maintenance">提问日志</router-link>
         <router-link to="/admin/system">系统状态</router-link>
       </template>
       <router-link v-else to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': route.path === '/courses' }">我的课程</router-link>
@@ -58,6 +58,7 @@
         <el-button @click="router.push(session.user ? (session.user.role === 'admin' ? '/admin/users' : '/courses') : '/login')">返回</el-button>
       </template>
     </el-main>
+    <footer v-if="isAdmin" class="staff-footer">课程知识库 · 管理</footer>
   </el-container>
 </template>
 

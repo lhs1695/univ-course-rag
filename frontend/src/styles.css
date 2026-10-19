@@ -57,7 +57,7 @@ button, input, textarea { font: inherit; }
 .app-title small { display: block; margin-top: 4px; font-size: 11px; letter-spacing: .04em; color: var(--text-muted); font-weight: 400; }
 .staff-bookmark { display: flex; justify-content: center; flex-shrink: 0; width: 32px; height: 43px; padding-top: 5px; background: var(--brand-violet); color: #fff; font-family: "STSong", "SimSun", serif; font-size: 19px; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 83%, 0 100%); }
 .app-user { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; font-size: 13px; color: var(--text-muted); }
-.username { max-width: 180px; overflow-wrap: anywhere; }
+.username { max-width: 180px; overflow-wrap: break-word; }
 .role-pill { border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; font-size: 11px; line-height: 1.6; color: var(--brand-violet); background: var(--brand-lilac); font-weight: 400; white-space: nowrap; }
 .global-nav { display: flex; flex-wrap: wrap; gap: 4px 24px; padding: 0 max(var(--content-gutter), calc((100vw - var(--content-max)) / 2)); background: #fff; border-bottom: 1px solid var(--line); }
 .global-nav a { display: block; padding: 9px 1px 8px; border-bottom: 2px solid transparent; color: var(--text-muted); font-size: 13px; }
@@ -65,9 +65,9 @@ button, input, textarea { font: inherit; }
 .global-nav a.nav-selected, .global-nav a.router-link-exact-active { color: var(--brand-violet); border-bottom-color: var(--brand-violet); font-weight: 600; }
 .el-main { width: 100%; max-width: calc(var(--content-max) + (var(--content-gutter) * 2)); align-self: center; padding: 20px var(--content-gutter) 64px; overflow: visible; min-width: 0; }
 .page { width: 100%; min-width: 0; margin: 12px auto 0; padding: 4px 0 0; background: transparent; border: 0; border-radius: 0; }
-.page h1, .page h2, .page h3, .page h4 { color: var(--text-strong); line-height: 1.35; overflow-wrap: anywhere; }
+.page h1, .page h2, .page h3, .page h4 { color: var(--text-strong); line-height: 1.35; overflow-wrap: break-word; }
 .page h1 { font-size: 30px; font-weight: 700; margin: 0 0 10px; letter-spacing: -.7px; line-height: 1.3; }
-.app-shell .page h1 { font-family: "STSong", "SimSun", "Songti SC", serif; font-size: 28px; font-weight: 500; letter-spacing: 0; line-height: 1.4; }
+.app-shell .page h1 { font-family: system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 28px; font-weight: 650; letter-spacing: 0; line-height: 1.4; }
 .page > h2 { font-size: 20px; margin: 0 0 12px; }
 .page h3 { font-size: 16px; margin: 28px 0 12px; }
 .page-description { max-width: 760px; color: var(--text-muted); font-size: 13.5px; margin: 0; line-height: 1.7; }
@@ -77,7 +77,7 @@ button, input, textarea { font: inherit; }
 .page-heading p { margin-bottom: 0; }
 .course-nav { margin-top: 4px; padding: 10px 2px 0; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
 .course-context { display: flex; flex-wrap: wrap; gap: 5px 10px; align-items: baseline; font-size: 12px; color: var(--text-muted); }
-.course-context strong { font-size: 15px; font-weight: 600; color: var(--brand-ink); overflow-wrap: anywhere; min-width: 0; }
+.course-context strong { font-size: 15px; font-weight: 600; color: var(--brand-ink); overflow-wrap: break-word; min-width: 0; }
 
 .course-tabs { display: flex; flex-wrap: wrap; gap: 6px 24px; margin-top: 7px; }
 .course-tabs a { padding: 7px 0 9px; font-size: 13px; color: var(--text-muted); border-bottom: 2px solid transparent; }
@@ -89,9 +89,9 @@ button, input, textarea { font: inherit; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #23764e; flex-shrink: 0; }
 .runtime-warning .status-dot { background: #92550b; }
 .runtime-details { padding: 0 14px 10px; border-top: 1px solid var(--line); }
-.runtime-details p { margin: 12px 0 4px; overflow-wrap: anywhere; }
+.runtime-details p { margin: 12px 0 4px; overflow-wrap: break-word; }
 .el-table { margin-top: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); font-size: 13.5px; --el-table-header-bg-color: #f8f7fb; --el-table-row-hover-bg-color: #f3eef7; --el-table-current-row-bg-color: #eee8f5; --el-table-border-color: #e9e3ef; }
-.el-table .cell { overflow-wrap: anywhere; line-height: 1.65; }
+.el-table .cell { overflow-wrap: break-word; line-height: 1.65; }
 .el-table th.el-table__cell { height: 44px; color: var(--text-body); font-size: 13px; font-weight: 600; }
 .el-table td.el-table__cell { padding: 12px 0; vertical-align: middle; }
 .el-table th.el-table__cell { vertical-align: middle; }
@@ -112,7 +112,7 @@ button, input, textarea { font: inherit; }
 .el-alert { margin: 14px 0; padding: 12px 16px; border-radius: 10px; }
 .el-alert__title { line-height: 1.6; }
 .el-page-header { margin-bottom: 20px; }
-.el-page-header__content { font-size: 21px; font-weight: 600; overflow-wrap: anywhere; }
+.el-page-header__content { font-size: 21px; font-weight: 600; overflow-wrap: break-word; }
 .el-text { line-height: 1.7; }
 .el-empty { padding: 32px 16px; }
 .login-page { min-height: 74vh; display: grid; place-items: center; padding: 40px 0; }
@@ -163,7 +163,11 @@ button, input, textarea { font: inherit; }
 
 /* Shared study components retain their palette when hosted in the staff shell. */
 .app-shell { --ink: var(--brand-ink); --violet: var(--brand-violet); --muted: var(--text-muted); --paper: var(--surface); --lilac: var(--brand-lilac); --pencil: var(--brand-pencil); }
-.app-shell .staff-bookmark { width: 25px; height: 34px; padding-top: 3px; font-size: 16px; background: var(--brand-lilac); color: var(--brand-violet); }
+.app-shell .page h1, .app-shell .page h2, .app-shell .page h3, .app-shell .page h4 { overflow-wrap: break-word; }
+.app-shell .page-description { max-width: 100%; }
+.app-shell .el-table .cell { overflow-wrap: break-word; line-height: 1.55; }
+.app-shell .el-table td.el-table__cell { padding: 9px 0; }
+.app-shell .staff-bookmark { width: 21px; height: 28px; padding-top: 2px; font-size: 13px; background: var(--brand-lilac); color: var(--brand-violet); clip-path: none; border-radius: 3px; }
 .app-shell .staff-shelf { margin-top: 24px; }
 .app-shell .shelf-heading { margin: 24px 0; align-items: center; }
 .app-shell .shelf-heading h1 { font-family: "STSong", "SimSun", serif; font-size: 28px; font-weight: 500; margin: 0; }
@@ -173,7 +177,7 @@ button, input, textarea { font: inherit; }
 .management-button { background: var(--surface); border: 1px solid var(--el-color-primary-light-5); border-radius: 6px; padding: 7px 12px; color: var(--brand-violet); cursor: pointer; font-size: 13px; }
 .management-button:hover { background: var(--brand-lilac); }
 .admin-course-entry { display: inline-block; padding: 8px 16px; border: 1px solid var(--brand-violet); border-radius: 6px; font-weight: 600; }
-.app-shell .course-delete { margin-left: 24px !important; color: var(--text-muted); }
+.app-shell .course-delete { color: var(--text-muted); }
 .app-shell .course-delete:hover { color: var(--el-color-danger); background: var(--el-color-danger-light-9); }
 .app-shell .course-nav, .app-shell .course-context { min-width: 0; }
 .app-shell .course-tabs a { white-space: nowrap; }
@@ -181,6 +185,14 @@ button, input, textarea { font: inherit; }
 .app-shell .el-table__body-wrapper .el-scrollbar__wrap { overflow-x: auto; }
 .runtime-overview > p { font-size: 13px; color: var(--text-muted); }
 .app-shell details > summary { cursor: pointer; font-weight: 600; }
+.runtime-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+.runtime-heading .el-alert { flex: 1; margin: 0; }
+.runtime-action { margin-top: 16px; }
+.course-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.course-toolbar h2 { margin: 0 0 8px; }
+.course-toolbar .el-form { margin: 0; }
+.selected-course, .account-note { margin: -10px 0 12px; color: var(--text-muted); font-size: 13px; }
+.staff-footer { padding: 12px 28px 22px; color: var(--text-muted); font-size: 12px; text-align: center; }
 @media (max-width: 700px) {
   .app-shell .shelf-heading { display: block; }
   .app-shell .shelf-heading h1 { font-size: 25px; }

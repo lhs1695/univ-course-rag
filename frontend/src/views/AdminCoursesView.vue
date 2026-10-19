@@ -1,20 +1,15 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程；下方成员区默认显示第一门课程。可用「加入并进入」以课内教师身份打开资料页（未加入时会先加入）。</p></header>
-    <section class="panel-card">
-    <h2>新建课程</h2>
-    <el-form :inline="true" @submit.prevent="onCreateCourse">
+    <header class="page-heading"><h1>课程与授权</h1><p class="page-description">管理课程和成员的课内访问权限。</p></header>
+    <section class="panel-card course-list-card">
+    <div class="course-toolbar"><h2>课程列表</h2><el-form :inline="true" @submit.prevent="onCreateCourse">
       <el-form-item label="标题">
         <el-input v-model="newTitle" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" native-type="submit" :loading="creating">创建课程</el-button>
       </el-form-item>
-    </el-form>
-    </section>
-
-    <section class="panel-card">
-    <h2>课程列表</h2>
+    </el-form></div>
     <el-table
       ref="courseTable"
       row-key="id"
@@ -25,18 +20,21 @@
       @current-change="onSelectCourse"
     >
       <el-table-column prop="title" label="课程" min-width="120" />
-      <el-table-column label="操作" width="320" fixed="right">
+      <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
-          <el-button type="primary" link :disabled="courseBusy || enteringId === row.id" :loading="enteringId === row.id" @click.stop="onJoinAndEnter(row)">加入并进入</el-button>
-          <el-button type="primary" link :disabled="courseBusy" @click.stop="onRenameCourse(row)">重命名</el-button>
-          <el-button class="course-delete" text :disabled="courseBusy" @click.stop="onDeleteCourse(row)">删除…</el-button>
+          <el-button type="primary" link :disabled="courseBusy || enteringId === row.id" :loading="enteringId === row.id" @click.stop="onJoinAndEnter(row)">进入</el-button>
+          <el-dropdown @command="action => action === 'rename' ? onRenameCourse(row) : onDeleteCourse(row)">
+            <el-button text :disabled="courseBusy">⋯</el-button>
+            <template #dropdown><el-dropdown-menu><el-dropdown-item command="rename">重命名</el-dropdown-item><el-dropdown-item command="delete" class="course-delete-item">删除</el-dropdown-item></el-dropdown-menu></template>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
     </section>
 
     <section class="panel-card">
-      <h2>成员与授权{{ selected ? ` · ${selected.title}` : "" }}</h2>
+      <h2>成员与授权</h2>
+      <p v-if="selected" class="selected-course">{{ selected.title }}</p>
       <p v-if="!selected">{{ loading ? "正在加载课程…" : "请先创建课程，再添加成员与授权。" }}</p>
       <template v-if="selected">
       <el-form :inline="true" @submit.prevent="onAddMember">

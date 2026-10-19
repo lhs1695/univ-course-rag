@@ -1,29 +1,25 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>提问日志维护 · 高级</h1><p class="page-description">演示时请勿当场删除。日常维护可按留存窗口预览并处理到期记录，每次仅操作受限的一批。</p></header>
-    <p class="scope-note">提问日志包含问题原文，只用于留存窗口内的课程学情。维护操作不会展示问题或提问者。</p>
+    <header class="page-heading"><h1>提问日志</h1><p class="page-description">预览并清理超过保留期限的提问记录。</p></header>
 
     <el-card class="maintenance-card panel-card" shadow="never">
-      <template #header>到期记录</template>
-      <p class="explanation">
-        先预览最早到期的一批，核对后再删除。每次仅处理服务器允许的一批，不会扫描或一次删除全部记录。
-      </p>
+      <template #header>日志清理</template>
 
       <el-descriptions v-if="result" :column="2" border class="result-grid">
-        <el-descriptions-item label="留存窗口">{{ result.retention_days }} 天</el-descriptions-item>
-        <el-descriptions-item label="单批上限">{{ result.batch_limit }} 条</el-descriptions-item>
-        <el-descriptions-item :label="result.mode === 'delete' ? '上次删除' : '本批到期'">
+        <el-descriptions-item label="保留最近">{{ result.retention_days }} 天</el-descriptions-item>
+        <el-descriptions-item :label="result.mode === 'delete' ? '本批已删除' : '本批到期'">
           {{ result.mode === "delete" ? result.deleted_count : result.matched_count }} 条
         </el-descriptions-item>
-        <el-descriptions-item label="仍有下一批">{{ result.has_more ? "是" : "否" }}</el-descriptions-item>
+        <el-descriptions-item v-if="result.has_more" label="后续记录">还有</el-descriptions-item>
       </el-descriptions>
+      <p v-if="previewReady && !result?.matched_count" class="empty-expired">没有到期记录</p>
 
       <div class="maintenance-actions">
         <el-button type="primary" plain :loading="previewing" @click="previewExpired">
-          {{ result?.mode === "delete" && result.has_more ? "预览下一批" : "预览到期记录" }}
+          {{ result?.mode === "delete" && result.has_more ? "预览下一批" : "预览到期" }}
         </el-button>
         <el-button
-          v-if="previewReady"
+          v-if="previewReady && result?.matched_count"
           type="danger"
           :loading="deleting"
           :disabled="!result?.matched_count"
@@ -35,6 +31,7 @@
     </el-card>
 
     <el-alert
+      class="maintenance-warning"
       title="这里只删除当前应用数据库中的记录，不能立即从已有备份、快照或其他外部副本中抹除。"
       type="warning"
       :closable="false"
@@ -112,21 +109,8 @@ async function deleteExpired() {
   border-radius: var(--radius-panel);
 }
 
-.scope-note {
-  margin: 0;
-  padding-left: 12px;
-  border-left: 2px solid var(--el-color-primary-light-5);
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.75;
-}
-
-.explanation {
-  margin: 0 0 16px;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.7;
-}
+.maintenance-warning { margin-top: 0; }
+.empty-expired { color: var(--text-muted); margin: 12px 0; }
 
 .result-grid {
   margin-bottom: 16px;

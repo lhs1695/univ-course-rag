@@ -1,7 +1,7 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>账号管理</h1><p class="page-description">创建教师、学生与管理员账号。账号身份与课程内授权分别管理。</p></header>
-    <el-alert v-if="!accountCapabilities.resetPassword && !accountCapabilities.disable" title="当前版本仅支持创建账号；重置密码/停用需运维，本页不提供" type="info" :closable="false" />
+    <header class="page-heading"><h1>账号管理</h1><p class="page-description">创建账号，并查看系统角色。</p></header>
+    <el-alert v-if="!accountCapabilities.resetPassword && !accountCapabilities.disable" title="本页可创建账号；改密或停用请联系运维。" type="info" :closable="false" />
     <section class="panel-card">
     <h2>创建账号</h2>
     <el-form :inline="true" :model="form" :disabled="creating" @submit.prevent="onCreate">
@@ -26,11 +26,11 @@
     </section>
     <section class="panel-card">
     <h2>已有账号</h2>
-    <p class="page-description" style="margin-top:0">演示种子账号：admin / teacher / student（密码见部署说明）。下方可按用户名筛选。</p>
+    <p class="account-note">演示账号：admin / teacher / student；默认密码分别为 change-me-admin、change-me-teacher、change-me-student。</p>
     <el-input v-model="userFilter" clearable placeholder="按用户名筛选" style="max-width: 280px; margin-bottom: 12px" aria-label="按用户名筛选账号" />
     <el-table :data="filteredUsers" v-loading="loading" empty-text="还没有账号，可在上方创建教师或学生账号">
       <el-table-column prop="username" label="用户名" />
-      <el-table-column label="全局身份" width="120"><template #default="{ row }">{{ { student: '学生', teacher: '教师', admin: '管理员' }[row.role] || row.role }}</template></el-table-column>
+      <el-table-column label="系统角色" width="120"><template #default="{ row }">{{ { student: '学生', teacher: '教师', admin: '管理员' }[row.role] || row.role }}</template></el-table-column>
     </el-table>
     </section>
   </div>
@@ -81,7 +81,7 @@ async function onCreate() {
   const payload = { username, password: form.password, role: form.role };
   try {
     try {
-      await ElMessageBox.confirm(`为「${username}」创建全局身份为「${roleNames[payload.role]}」的账号？课程授权需另行设置。`, "确认账号角色", { confirmButtonText: "确认创建", cancelButtonText: "取消", type: "warning" });
+      await ElMessageBox.confirm(`为「${username}」创建系统角色为「${roleNames[payload.role]}」的账号？课程授权需另行设置。`, "确认账号角色", { confirmButtonText: "确认创建", cancelButtonText: "取消", type: "warning" });
     } catch { return; }
     await api("/admin/users", {
       method: "POST",
