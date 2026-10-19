@@ -160,3 +160,31 @@ button, input, textarea { font: inherit; }
 .panel-card:has(> .el-form), .page > .el-form.panel-card { border-top: 3px solid var(--el-color-primary); box-shadow: var(--elev-1); }
 .el-button--primary.is-disabled, .el-button--primary.is-disabled:hover { background: var(--disabled-bg); border-color: var(--disabled-bg); color: var(--disabled-text); }
 @media (max-width: 700px) { .panel-card { padding: 16px; } }
+
+/* Shared study components retain their palette when hosted in the staff shell. */
+.app-shell { --ink: var(--brand-ink); --violet: var(--brand-violet); --muted: var(--text-muted); --paper: var(--surface); --lilac: var(--brand-lilac); --pencil: var(--brand-pencil); }
+.app-shell .staff-bookmark { width: 25px; height: 34px; padding-top: 3px; font-size: 16px; background: var(--brand-lilac); color: var(--brand-violet); }
+.app-shell .staff-shelf { margin-top: 24px; }
+.app-shell .shelf-heading { margin: 24px 0; align-items: center; }
+.app-shell .shelf-heading h1 { font-family: "STSong", "SimSun", serif; font-size: 28px; font-weight: 500; margin: 0; }
+.app-shell .shelf-heading .role-pill { display: inline-block; margin-top: 12px; }
+.app-shell .shelf-list { margin-top: 24px; }
+.app-shell .book-management { flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.management-button { background: var(--surface); border: 1px solid var(--el-color-primary-light-5); border-radius: 6px; padding: 7px 12px; color: var(--brand-violet); cursor: pointer; font-size: 13px; }
+.management-button:hover { background: var(--brand-lilac); }
+.admin-course-entry { display: inline-block; padding: 8px 16px; border: 1px solid var(--brand-violet); border-radius: 6px; font-weight: 600; }
+.app-shell .course-delete { margin-left: 24px !important; color: var(--text-muted); }
+.app-shell .course-delete:hover { color: var(--el-color-danger); background: var(--el-color-danger-light-9); }
+.app-shell .course-nav, .app-shell .course-context { min-width: 0; }
+.app-shell .course-tabs a { white-space: nowrap; }
+.app-shell .el-table { max-width: 100%; }
+.app-shell .el-table__body-wrapper .el-scrollbar__wrap { overflow-x: auto; }
+.runtime-overview > p { font-size: 13px; color: var(--text-muted); }
+.app-shell details > summary { cursor: pointer; font-weight: 600; }
+@media (max-width: 700px) {
+  .app-shell .shelf-heading { display: block; }
+  .app-shell .shelf-heading h1 { font-size: 25px; }
+  .app-shell .course-context strong { flex-basis: 100%; }
+  .app-shell .course-tabs { gap: 0 16px; }
+  .app-shell .window-filter .el-date-editor { max-width: 100%; }
+}

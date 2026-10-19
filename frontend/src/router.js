@@ -41,7 +41,7 @@ router.beforeEach(async (to, from) => {
     return { path: "/login", query: { next: to.fullPath } };
   }
   if (to.meta.admin && session.user?.role !== "admin") {
-    sessionStorage.setItem("accessDeniedFlash", "你没有访问这个页面的权限");
+    sessionStorage.setItem("accessDeniedFlash", "仅管理员可进入后台管理");
     return "/courses";
   }
   if (to.params.courseId) {

@@ -64,8 +64,9 @@ export async function login(username, password) {
 
 export async function logout() {
   const version = ++authVersion;
-  await api("/auth/logout", { method: "POST" });
-  if (version !== authVersion) return;
+  try { await api("/auth/logout", { method: "POST" }); }
+  catch (error) { if (error.status !== 401) throw error; }
+  if (version !== authVersion && session.user) return;
   session.user = null;
   session.ready = true;
   session.error = null;

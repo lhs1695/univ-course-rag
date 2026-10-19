@@ -19,7 +19,7 @@ const serviceMessages = {
 };
 const knownDetails = {
   "Invalid credentials": "用户名或密码不正确，请重新输入。",
-  "User not found": "用户不存在，请核对已有账号。",
+  "User not found": "找不到该学生账号，请先让管理员创建。",
   "Already a member": "该账号已加入课程，请刷新成员列表。",
   "Username taken": "用户名已存在，请换一个用户名。",
   "Can only add students": "这里只能加入已有学生账号。",

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程，点击课程行管理成员。管理员也需加入课程后才能访问课内内容。</p></header>
+    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>课程与授权</h1><p class="page-description">创建、重命名或删除课程，下方成员区默认显示第一门课程，点击课程行切换。管理员也需加入课程后才能访问课内内容。</p></header>
     <section class="panel-card">
     <h2>新建课程</h2>
     <el-form :inline="true" @submit.prevent="onCreateCourse">
@@ -25,18 +25,19 @@
       @current-change="onSelectCourse"
     >
       <el-table-column prop="title" label="课程" min-width="120" />
-      <el-table-column label="操作" width="150" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link :disabled="courseBusy" @click.stop="onRenameCourse(row)">重命名</el-button>
-          <el-button type="danger" link :disabled="courseBusy" @click.stop="onDeleteCourse(row)">删除</el-button>
+          <el-button class="course-delete" text :disabled="courseBusy" @click.stop="onDeleteCourse(row)">删除…</el-button>
         </template>
       </el-table-column>
     </el-table>
     </section>
 
-    <template v-if="selected">
-      <section class="panel-card">
-      <h2>成员 · {{ selected.title }}</h2>
+    <section class="panel-card">
+      <h2>成员与授权{{ selected ? ` · ${selected.title}` : "" }}</h2>
+      <p v-if="!selected">{{ loading ? "正在加载课程…" : "请先创建课程，再添加成员与授权。" }}</p>
+      <template v-if="selected">
       <el-form :inline="true" @submit.prevent="onAddMember">
         <el-form-item label="用户">
           <el-select v-model="memberUserId" filterable style="width: 200px">
@@ -67,8 +68,8 @@
           </template>
         </el-table-column>
       </el-table>
-      </section>
-    </template>
+      </template>
+    </section>
   </div>
 </template>
 
@@ -99,7 +100,7 @@ const bindableUsers = computed(() => {
 
 async function loadCourses(selectedId = selected.value?.id) {
   courses.value = await api("/admin/courses");
-  const row = courses.value.find(course => course.id === selectedId) || null;
+  const row = courses.value.find(course => course.id === selectedId) || courses.value[0] || null;
   await onSelectCourse(row);
   await nextTick();
   courseTable.value?.setCurrentRow(row);
@@ -118,7 +119,7 @@ onMounted(async () => {
   try {
     await Promise.all([loadCourses(), loadUsers()]);
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     loading.value = false;
   }
@@ -139,7 +140,7 @@ async function onSelectCourse(row) {
   try {
     await loadMembers(row.id);
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   }
 }
 
@@ -156,7 +157,7 @@ async function onCreateCourse() {
     ElMessage.success("已创建课程");
     await loadCourses(course.id);
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     creating.value = false;
   }
@@ -168,9 +169,9 @@ async function onRenameCourse(row) {
   try {
     let value;
     try {
-      ({ value } = await ElMessageBox.prompt("请输入新的课程名称", "重命名课程", {
+      ({ value } = await ElMessageBox.prompt("请输入新的课程显示名称", "重命名课程", {
         inputValue: row.title,
-        inputValidator: value => Boolean(value?.trim()) || "课程名称不能为空",
+        inputValidator: value => Boolean(value?.trim()) || "课程显示名称不能为空",
         confirmButtonText: "保存", cancelButtonText: "取消",
       }));
     } catch {
@@ -180,7 +181,7 @@ async function onRenameCourse(row) {
     ElMessage.success("已重命名课程");
     await loadCourses(row.id);
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     courseBusy.value = false;
   }
@@ -191,7 +192,9 @@ async function onDeleteCourse(row) {
   courseBusy.value = true;
   try {
     try {
-      await ElMessageBox.confirm(`删除课程「${row.title}」将移除成员与课内数据，且不可从本页恢复。确定删除？`, "确认删除课程", {
+      await ElMessageBox.prompt(`删除课程「${row.title}」将移除成员关系、课内资料文件与入库记录、向量切片、提问日志，无法从本页恢复（已有外部备份不受影响）。请输入课程全名确认：`, "确认删除课程", {
+        inputValidator: value => value === row.title || "请输入完整课程名称",
+        inputPlaceholder: "课程全名",
         confirmButtonText: "删除课程", cancelButtonText: "取消", type: "warning",
       });
     } catch {
@@ -203,7 +206,7 @@ async function onDeleteCourse(row) {
     ElMessage.success("已删除课程");
     await loadCourses();
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     courseBusy.value = false;
   }
@@ -226,7 +229,7 @@ async function onAddMember() {
     memberUserId.value = "";
     await loadMembers(courseId);
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     adding.value = false;
   }
@@ -247,7 +250,7 @@ async function onRemoveMember(row) {
     if (selected.value?.id === courseId) await loadMembers(courseId);
     ElMessage.success("已移出课程");
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   }
 }
 </script>

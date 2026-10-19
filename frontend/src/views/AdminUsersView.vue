@@ -1,9 +1,10 @@
 <template>
   <div class="page">
     <header class="page-heading"><p class="eyebrow">管理后台</p><h1>账号管理</h1><p class="page-description">创建教师、学生与管理员账号。账号身份与课程内授权分别管理。</p></header>
+    <el-alert v-if="!accountCapabilities.resetPassword && !accountCapabilities.disable" title="当前版本仅支持创建账号；重置密码/停用需运维，本页不提供" type="info" :closable="false" />
     <section class="panel-card">
     <h2>创建账号</h2>
-    <el-form :inline="true" :model="form" @submit.prevent="onCreate">
+    <el-form :inline="true" :model="form" :disabled="creating" @submit.prevent="onCreate">
       <el-form-item label="用户名">
         <el-input v-model="form.username" />
       </el-form-item>
@@ -19,6 +20,7 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" native-type="submit" :loading="creating">创建账号</el-button>
+        <el-button :disabled="creating" @click="clearForm">清空</el-button>
       </el-form-item>
     </el-form>
     </section>
@@ -34,9 +36,13 @@
 
 <script setup>
 import { onMounted, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 
+// Known API contract: GET/POST only; do not probe unsupported write endpoints.
+const accountCapabilities = Object.freeze({ resetPassword: false, disable: false });
+const roleNames = { student: "学生", teacher: "教师", admin: "管理员" };
+function clearForm() { Object.assign(form, { username: "", password: "", role: "student" }); }
 const users = ref([]);
 const loading = ref(true);
 const creating = ref(false);
@@ -50,7 +56,7 @@ onMounted(async () => {
   try {
     await loadUsers();
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     loading.value = false;
   }
@@ -64,17 +70,20 @@ async function onCreate() {
     return;
   }
   creating.value = true;
+  const payload = { username, password: form.password, role: form.role };
   try {
+    try {
+      await ElMessageBox.confirm(`为「${username}」创建全局身份为「${roleNames[payload.role]}」的账号？课程授权需另行设置。`, "确认账号角色", { confirmButtonText: "确认创建", cancelButtonText: "取消", type: "warning" });
+    } catch { return; }
     await api("/admin/users", {
       method: "POST",
-      json: { username, password: form.password, role: form.role },
+      json: payload,
     });
-    form.username = "";
-    form.password = "";
+    clearForm();
     ElMessage.success("已创建");
     await loadUsers();
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     creating.value = false;
   }

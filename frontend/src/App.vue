@@ -32,7 +32,7 @@
       <template v-if="isAdmin">
         <router-link to="/admin/users">账号管理</router-link>
         <router-link to="/admin/courses">课程与授权</router-link>
-        <router-link to="/admin/maintenance">日志维护</router-link>
+        <router-link to="/admin/maintenance">日志维护 · 高级</router-link>
         <router-link to="/admin/system">系统状态</router-link>
       </template>
       <router-link to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': !route.path.startsWith('/admin') }">我的课程</router-link>
@@ -41,8 +41,8 @@
       <nav v-if="pageAllowed && currentCourse" class="course-nav" aria-label="当前课程导航">
         <div class="course-context"><span>当前课程</span><strong>{{ currentCourse.title }}</strong><span class="role-pill">课内{{ currentCourse.membership_role === 'teacher' ? '教师' : '学生' }}</span></div>
         <div class="course-tabs">
-          <router-link :to="`/courses/${currentCourse.id}`" exact-active-class="tab-selected">课程问答</router-link>
-          <router-link :to="`/courses/${currentCourse.id}/documents`" exact-active-class="tab-selected">课程资料</router-link>
+          <router-link :to="`/courses/${currentCourse.id}`" exact-active-class="tab-selected">提问</router-link>
+          <router-link :to="`/courses/${currentCourse.id}/documents`" exact-active-class="tab-selected">资料</router-link>
           <router-link v-if="currentCourse.capabilities.can_manage_members" :to="`/courses/${currentCourse.id}/members`" exact-active-class="tab-selected">本课学生</router-link>
           <router-link v-if="currentCourse.capabilities.can_view_insights" :to="`/courses/${currentCourse.id}/insights`" exact-active-class="tab-selected">问答反馈</router-link>
         </div>
@@ -70,7 +70,7 @@ import { clearCourseAccess, courseAccess, refreshCourseAccess } from "./courseAc
 
 const router = useRouter();
 const route = useRoute();
-const studentSurface = computed(() => route.path === "/login" || (route.path.startsWith("/courses") && !route.meta.capability));
+const studentSurface = computed(() => route.path === "/login" || (session.user?.role === "student" && route.path.startsWith("/courses")));
 const isAdmin = computed(() => session.user?.role === "admin");
 const roleLabel = computed(() => ({ admin: "管理员", teacher: "教师", student: "学生" }[session.user?.role] || ""));
 const currentCourse = computed(() => courseAccess.course?.id === route.params.courseId ? courseAccess.course : null);
@@ -133,7 +133,7 @@ async function onLogout() {
     await logout();
     await router.push("/login");
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   }
 }
 

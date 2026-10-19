@@ -1,5 +1,10 @@
 # 当前施工计划
 
+## 2026-10-19 当前授权项：staff/admin F1–F20
+
+按本次用户任务卡完成角色选壳、教师资料原文入口、反馈降噪及后台操作提示。直接复用现有 Element Plus（^2.11.3）、Vue（^3.5.21）、documentDisplay、api.js 与原生 details；本地工作仅角色分支、文案、样式和确认流程，无新增依赖/后端接口。逐项验收与诚实降级见 [NOTES-F1-F20](../NOTES-F1-F20.md)。静态编译及 diff 检查通过；按用户要求构建/Playwright 留外层。
+
+
 更新：2026-10-18。R7 单课心理学纯文字对照为历史结果；当前四课基线已在隔离库 `univ_course_rag_r7b6_real` 完成：17 份 PDF、385 chunks，真实 SiliconFlow BAAI/bge-m3 与有限 DeepSeek 生成，结果与指标限制见 [结果登记](evaluation-results.md)。Docling 的 17 份全量冻结于 8/17 停止，已处理约 4.13 小时，线性代数公式密集文件出现 71–94 分钟/4–5 页的不可接受耗时。**当前决策：停止 Docling 作为生产主解析器，不续跑旧任务；生产 PDF 使用 PyMuPDF 轻量路径与页级质量门禁，特殊页面按需处理。** R7B-L1…L3、R7B-5、R7B-6B（Fake）、R7B-6C（真实 embedding 小样本）和 R7B-7（四课基线）均已完成。旧 R7B-1…4 只保留历史证据，不算通过或当前前置。
 
 ## 目标与约束

@@ -1,5 +1,5 @@
 <template>
-  <StudentDocuments v-if="!canManage" :documents="documents" :loading="loading" :failure="failure" :course-id="courseId" @refresh="refreshDocuments" />
+  <StudentDocuments v-if="session.user?.role === 'student'" :documents="documents" :loading="loading" :failure="failure" :course-id="courseId" @refresh="refreshDocuments" />
   <div v-else class="page">
     <header class="page-heading"><p class="eyebrow">课程资源</p><h1>课程资料</h1><p class="page-description">{{ canManage ? '上传、检查入库状态，维护本课问答的资料依据。' : '只读查看本课资料；PDF 可输入页码后打开到对应页，回答引用也可回到原资料核对。' }}</p></header>
 
@@ -27,42 +27,7 @@
 
     <p v-if="canManage" class="scope-note">入库质量只说明文本是否被抽取和切片，不代表问答一定正确。文本较少的资料仍会保留，请结合引用核对原文。</p>
 
-    <el-table v-if="!canManage" :data="documents" v-loading="loading" empty-text="本课还没有可查看的资料">
-      <el-table-column prop="filename" label="文件名" min-width="220" class-name="filename-cell" />
-      <el-table-column label="页数" width="100">
-        <template #default="{ row }">{{ documentPageLabel(row) }}</template>
-      </el-table-column>
-      <el-table-column label="状态" width="130">
-        <template #default="{ row }">
-          <el-tag :type="documentCoverage(row).type">{{ documentCoverage(row).label }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" min-width="280">
-        <template #default="{ row }">
-          <div v-if="row.job_status === 'succeeded'" class="student-open">
-            <label v-if="isPdfDocument(row)" :for="`document-page-${row.id}`">页码</label>
-            <el-input
-              v-if="isPdfDocument(row)"
-              :id="`document-page-${row.id}`"
-              v-model="pageSelections[row.id]"
-              inputmode="numeric"
-              @blur="correctPage(row)"
-              @keydown.enter="correctPage(row)"
-              size="small"
-              class="page-input"
-              :aria-label="`打开页码：${row.filename}`"
-            />
-            <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">
-              {{ isPdfDocument(row) ? '打开 PDF' : '打开资料' }}
-            </el-link>
-            <small v-if="isPdfDocument(row)" class="subtle">新窗口打开，可调整页码</small>
-          </div>
-          <span v-else class="subtle">暂不可打开</span>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <el-table v-else :data="documents" v-loading="loading" empty-text="还没有资料">
+    <el-table :data="documents" v-loading="loading" empty-text="还没有资料">
       <el-table-column prop="filename" label="文件" min-width="220" class-name="filename-cell" />
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
@@ -87,7 +52,30 @@
           <span v-else>—</span>
         </template>
       </el-table-column>
-      <el-table-column v-if="canManage" label="操作" width="140">
+      <el-table-column label="打开原文" min-width="280">
+        <template #default="{ row }">
+          <div v-if="row.job_status === 'succeeded'" class="student-open">
+            <label v-if="isPdfDocument(row)" :for="`document-page-${row.id}`">页码</label>
+            <el-input
+              v-if="isPdfDocument(row)"
+              :id="`document-page-${row.id}`"
+              v-model="pageSelections[row.id]"
+              inputmode="numeric"
+              @blur="correctPage(row)"
+              @keydown.enter="correctPage(row)"
+              size="small"
+              class="page-input"
+              :aria-label="`打开页码：${row.filename}`"
+            />
+            <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">
+              {{ isPdfDocument(row) ? '打开 PDF' : '打开资料' }}
+            </el-link>
+            <small v-if="isPdfDocument(row)" class="subtle">新窗口打开，可调整页码</small>
+          </div>
+          <span v-else class="subtle">暂不可打开</span>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="canManage" label="维护" width="140">
         <template #default="{ row }">
           <el-button v-if="row.job_status === 'failed'" :disabled="busyIds.has(row.id)" type="primary" link @click="onRetry(row)">
             重试
@@ -105,8 +93,9 @@ import StudentDocuments from "../components/StudentDocuments.vue";
 import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
+import { session } from "../session";
 import { courseAccess } from "../courseAccess";
-import { clampDocumentPage, documentQualityLabel, documentContentUrl, documentCoverage, documentPageLabel, isPdfDocument } from "../documentDisplay";
+import { clampDocumentPage, documentQualityLabel, documentContentUrl, isPdfDocument } from "../documentDisplay";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
@@ -240,7 +229,7 @@ onMounted(async () => {
     await loadDocuments();
   } catch (error) {
     failure.value = error.message;
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     loading.value = false;
   }
@@ -266,7 +255,7 @@ async function onUpload({ file }) {
     failedUpload.value = file;
     uploadUncertain.value = error.status === 0;
     failure.value = error.message;
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     uploading.value = false;
   }
@@ -306,7 +295,7 @@ async function onDelete(row) {
     await loadDocuments();
   } catch (error) {
     failure.value = error.message;
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     busyIds.value.delete(row.id);
   }
@@ -321,7 +310,7 @@ async function onRetry(row) {
     await loadDocuments();
   } catch (error) {
     failure.value = error.message;
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     busyIds.value.delete(row.id);
   }

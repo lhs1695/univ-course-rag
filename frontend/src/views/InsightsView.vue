@@ -1,7 +1,6 @@
 <template>
   <div class="page">
     <header class="page-heading">
-      <p class="eyebrow">课程反馈</p>
       <h1>问答反馈</h1>
       <p class="page-description">查看已保存问答的计数、趋势和待核对问句。</p>
     </header>
@@ -25,11 +24,6 @@
 
     <el-alert v-if="failure" :title="failure" type="error" :closable="false" show-icon />
     <template v-else>
-      <div v-if="summary" class="key-counts" aria-label="关键统计">
-        <div>学生提交<strong>{{ summary.student_attempts }}</strong></div>
-        <div>有引用回答<strong>{{ summary.cited_answer }}</strong></div>
-        <div>依据不足<strong>{{ summary.no_evidence }}</strong></div>
-      </div>
       <section class="panel-card insights-section">
         <h3 class="section-title">依据不足的问句（待核对）</h3>
         <el-table :data="noEvidence" v-loading="loading" empty-text="这段时间暂无已登记的依据不足问句">
@@ -58,6 +52,8 @@
         </details>
       </section>
 
+      <section class="panel-card insights-section" aria-live="polite"><h3 class="section-title">备课建议</h3><p>{{ teachingSuggestion }}</p></section>
+
       <section class="panel-card insights-section">
         <h3 class="section-title">学生提交趋势（按本地日期）</h3>
         <p class="hint">按上海时间的自然日统计；下表只列有学生提交的日期。</p>
@@ -73,18 +69,18 @@
         </el-table>
       </section>
 
-      <section class="panel-card insights-section">
-        <h3 class="section-title">有引用回答的问句（按次数）</h3>
+      <details class="panel-card insights-section">
+        <summary>有引用回答的问句（按次数）</summary>
         <el-table :data="frequent" v-loading="loading" empty-text="这段时间暂无已登记的有引用回答">
           <el-table-column label="问句" width="420">
             <template #default="{ row }"><span class="query-clamp">{{ row.query }}</span></template>
           </el-table-column>
           <el-table-column prop="count" label="次数" width="100" />
         </el-table>
-      </section>
+      </details>
 
-      <section class="panel-card insights-section">
-        <h3 class="section-title">相似问句分组（仅供参考，未验证）</h3>
+      <details class="panel-card insights-section">
+        <summary>相似问句分组（仅供参考，未验证）</summary>
         <details class="hint"><summary>候选分组说明</summary>
         <p>
         把相近的问法放在一起，方便核对；分组默认关闭，相似度阈值尚未校准。只有填写阈值并勾选确认后，才会把当前已应用统计窗口内的学生问句原文发送到已配置的嵌入服务，可能产生费用。请求发出后，离开页面也不能保证调用停止。返回结果只是达到该阈值的候选；单例表示未与其他问句成组。候选组不是已验证同义、教学缺口或学生掌握度。
@@ -145,7 +141,7 @@
           <template #default="{ row }">{{ memberOutcome(row) }}</template>
         </el-table-column>
         </el-table>
-      </section>
+      </details>
     </template>
   </div>
 </template>
@@ -181,6 +177,14 @@ const rangeShortcuts = [
   { text: "最近 7 天", value: () => [hoursAgo(24 * 7), new Date()] },
   { text: "最近 30 天", value: () => [hoursAgo(24 * 30), new Date()] },
 ];
+
+const teachingSuggestion = computed(() => {
+  if (loading.value) return "正在读取本窗口问答记录…";
+  if (!summary.value || !summary.value.knowledge_attempts) return "暂无可用于建议的问答数据；可先检查本课资料。";
+  if (summary.value.no_evidence > 0) return `有 ${summary.value.no_evidence} 次提问依据不足，建议先对照上方问句核对原文，再决定是否补充资料。`;
+  if (summary.value.cited_answer > 0) return "当前已登记问答均有引用，可抽查引用原页与回答是否一致；有引用不代表回答正确。";
+  return "暂无可用于建议的问答数据。";
+});
 
 const threshold = computed(() => {
   const value = Number(thresholdText.value);
@@ -236,7 +240,7 @@ async function loadInsights() {
   } catch (error) {
     failure.value = error.message;
     summary.value = null;
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     loading.value = false;
   }
@@ -284,7 +288,7 @@ async function loadGroups() {
     groups.value = await api(`/courses/${courseId.value}/insights/groups`, { method: "POST", json: body });
   } catch (error) {
     groupingFailure.value = error.message;
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     grouping.value = false;
   }

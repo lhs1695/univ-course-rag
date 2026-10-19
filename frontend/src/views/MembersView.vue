@@ -5,7 +5,7 @@
 
     <el-form class="add-form" :inline="true" @submit.prevent="onAdd">
       <el-form-item label="学生账号">
-        <el-input v-model="username" placeholder="已有学生用户名" />
+        <el-input v-model="username" :disabled="adding" placeholder="已有学生用户名" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" native-type="submit" :loading="adding">加入本课</el-button>
@@ -49,7 +49,7 @@ onMounted(async () => {
     courseTitle.value = course.title;
     await loadMembers();
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error({ message: error.message, grouping: true });
   } finally {
     loading.value = false;
   }
@@ -72,7 +72,7 @@ async function onAdd() {
     username.value = "";
     await loadMembers();
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error({ message: error.message, grouping: true });
   } finally {
     adding.value = false;
   }
@@ -93,7 +93,7 @@ async function onRemove(row) {
     ElMessage.success("已移出");
     await loadMembers();
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error({ message: error.message, grouping: true });
   }
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>提问日志维护</h1><p class="page-description">按留存窗口预览并处理到期记录，每次仅操作受限的一批。</p></header>
+    <header class="page-heading"><p class="eyebrow">管理后台</p><h1>提问日志维护 · 高级</h1><p class="page-description">演示时请勿当场删除。日常维护可按留存窗口预览并处理到期记录，每次仅操作受限的一批。</p></header>
     <p class="scope-note">提问日志包含问题原文，只用于留存窗口内的课程学情。维护操作不会展示问题或提问者。</p>
 
     <el-card class="maintenance-card panel-card" shadow="never">
@@ -63,7 +63,7 @@ async function previewExpired() {
     });
     previewReady.value = true;
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     previewing.value = false;
   }
@@ -98,7 +98,7 @@ async function deleteExpired() {
     previewReady.value = false;
     ElMessage.success(`已删除 ${result.value.deleted_count} 条到期日志`);
   } catch (error) {
-    ElMessage.error(error.message);
+    if (error.status !== 401) ElMessage.error(error.message);
   } finally {
     deleting.value = false;
   }
