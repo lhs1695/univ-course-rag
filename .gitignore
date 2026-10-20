@@ -27,3 +27,6 @@ corpus/local/**
 
 .codex-prompt.txt
 
+
+# Local demo / rehearsal logs (do not commit)
+.demo-logs/
