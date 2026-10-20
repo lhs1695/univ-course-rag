@@ -18,7 +18,8 @@
       <div v-else-if="notice" class="answer-content"><el-alert :title="notice.message" :type="notice.type" :closable="false"/><p>{{ notice.type === 'error' ? '本次回答未能完成，请稍后重试。' : '试着补充概念名称、章节或更具体的描述，也可以先浏览课程资料。' }}</p><router-link :to="`/courses/${courseId}/documents`">浏览课程资料</router-link></div>
       <div v-else-if="result?.answer" class="answer-content"><AnswerBody :answer="result.answer" :citations="result.citations || []" @citation="focusCitation"/></div>
       <section v-if="!selectedRound.pending" class="source-section" aria-labelledby="evidence-title"><div class="source-section-heading"><h3 id="evidence-title">回答从哪里来</h3><span>{{ result?.citations?.length || 0 }} 条资料依据</span></div>
-        <ol v-if="result?.citations?.length" class="source-list"><li v-for="(citation,index) in result.citations" :key="citation.chunk_id" :id="`source-${citation.chunk_id}`" tabindex="-1" class="source-slip"><div class="source-slip-top"><span class="source-cite-number">[{{ index + 1 }}]</span><h4>{{ citationTitle(filenameOf(citation.document_id)) }}</h4><a :href="citationUrl(citation)" target="_blank" rel="noopener" class="source-page-link" :aria-label="`打开${filenameOf(citation.document_id)}${citation.page != null ? '第'+citation.page+'页' : ''}（新窗口）`">{{ citation.page != null ? '第 '+citation.page+' 页' : '原资料' }} <span aria-hidden="true">↗</span></a></div><blockquote>{{ cleanExcerpt(citation.snippet, citation.page) }}</blockquote><small>{{ filenameOf(citation.document_id) }}</small></li></ol>
+        <p v-if="result?.citations?.length" class="source-hint">每条依据标注页码；点「打开原 PDF」会在新窗口打开课件，地址带 <code>#page=</code>，便于回到原页核对（有引用 ≠ 主张已被证明）。</p>
+        <ol v-if="result?.citations?.length" class="source-list"><li v-for="(citation,index) in result.citations" :key="citation.chunk_id" :id="`source-${citation.chunk_id}`" tabindex="-1" class="source-slip"><div class="source-slip-top"><span class="source-cite-number">[{{ index + 1 }}]</span><h4>{{ citationTitle(filenameOf(citation.document_id)) }}</h4><span class="source-page-badge" v-if="citation.page != null">{{ citationPageLabel(citation.page) }}</span><a :href="citationUrl(citation)" target="_blank" rel="noopener" class="source-page-link" :aria-label="`${citationOpenLabel(citation.page)}：${filenameOf(citation.document_id)}（新窗口）`">{{ citationOpenLabel(citation.page) }} <span aria-hidden="true">↗</span></a></div><blockquote>{{ cleanExcerpt(citation.snippet, citation.page) }}</blockquote><small>{{ filenameOf(citation.document_id) }}<template v-if="citation.page != null"> · #page={{ citation.page }}</template></small></li></ol>
         <p v-else class="source-empty">本次没有可展示的引用，请调整问题或核对课程资料。</p>
       </section>
     </article>
@@ -34,7 +35,7 @@ import { api } from "../api";
 import { session } from "../session";
 import { questionDraft } from "../drafts";
 import { askHistory, answerNotice, roundStatus } from "../askHistory.js";
-import { cleanExcerpt, citationTitle } from "../citationDisplay.js";
+import { cleanExcerpt, citationTitle, citationPageLabel, citationOpenLabel } from "../citationDisplay.js";
 import AnswerBody from "../components/AnswerBody.vue";
 
 const route = useRoute();

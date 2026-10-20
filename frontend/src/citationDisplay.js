@@ -21,3 +21,17 @@ export function citationTitle(filename) {
   if (filename === '01-linear-algebra-full.pdf') return '线性代数讲义';
   return String(filename || '课程资料').replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').trim() || '课程资料';
 }
+
+/** Visible page label for citation cards / links. */
+export function citationPageLabel(page) {
+  const n = Number(page);
+  if (Number.isInteger(n) && n > 0) return `第 ${n} 页`;
+  return '原资料';
+}
+
+/** Short CTA: open original PDF at page. */
+export function citationOpenLabel(page) {
+  const n = Number(page);
+  if (Number.isInteger(n) && n > 0) return `打开原 PDF · 第 ${n} 页`;
+  return '打开原 PDF';
+}

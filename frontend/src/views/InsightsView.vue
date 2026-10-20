@@ -2,7 +2,16 @@
   <div class="page">
     <header class="page-heading">
       <h1>问答反馈</h1>
+      <p class="page-lead">把本课学生提问整理成备课线索：哪些问句常被问到、哪些依据不足。这里不推断学生能力，有引用也不等于回答正确。</p>
     </header>
+
+    <section v-if="summary" class="key-counts" aria-label="本窗口汇总">
+      <div><span>学生提交</span><strong>{{ summary.knowledge_attempts ?? 0 }}</strong></div>
+      <div><span>有引用回答</span><strong>{{ summary.cited_answer ?? 0 }}</strong></div>
+      <div><span>依据不足</span><strong>{{ summary.no_evidence ?? 0 }}</strong></div>
+      <div><span>失败 / 未知</span><strong>{{ (summary.failure ?? 0) + (summary.unknown_outcome ?? 0) }}</strong></div>
+    </section>
+    <p v-else-if="!loading && !failure" class="insights-empty-lead">本窗口还没有可展示的问答统计。学生在本课提问并产生结果后，这里会出现汇总与待核对列表。</p>
 
     <fieldset class="window-filter">
       <legend>统计时间</legend>
@@ -293,6 +302,8 @@ h4 { font-size: 15px; }
 .group-controls .el-checkbox { display: flex; margin-top: 12px; white-space: normal; height: auto; }
 .summary-surface { margin: 24px 0 26px; padding: 16px 18px; background: var(--surface-subtle); border-left: 3px solid var(--el-color-primary-light-5); }
 .summary-surface p { margin: 4px 0; }
+.page-lead { margin: 8px 0 0; max-width: 52rem; color: var(--text-muted); font-size: 14px; line-height: 1.7; }
+.insights-empty-lead { margin: 12px 0 8px; color: var(--text-muted); font-size: 14px; line-height: 1.7; }
 .insights-section { margin: 20px 0; }
 .section-title { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
 .query-clamp { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; line-height: 1.5; }

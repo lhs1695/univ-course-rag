@@ -214,20 +214,16 @@ add_box(slide, 0.70, 4.75, 11.9, 1.35, WHITE, LINE)
 add_text(slide, "三角色分工", 0.95, 4.95, 2.0, 0.34, 17, TEAL, True)
 add_text(slide, "管理员：账号与课程、成员授权　｜　教师：本课资料状态与基础反馈　｜　学生：我的课程 → 提问 → 查看引用 → 回原页", 0.95, 5.40, 11.3, 0.45, 16, INK)
 
-# 4. Three features
-slide = add_slide("三项技术特色", "开题方案研究重点：资料可追溯、检索可对照、回答可核对（开源复用，不自造平台）", 4, total=TOTAL)
-add_card(slide, 0.70, 1.80, 3.85, 4.20,
-         "① 可追溯的资料组织",
-         "PyMuPDF 原生文字提取\n保留页码与逐页质量记录\n空页 / 稀疏页 / 异常可登记\n资料哈希、切分与索引版本可解释\nMarkdown / Chunk 是派生视图",
-         TEAL_LIGHT, TEAL, TEAL, INK, 18, 15)
-add_card(slide, 4.75, 1.80, 3.85, 4.20,
-         "② 课程内检索（可对照）",
-         "中期演示默认：Dense\nHybrid / BM25 / rerank\n已实现、可开关\n不作中期主结论\n权限贯穿候选与缓存",
-         WHITE, LINE, AMBER, INK, 18, 15)
-add_card(slide, 8.80, 1.80, 3.85, 4.20,
-         "③ 可核对的证据回答",
-         "只引用实际送入上下文的来源\n区分有据回答 / 依据不足 / 失败\n学生可打开原 PDF #page=\n合法引用 ≠ 事实主张被支持",
-         AMBER_LIGHT, AMBER, AMBER, INK, 18, 15)
+# 4. Dual narrative highlights
+slide = add_slide("技术亮点 · 双叙事", "教学场景闭环 + 检索/生成技术；中期只讲能演示、有证据的能力", 4, total=TOTAL)
+add_card(slide, 0.55, 1.75, 6.05, 4.35,
+         "A. 教学场景闭环",
+         "• 课界权限贯穿检索—生成—打开原文件\n• 证据不足可拒答，不编造课外步骤\n• 引用带回原 PDF 页（#page=）\n• 三角色分工清晰，不是单一聊天窗\n• 教师问答反馈：高频问句与依据不足线索",
+         TEAL_LIGHT, TEAL, TEAL, INK, 19, 15)
+add_card(slide, 6.85, 1.75, 5.85, 4.35,
+         "B. 检索 / 生成技术",
+         "• 页级解析 + 质量门禁（PyMuPDF）\n• 向量检索 BGE-M3 + 证据约束生成\n• DeepSeek（deepseek-flash）\n• dense / hybrid / rerank 已实现可开关\n• 中期主演示：dense，rerank 关\n• Hybrid 对照实验放后期，不作主结论",
+         AMBER_LIGHT, AMBER, AMBER, INK, 19, 15)
 
 # 5. Architecture
 slide = add_slide("系统链路与技术栈", "复用成熟组件；本地实现课程边界、来源映射与失败状态", 5, total=TOTAL)
@@ -309,48 +305,38 @@ add_card(slide, 6.85, 1.80, 5.75, 4.15,
          "• 小规模同义问题组（默认关闭）\n• 阈值未校准，效果待真实条件验证\n• 不据此宣称教学质量提升\n• 与学生问答共用课程边界与留存策略\n• 演示时可打开教师侧反馈入口一眼带过",
          WHITE, LINE, AMBER, INK, 19, 16)
 
-# 9. Limitations
-slide = add_slide("诚实限制", "工程闭环与通用 RAG 质量是两回事；只陈述有证据的能力", 9, total=TOTAL)
-add_card(slide, 0.70, 1.80, 5.90, 4.15,
-         "评价口径",
-         "• 事实正确 ≠ 引用支持\n• 12/12 与 4/4 是弱自动化规则\n• AI 预标题集未经独立人工复核\n• 余弦阈值 0.45 未校准\n• Hybrid/rerank 不作中期主结论",
-         RED_LIGHT, RED, RED, INK, 19, 16)
-add_card(slide, 6.85, 1.80, 5.75, 4.15,
-         "能力与交付边界",
-         "• 非 OCR / 公式 / 图表理解主线\n• 非校园网生产部署\n• 供应商账单、依赖锁定待验\n• Demo Reset / 成本专项待验\n• 非开发者独立试用尚未完成",
-         AMBER_LIGHT, AMBER, AMBER, INK, 19, 16)
+# 9. Gaps (three) + later plan teaser
+slide = add_slide("现有不足（三条）", "把边界讲清楚，比夸大进展更有说服力", 9, total=TOTAL)
+add_card(slide, 0.55, 1.80, 3.95, 4.25,
+         "① 评价未人工复核",
+         "仅有弱规则命中与拒答\n事实正确 ≠ 引用支持\n尚无独立人工事实正确率\n题集为 AI 预标",
+         RED_LIGHT, RED, RED, INK, 18, 15)
+add_card(slide, 4.70, 1.80, 3.95, 4.25,
+         "② 复杂资料未覆盖",
+         "非 OCR / 扫描件主线\n公式与图表理解有限\n纯图页覆盖不全\n文字层 PDF 是中期范围",
+         AMBER_LIGHT, AMBER, AMBER, INK, 18, 15)
+add_card(slide, 8.85, 1.80, 3.85, 4.25,
+         "③ 产品化待验",
+         "阈值与同义分组未校准\n供应商账单 / 成本待验\n单机演示，非校园网并发\n开题争取项尚未全部兑现",
+         WHITE, LINE, NAVY, INK, 18, 15)
 
-# 10. Next steps
-slide = add_slide("中期结论与下一步", "可演示、可追溯、可核对；不宣称通用多模态或人工事实准确率", 10, total=TOTAL)
-add_text(slide, "已完成", 0.82, 1.75, 2.0, 0.40, 21, GREEN, True)
-done = [
-    "中文四课演示库 4 / 27 / 2,501（cn_v2）",
-    "业务闭环可走：提问 → 引用 → 回原页",
-    "拒答与有据回答可区分演示",
-    "教师基础反馈与三角色入口可用",
-]
-for i, item in enumerate(done):
-    y = 2.25 + i * 0.72
-    add_box(slide, 0.82, y, 5.55, 0.58, GREEN_LIGHT, GREEN_LIGHT)
-    add_text(slide, f"0{i+1}", 0.94, y + 0.08, 0.45, 0.40, 14, GREEN, True, PP_ALIGN.CENTER)
-    add_text(slide, item, 1.48, y + 0.08, 4.72, 0.42, 14, INK, True)
-add_text(slide, "下一步", 6.82, 1.75, 2.0, 0.40, 21, AMBER, True)
+# 10. Later plan (four) + conclusion
+slide = add_slide("后期计划与中期结论", "四条可汇报的下一步；不承诺公网生产部署", 10, total=TOTAL)
 todo = [
-    "答辩同学可按提纲重做 PPT 终稿",
-    "固定问句再彩排（模型已对齐 flash）",
-    "小规模人工事实与引用复核",
-    "成本/资源专项与结题试用",
+    ("人工复核", "小样本抽检事实正确与引用支持是否一致"),
+    ("检索对照", "Hybrid / rerank 与 dense 对照，有无收益都如实报"),
+    ("同义问题组", "教师侧校准后再开，服务备课线索"),
+    ("试用与成本", "结题非开发者试用 + 资源账单；不承诺公网"),
 ]
-for i, item in enumerate(todo):
-    y = 2.25 + i * 0.72
-    add_box(slide, 6.82, y, 5.55, 0.58, AMBER_LIGHT, AMBER_LIGHT)
-    add_text(slide, f"0{i+1}", 6.94, y + 0.08, 0.45, 0.40, 14, AMBER, True, PP_ALIGN.CENTER)
-    add_text(slide, item, 7.48, y + 0.08, 4.72, 0.42, 14, INK, True)
-add_box(slide, 0.82, 5.55, 11.55, 0.85, NAVY, NAVY)
-add_text(slide, "结论：本机可演示的有依据课程问答原型；参考稿供队友改写，终稿可由答辩同学重做。", 1.05, 5.75, 11.10, 0.45, 17, WHITE, True, PP_ALIGN.CENTER)
+for i, (title, body) in enumerate(todo):
+    x = 0.55 + (i % 2) * 6.35
+    y = 1.75 + (i // 2) * 1.70
+    add_card(slide, x, y, 6.05, 1.50, f"0{i+1} {title}", body, AMBER_LIGHT if i % 2 else TEAL_LIGHT, AMBER if i % 2 else TEAL, AMBER if i % 2 else TEAL, INK, 17, 14)
+add_box(slide, 0.55, 5.35, 12.2, 1.05, NAVY, NAVY)
+add_text(slide, "结论：双叙事亮点可讲清——课界+证据闭环，与页级检索/生成技术；本机可演示。开题「重点争取」项诚实后置。", 0.80, 5.55, 11.7, 0.65, 16, WHITE, True, PP_ALIGN.CENTER)
 
 prs.core_properties.title = "高校课程知识库智能问答：中期进展（参考稿）"
-prs.core_properties.subject = "中文四课 cn_v2、业务闭环、三项特色与诚实限制"
+prs.core_properties.subject = "中文四课 cn_v2、双叙事亮点、不足与后期计划"
 prs.core_properties.author = "项目组"
 prs.core_properties.keywords = "RAG, 课程知识库, 引用, 中期, 参考稿"
 prs.save(PPTX_PATH)
@@ -360,18 +346,18 @@ speaker_notes = """# 中期汇报讲稿提示（参考稿 v5）
 > **定位**：仓内 PPT / 本讲稿均为**参考稿**，队友可改；终稿可由答辩同学按《答辩提纲》重做。
 > 建议时长：约 6–8 分钟。只讲已验证事实；不要把计划说成已完成。
 
-1. **封面**：项目做高校课程知识库问答，核心是让学生回到原始课程材料核对依据。标明这是参考稿。
-2. **问题与目标**：课件分散难定位；通用模型流畅不等于课程依据。中期交付本机文本型原型 + 中文四课 4/27/2501。
-3. **业务闭环**：资料管理 → 授权检索 → 证据问答 → 来源核对 → 教学反馈。三角色各司其职。
-4. **三项特色**：可追溯资料组织；课程内检索（演示默认 Dense，Hybrid/rerank 可开关不作主结论）；可核对证据回答。
-5. **技术栈**：PyMuPDF + BGE-M3 + DeepSeek（`deepseek-flash`）+ FastAPI/pgvector/Vue。不要口播重型解析试验细节。
-6. **四课证据**：库 `univ_course_rag_cn_v2`；弱规则 12/12 与 4/4；题集 AI 预标 ≠ 人工事实正确率。
-7. **演示路径**：LA-01 有引用并打开 `#page=`；LA-R 依据不足。截图在 `中期答辩材料/彩排截图/`。
-8. **教学反馈**：高频问句与依据不足列表是教师线索，不推断学生能力；同义聚合仍待验。
-9. **限制**：事实正确 ≠ 引用支持；无 OCR/公式主线；非生产部署；账单与人工复核待验。
-10. **下一步**：可按提纲重做终稿 PPT；建议用 LA-01/LA-R 再彩排；人工复核与成本专项后置。
+1. **封面**：高校课程知识库问答；核心是学生能回到原始材料核对。标明参考稿。
+2. **问题与目标**：课件分散难定位；通用模型流畅≠课程依据。中期交付本机文本型原型 + 四课 4/27/2501。
+3. **业务闭环**：资料管理 → 授权检索 → 证据问答 → 来源核对 → 教学反馈。
+4. **技术亮点（双叙事）**：先讲教学闭环（权限贯穿、可拒答、回原页、三角色+反馈）；再讲检索/生成（页级门禁、BGE-M3、deepseek-flash、策略可开关；主演示 dense、rerank 关）。
+5. **技术栈一图**：本地实现课程边界与来源映射；开源复用，不自造平台。
+6. **四课证据**：cn_v2；弱规则 12/12 与 4/4 ≠ 人工事实正确率。
+7. **演示路径**：LA-01 有引用并打开 `#page=`；LA-R 依据不足；PERM 无权限可口头或实走。
+8. **教学反馈**：高频问句与依据不足是线索，不画像学生能力。
+9. **不足三条**：无人工复核；复杂 PDF/OCR 未覆盖；阈值/同义/账单与并发待验。
+10. **后期四条**：人工复核；Hybrid/rerank 对照；同义问题组；结题试用+成本。不承诺公网。开题「重点争取」诚实后置。
 
-演示前：库 `univ_course_rag_cn_v2`，`UPLOAD_DIR` 指向 uploads_v2，`RERANKER_BACKEND=disabled`，模型 `deepseek-flash`。不要临场换模型或重新入库。
+演示前：库 `univ_course_rag_cn_v2`，`UPLOAD_DIR`→uploads_v2，`RERANKER_BACKEND=disabled`，模型 `deepseek-flash`。队友自备 Key。不要临场换模型或重新入库。
 """
 NOTES_PATH.write_text(speaker_notes, encoding="utf-8")
 HANDOFF_NOTES.parent.mkdir(parents=True, exist_ok=True)
@@ -383,6 +369,7 @@ all_text = "\n".join(shape.text for slide in check.slides for shape in slide.sha
 required = [
     "参考稿", "2501", "cn_v2", "deepseek-flash", "Dense", "教学反馈",
     "线性代数", "业务闭环", "依据不足", "事实正确", "PyMuPDF", "BGE-M3",
+    "双叙事", "教学场景闭环", "后期", "人工复核",
 ]
 stale = [
     "Docling", "P7-3", "PHIL", "V4 Flash", "v4-flash", "r7b6",

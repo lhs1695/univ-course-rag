@@ -197,3 +197,11 @@
 .study-app .el-input__inner:focus-visible, .study-app .el-textarea__inner:focus-visible { outline-color: #9671b2; }
 .study-app .el-input__wrapper.is-focus { box-shadow:0 0 0 1px var(--violet) inset; }
 @media(max-width:600px) { .study-tabs { flex-wrap:wrap; } }
+
+.source-hint { margin: 0 0 12px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+.source-hint code { font-size: 12px; }
+.source-page-badge {
+  display: inline-flex; align-items: center; margin-left: 8px; padding: 2px 8px;
+  border-radius: 999px; background: var(--el-color-primary-light-9, #e8f5f3);
+  color: #17675f; font-size: 12px; font-weight: 600; white-space: nowrap;
+}
