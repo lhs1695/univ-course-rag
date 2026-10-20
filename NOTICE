@@ -1,0 +1,43 @@
+# NOTICE — Third-party course materials
+
+## What this NOTICE covers
+
+The directory tree under:
+
+`corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/`
+
+contains **course PDF materials** used for midterm demo and teammate rehearsal
+(about 27 PDFs / ~57 MB for four Chinese courses). These files are **not**
+covered by the repository root `LICENSE` (MIT for this project's own code and
+docs).
+
+## Intended use (private repo)
+
+- Current private repository may keep these PDFs so teammates can clone and
+  run the midterm demo with `UPLOAD_DIR` pointing at `uploads_v2`.
+- Use is limited to **course-project teaching / defense demonstration** within
+  the authorized team. Do not redistribute the PDFs to public chat groups,
+  public mirrors, or unrelated third parties.
+
+## Before making the repository public
+
+Human review is **required**:
+
+1. Confirm each PDF's copyright / redistribution rights with the rights holder
+   (instructor / course publisher / institution).
+2. If authorization is incomplete: **remove or replace** `uploads_v2` (and any
+   other tracked third-party corpora) before opening the repo, or keep the repo
+   private.
+3. Also sweep for secrets: never commit `.env`, API keys, dumps, or real
+   passwords (see root README).
+
+## Redistribution
+
+Any further redistribution of the course PDFs requires **separate permission**
+from each rights holder. Cloning this private repo for team demo does not by
+itself grant public redistribution rights.
+
+## Contact
+
+Questions about corpus authorization: ask the project owner / team lead before
+publishing or sharing outside the team.

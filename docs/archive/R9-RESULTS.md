@@ -18,7 +18,7 @@ Metrics cited from eval/rehearsal remain weak automated checks, **not** human fa
 ## Post-commit refresh
 
 - Final documented HEAD after NEXT-SESSION commit: `fa67bcf` (`fa67bcfb1c74d59d90c6813867453d7fb17ff3ff`), ahead 62
-- PPT: [`中期答辩材料/汇报PPT/中期汇报-v5.pptx`](../../中期答辩材料/汇报PPT/中期汇报-v5.pptx)（`build/midterm-presentation/` 仅重建脚本）
+- PPT（历史）：当时为 `中期汇报-v5.pptx`；**v5 已从仓库移除，当前以 `中期汇报-v6-candidate.pptx` 为准**（`build/midterm-presentation/` 若仍存在仅为历史重建脚本）
 - Rehearsal: PASS — see [`中期答辩材料/验收摘要/彩排验收-PASS.md`](../../中期答辩材料/验收摘要/彩排验收-PASS.md)
 
 ## 文档对齐后的 HEAD（说明）
