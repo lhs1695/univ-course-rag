@@ -31,6 +31,8 @@
 
 旧英文四课与 `r7b6_real` 的 17/385 仅为历史对照。
 
+另有 **22 题真实模型 Dense/Hybrid 小样本对照**，由开发者核验（非独立评测）：端到端可答题成功率 Dense/Hybrid **15/17、16/17**；已回答题事实要点通过率 **15/16、16/16**；引用支持均 **16/16**；严格预期页命中均 **12/16**；明显课外问题正确拒答均 **5/5**。不得合成单一准确率或宣称 Hybrid 整体显著更优，详见 [当前评测登记](docs/evaluation-results.md)。
+
 ## 技术栈（仓库事实）
 
 - **前端**：Vue 3 + Vite + Element Plus（Node.js，建议 20+；本仓库常见开发环境为 Node 24）
@@ -46,7 +48,7 @@
 
 **教学闭环**：课界权限贯穿检索—生成—原文件；证据不足可拒；引用回原页；三角色与教师问答反馈。
 
-**检索 / 生成**：页级解析与质量门禁；BGE-M3 向量检索 + DeepSeek（`deepseek-flash`）证据约束生成；dense / hybrid / rerank **已实现可开关**——中期主演示 **dense、rerank 关**，对照实验放后期。勿用弱规则数字冒充人工准确率。
+**检索 / 生成**：页级解析与质量门禁；BGE-M3 向量检索 + DeepSeek（`deepseek-flash`）证据约束生成；dense / hybrid / rerank **已实现可开关**。22 题 Dense/Hybrid 开发者核验小样本对照已完成，但证据不足以证明 Hybrid 整体显著更优；中期主演示仍为 **dense、rerank 关**。勿用弱规则数字冒充人工准确率。
 
 详见 [中期答辩材料/答辩提纲.md](中期答辩材料/答辩提纲.md)。
 
@@ -185,13 +187,13 @@ npm run dev
 | [workflow](docs/workflow.md) | 启动 / 测试 / 禁区（一页） |
 | [engineering](docs/engineering.md) | 现行组件边界摘要 |
 | [validation](docs/validation.md) | 验收分层摘要 |
-| [implementation-plan](docs/implementation-plan.md) | 施工 stub（中期已收口） |
-| [evaluation-results](docs/evaluation-results.md) | 当前数字 stub |
+| [implementation-plan](docs/implementation-plan.md) | 当前阶段状态摘要（历史全文归档） |
+| [evaluation-results](docs/evaluation-results.md) | 当前评测登记与结果口径 |
 | [docs/archive/](docs/archive/README.md) | 历史长文与 UI-trial 说明 |
 | [中期答辩材料](中期答辩材料/README.md) | 队友材料包 |
 
 ## 当前现状（三行）
 
-1. 产品骨架可用；正式演示库 cn_v2 **4 / 27 / 2,501**；中期材料含双叙事亮点提纲 + 参考稿 PPT；彩排 **PASS**。
-2. 生产 PDF 为 PyMuPDF；演示默认 dense、rerank 关；答案评价未经独立人工复核。
+1. 产品骨架可用；正式演示库 cn_v2 **4 / 27 / 2,501**；中期材料有 v6-candidate PPT/讲稿（v5 保留作参考）；核心演示路径复彩排 **PASS**。
+2. 生产 PDF 为 PyMuPDF；演示默认 dense、rerank 关；22 题真实模型结果由开发者核验，**尚非独立评测**。
 3. CI 对代码变更跑 Fake 后端 + 前端构建；纯文档变更可跳过。仓库计划公开——**勿提交本机 `.env` / Key**；队友 Real 演示自备 Key。
