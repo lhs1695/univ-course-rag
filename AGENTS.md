@@ -6,7 +6,7 @@
 
 架构总览见 [docs/架构说明.md](docs/架构说明.md)。历史前端 F1–F20 交付清单见 [docs/archive/NOTES-F1-F20.md](docs/archive/NOTES-F1-F20.md)。
 
-用户最新明确决定 > docs/implementation-plan.md（唯一施工计划）> 新开题资料.md（研究目标）> 功能合同与选型。先读 docs/当前交接.md，按当前项推进；具体工作方式见 docs/workflow.md 与专用 skill univ-course-rag-dev-loop。旧阶段冻结不限制用户已授权重构。
+用户最新明确决定 > docs/当前交接.md（下一步）> 新开题资料.md（研究目标）> docs/implementation-plan.md（现行 stub；历史全文见 docs/archive/implementation-plan-full.md）。具体工作方式见 docs/workflow.md 与专用 skill univ-course-rag-dev-loop。工程/验收现行摘要见 docs/engineering.md、docs/validation.md；长文在 docs/archive/。旧阶段冻结不限制用户已授权重构。
 
 ## 工作纪律
 
@@ -17,7 +17,7 @@
 - 每项实现前先按 docs/workflow.md 的复用决策顺序选择：现成 API/组件 > 合法源码复用改造 > 本地实现。将具体对象、使用方式、剩余本地工作与验收写回当前项；只有参考链接不算直接复用。
 - 开源技术选型由维护者结合项目现状直接确定；编码助手按施工计划实施。小改由本项目 coding bot 直接做；其余走 Codex CLI（实现模型 6.1sol / 子代理 6.1luna，思考强度中）。用户只需对真实云调用、较大模型/依赖下载、数据库迁移等有实际成本或风险的动作单独授权。
 - 自写必须说明已检查的现成方案为何不适配及实际总成本；“方便控制/以后扩展”不能单独成为重写理由。短小、已验证的适配器可保留，不为复制比例而重写；禁止把课程适配无限扩展成新的通用框架。
-- 搜索仅针对当前项路径，排除 .venv、node_modules、构建产物和真资料。不要每会话重读全部文档。R7B 步骤以 implementation-plan 的「轻量解析路线开工计划」为唯一施工叙述；验收门槛见 validation。历史 Docling 记录只作证据，不覆盖当前决定。
+- 搜索仅针对当前项路径，排除 .venv、node_modules、构建产物和真资料。不要每会话重读全部文档。中期已收口；历史 R7B 施工叙述见 docs/archive/implementation-plan-full.md，验收协议全文见 docs/archive/validation-full.md。历史 Docling 记录只作证据，不覆盖当前决定。
 - 完成后只更新受影响合同、当前计划与最新交接；无独立用途的阶段总结不另建文件。过时/重复文档删除，独有证据先合并，修复引用。
 
 ## 数据与固定合同
