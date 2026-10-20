@@ -2,7 +2,15 @@ name: CI
 
 on:
   push:
+    paths-ignore:
+      - "**/*.md"
+      - "中期答辩材料/**"
+      - "docs/**"
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "中期答辩材料/**"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -14,7 +22,7 @@ jobs:
     env:
       EMBEDDER_BACKEND: fake
       LLM_BACKEND: fake
-      DATABASE_URL: postgresql+psycopg://univ:univ@127.0.0.1:5432/univ_course_rag
+      DATABASE_URL: postgresql+psycopg://univ:univ@127.0.0.1:5432/univ_course_rag_cn_v2
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
