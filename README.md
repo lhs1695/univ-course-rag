@@ -33,11 +33,11 @@
 
 ## 技术栈（仓库事实）
 
-- **前端**：Vue 3 + Vite + Element Plus
-- **后端**：FastAPI + SQLAlchemy + Alembic（Python 3.12，`backend/.venv`）
-- **数据**：PostgreSQL + pgvector（向量维 1024）
+- **前端**：Vue 3 + Vite + Element Plus（Node.js，建议 20+；本仓库常见开发环境为 Node 24）
+- **后端**：FastAPI + SQLAlchemy + Alembic（**Python 3.12**，统一用 `backend/.venv`）
+- **数据**：PostgreSQL 16 + pgvector（向量维 1024）；本机可用 Docker Desktop
 - **解析 / 切分**：PyMuPDF；semantic-text-splitter
-- **模型**：SiliconFlow `BAAI/bge-m3`（Embedding）；DeepSeek 文本生成；pytest 默认 FakeEmbedder / FakeLLM
+- **模型**：SiliconFlow `BAAI/bge-m3`（Embedding）；DeepSeek 文本生成（默认模型 id：`deepseek-flash`）；**pytest 默认 FakeEmbedder / FakeLLM**（无云 Key 也能绿测）
 
 数据流一句话：上传 → 解析切分向量化 → 课内 dense 检索 → 证据约束生成 + 引用 → 前端 `#page=` 回原 PDF。结构详解见 [docs/架构说明.md](docs/架构说明.md)。
 
@@ -51,14 +51,111 @@
 
 全局角色 ≠ 自动拥有课内读写权；须课程成员关系。登录为 HTTP-only Cookie Session（非 JWT）。
 
-## 克隆后启动摘要
+## 克隆后启动（队友可操作）
 
-1. 复制 `.env.example` 为本地 `.env`（**勿提交**）；确认 `DATABASE_URL` / `POSTGRES_DB` 为 `univ_course_rag_cn_v2`，并设置 `UPLOAD_DIR` 指向上述课件目录。
-2. `docker compose up -d` 启动 Postgres（默认库名已与 cn_v2 对齐）。
-3. 在 `backend`：`.venv` 内 `alembic upgrade head`，再 `python -m app` seed 演示账号。
-4. 仓库根启动 uvicorn `:8000`；`frontend` 下 `npm run dev`，浏览器打开 Vite 地址登录（勿直连后端端口）。
+以下命令以 Windows PowerShell、仓库根目录为准；与 [workflow](docs/workflow.md)、[中期演示运行卡](docs/中期演示运行卡.md) 对齐。**不要**把 API Key、真实口令或 `.env` 全文写进 README / PPT / 公开群。
 
-逐步命令、固定问句与故障降级见 [中期演示运行卡](docs/中期演示运行卡.md) 与 [workflow](docs/workflow.md)。演示账号口令见 seed 默认值，**勿写入 PPT 或公开群**。
+### 1. 需要的环境
+
+| 项 | 说明 |
+| --- | --- |
+| 系统 | Windows（本仓库演示与脚本按此写） |
+| Git | 克隆本**私人**仓 |
+| Python | **3.12**；在 `backend` 建 `.venv` 并安装依赖 |
+| Node.js | 建议 20+；在 `frontend` 执行 `npm ci` / `npm run dev` |
+| Docker Desktop | 用于 `docker compose up -d` 起 Postgres + pgvector |
+| 可选云 Key | **仅真实演示**需要：SiliconFlow（Embedding）与 DeepSeek（生成）。在本地 `.env` 配置，**参见 `.env.example`，勿提交、勿贴聊天**。无 Key 时保持 `EMBEDDER_BACKEND=fake` / `LLM_BACKEND=fake` 仍可跑通 UI 与 Fake 测试，但回答是假的 |
+
+### 2. 配置 `.env`
+
+```powershell
+Copy-Item .env.example .env
+# 用编辑器打开 .env，至少确认：
+# DATABASE_URL / POSTGRES_DB → univ_course_rag_cn_v2
+# UPLOAD_DIR → corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2
+# 真实演示时：EMBEDDER_BACKEND=siliconflow、LLM_BACKEND=deepseek，并填写对应 Key（见 .env.example）
+# DEEPSEEK_MODEL=deepseek-flash；演示建议 RERANKER_BACKEND=disabled、RETRIEVAL_STRATEGY=dense
+```
+
+正式库名是 **`univ_course_rag_cn_v2`**。课件树已在私人仓（约 57MB / 27 PDF）。密钥只放本机 `.env`。
+
+### 3. 安装依赖
+
+```powershell
+# 后端（在 backend 目录）
+cd backend
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -U pip
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+cd ..
+
+# 前端
+cd frontend
+npm ci
+cd ..
+```
+
+（若仓库已带可用的 `backend/.venv` 与 `frontend/node_modules`，可跳过对应安装。）
+
+### 4. 启动 Postgres
+
+```powershell
+docker compose up -d
+# 等待 healthy 后，端口默认 5432；默认用户/库见 compose 与 .env.example（univ / univ_course_rag_cn_v2）
+```
+
+### 5. 迁移与演示账号 seed
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe -m app
+cd ..
+```
+
+`python -m app` 会按配置 **seed 演示三角色**（只补不存在的账号）。默认用户名在代码里是 `admin` / `teacher` / `student`；默认口令见 `backend/app/config.py` 的 `seed_*_password`（形如 `change-me-*`）。**口令不要写进 PPT 或公开渠道**；若负责人改过本机口令，以私聊为准。
+
+> 注意：seed **不会**自动重建四课 27 份 PDF 的向量库。完整「点引用开 PDF」需要库内已有 cn_v2 数据，且本机 `UPLOAD_DIR` 能对上文件。负责人本机 DB 里 `storage_path` 可能是绝对路径；队友机器若路径对不上，需协调导出/重入库或校正路径（见下方常见坑）。
+
+### 6. 启动后端与前端
+
+```powershell
+# 仓库根：后端（监听 8000）
+backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+
+# 另开一个终端：前端
+cd frontend
+npm run dev
+```
+
+浏览器打开 Vite 地址（一般为 `http://127.0.0.1:5173`）再登录。**不要**直连 `:8000` 做登录页。可检查：
+
+- `http://127.0.0.1:8000/health` — 进程存活
+- `http://127.0.0.1:8000/ready` — 数据库 `SELECT 1`
+- `/runtime` — 可见 database / reranking 等配置态（`configured` ≠ 供应商一定连通）
+
+### 7. 固定演示问句（线性代数课）
+
+1. **LA-01（有引用）**：`根据线性代数讲义，线性代数主要研究哪两类对象？`  
+   预期：有回答与引用卡片；**点引用**打开原 PDF，URL 含 `#page=`。截图/演示时务必等 PDF 正文渲染出来再截，避免截到深色空壳。
+2. **LA-R（拒答）**：`根据线性代数讲义，如何用 SQL 创建数据库表并插入数据？`  
+   预期：依据不足 / `NO_EVIDENCE`，不编造 SQL。
+
+完整顺序与故障降级见 [中期演示运行卡](docs/中期演示运行卡.md)。
+
+### 8. 常见坑
+
+| 现象 | 处理方向 |
+| --- | --- |
+| 点引用 PDF 黑屏 / 打不开 | 查 `UPLOAD_DIR` 是否指向 `.../uploads_v2`；库内路径若是别人机器的绝对路径，本机文件对不上；等预览加载完成再截图 |
+| 回答很假或 Embedding 报错 | 分清 **Fake vs Real**：`.env.example` 默认 Fake；真实演示须 SiliconFlow + DeepSeek Key（只写在 `.env`） |
+| 连错库 / 课不对 | 确认库名 `univ_course_rag_cn_v2`，不要用已删除的旧默认库或历史隔离库 |
+| 登录页异常 | 必须走 Vite 端口，勿直连后端 |
+| 8000 / 5173 / 5432 占用 | 结束旧 uvicorn / Vite / 旧容器后再启；`docker compose ps` 看 Postgres |
+| 误开 rerank / hybrid | 中期演示口径是 **dense + rerank 关闭**；勿临场改检索当主结论 |
+| 端口或依赖版本不对 | 后端固定 Python 3.12 + `backend/.venv`；前端用仓库内 `package.json` / lockfile |
+
+逐步验收与汇报口径以运行卡为准；系统结构见 [架构说明](docs/架构说明.md)。
 
 ## 文档索引（精简后）
 
