@@ -24,4 +24,4 @@
 - verifier=**developer**（不得称独立评测）
 - runner：`backend/scripts/run_manual_verify_cn_v1.py`
 - **未做**：全量重入库、Vision、启用 rerank、人民币费用估算
-- **公开前**：请做密钥与课件授权清查（见仓库根 [`NOTICE`](../../NOTICE) / [`LICENSE`](../../LICENSE)）
+- **公开前**：请做密钥清查（见仓库根 [`LICENSE`](../../LICENSE)）；课件说明见 [`NOTICE`](../../NOTICE)（公开分享资料，无需逐份授权清查）

@@ -7,7 +7,7 @@
 ## 许可与课件说明
 
 - **自有代码与文档**：见根目录 [`LICENSE`](LICENSE)（MIT）。该许可证**不**覆盖第三方课件版权。
-- **课内 PDF / corpus**：见 [`NOTICE`](NOTICE)。私人仓当前可含 `uploads_v2` 供队友演示；**公开仓库前须人工复核授权，或移出/替换为已授权材料**。
+- **课内 PDF / corpus**：见 [`NOTICE`](NOTICE)。`uploads_v2` 按公开分享教学资料收录，供演示与队友复现；**MIT 仅覆盖自有代码/文档**，不覆盖课件本身。
 
 ## 队友三件套（中期答辩优先看）
 
@@ -75,7 +75,7 @@
 
 - **Key：队友自备**。Real 问答需本机 SiliconFlow + DeepSeek Key（见 `.env.example`）；无 Key 时 Fake 仅能验证 UI。
 - **演示可在任意配好环境的机器上跑**：Docker Postgres、`univ_course_rag_cn_v2` 数据、`UPLOAD_DIR`、前后端。点引用打不开时优先查 `UPLOAD_DIR` 与库内路径是否一致。
-- **仓库计划公开**：公开前清查未跟踪密钥与课件授权（[`NOTICE`](NOTICE)）；**勿提交 `.env`**；改过的演示口令勿写回仓库文件。
+- **仓库计划公开**：公开前清查未跟踪密钥（**勿提交 `.env`**）；课件按公开分享资料收录，说明见 [`NOTICE`](NOTICE)；改过的演示口令勿写回仓库文件。
 
 
 ### 1. 需要的环境

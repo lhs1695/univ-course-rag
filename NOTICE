@@ -1,4 +1,4 @@
-# NOTICE — Third-party course materials
+# NOTICE — Course materials in this repository
 
 ## What this NOTICE covers
 
@@ -11,33 +11,29 @@ contains **course PDF materials** used for midterm demo and teammate rehearsal
 covered by the repository root `LICENSE` (MIT for this project's own code and
 docs).
 
-## Intended use (private repo)
+## Status of the course PDFs
 
-- Current private repository may keep these PDFs so teammates can clone and
-  run the midterm demo with `UPLOAD_DIR` pointing at `uploads_v2`.
-- Use is limited to **course-project teaching / defense demonstration** within
-  the authorized team. Do not redistribute the PDFs to public chat groups,
-  public mirrors, or unrelated third parties.
+Per the project owner (2026-10-20): materials under `uploads_v2` are treated as
+**publicly shared teaching resources** collected for course-project demonstration.
+They are kept in the repo so teammates can clone and run the midterm demo with
+`UPLOAD_DIR` pointing at `uploads_v2`.
 
-## Before making the repository public
+**No per-file copyright authorization sweep is required** before opening the
+repository. Do not block a public release solely on corpus clearance for these
+demo PDFs.
 
-Human review is **required**:
+## What MIT does and does not cover
 
-1. Confirm each PDF's copyright / redistribution rights with the rights holder
-   (instructor / course publisher / institution).
-2. If authorization is incomplete: **remove or replace** `uploads_v2` (and any
-   other tracked third-party corpora) before opening the repo, or keep the repo
-   private.
-3. Also sweep for secrets: never commit `.env`, API keys, dumps, or real
-   passwords (see root README).
+- Root `LICENSE` (MIT) covers **this project's own source code and documentation**.
+- Course PDFs under `corpus/.../uploads_v2/` remain **outside** that MIT grant:
+  they are third-party teaching materials included for demo, not re-licensed as
+  MIT by this project.
 
-## Redistribution
+## Secrets (still required)
 
-Any further redistribution of the course PDFs requires **separate permission**
-from each rights holder. Cloning this private repo for team demo does not by
-itself grant public redistribution rights.
+Independently of courseware: never commit `.env`, API keys, database dumps, or
+real passwords (see root README). A public release still needs a secrets sweep.
 
 ## Contact
 
-Questions about corpus authorization: ask the project owner / team lead before
-publishing or sharing outside the team.
+Questions about corpus policy: ask the project owner / team lead.
