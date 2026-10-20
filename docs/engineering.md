@@ -2,7 +2,7 @@
 
 更新：2026-10-19。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。R7 有限真实运行及 Docling 停止原因见 [结果登记](evaluation-results.md)。
 
-> **口径说明（2026-10-20）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；启动与固定问句见 [midterm-demo-runbook](midterm-demo-runbook.md)。下文若出现 17 份 / `r7b6_real` / 旧 `univ_course_rag`，均为 R7B 历史口径。
+> **口径说明（2026-10-20）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；启动与固定问句见 [中期演示运行卡](中期演示运行卡.md)。下文若出现 17 份 / `r7b6_real` / 旧 `univ_course_rag`，均为 R7B 历史口径。
 
 ## 目录
 
@@ -360,3 +360,4 @@ trend 与 summary、问句列表来自同一条 SQL：按课内角色、最终�
 ## 当前待验证边界
 
 R7B-7 四课真实基线已核验隔离库 `univ_course_rag_r7b6_real` 的 migration 0011、4 课 / 17 份资料 / 385 chunks，以及来源映射、索引隔离和幂等复跑；R8 的 API 关键路径与 UI 四点已于 2026-10-17 正式通过，P7-3 数据库 dump + 上传资料/解析产物的隔离恢复子项于 2026-10-18 通过，证据见 [结果登记](evaluation-results.md)。仍待验证：原长期目标库是否需要迁移、性能/并发、供应商实际账单、人工事实复核、阈值校准、关键词独有证据充分性及视觉输入。R8 与恢复子项通过不代表完整生命周期、独立试用或通用 RAG 质量均已验证；Demo Reset、成本/资源限制专项展示仍待验。PyMuPDF 页级报告和固定代表页已有测试/冻结证据，但覆盖警告不是内容完整性证明。教师看板只展示已保存计数和当次候选分组，不证明同义质量或教学效果。Fake/组件导入/本地configured状态只证明相应合同，不能代替这些结果。
+

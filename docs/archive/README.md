@@ -5,4 +5,5 @@
 - `NOTES-F1-F20.md`：staff/admin F1–F20 逐项交付（历史）
 - 现行 staff 设计说明见 [`frontend/DESIGN-NOTES-STAFF.md`](../../frontend/DESIGN-NOTES-STAFF.md)（已合并旧 admin/study-align / pre-merge 三稿；旧全文已从仓库删除）
 
-中期演示与架构以仓库根 [`AGENTS.md`](../../AGENTS.md)、[`docs/architecture.md`](../architecture.md)、[`docs/midterm-demo-runbook.md`](../midterm-demo-runbook.md)、[`midterm-handoff/`](../../midterm-handoff/README.md) 为准。
+中期演示与架构以仓库根 [`AGENTS.md`](../../AGENTS.md)、[`docs/架构说明.md`](../架构说明.md)、[`docs/中期演示运行卡.md`](../中期演示运行卡.md)、[`中期答辩材料/`](../../中期答辩材料/README.md) 为准。
+

@@ -1,6 +1,6 @@
 # 开发与运行工作流
 
-更新：2026-10-19。任务以 [施工计划](implementation-plan.md) 为准，下一步见 [当前交接](NEXT-SESSION.md)。本文件只保留有效操作规则。
+更新：2026-10-19。任务以 [施工计划](implementation-plan.md) 为准，下一步见 [当前交接](当前交接.md)。本文件只保留有效操作规则。
 
 > **口径说明（2026-10-19）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；下文若出现 17 份 / `r7b6_real` / `univ_course_rag`，均为 R7B 历史口径。
 
@@ -21,7 +21,7 @@
 
 每项在现有 engineering 或施工计划记录：具体对象与版本/commit、许可、实际采用方式、接入/迁移/维护成本、剩余本地工作和验收。只有参考链接不能算接入；自写须比较现成对象的实际不适配之处。
 
-分词、BM25、重排、解析等算法优先直接复用；本地保留课程授权、ID/索引映射、生命周期、上限与错误适配。**PDF 生产默认路径已是 PyMuPDF 原生文字提取与页级质量门禁；Docling 全量主解析路线已停止。** R7B-L1…L3、R7B-5、R7B-6B/6C、R7B-7、R8 与 P7-3 恢复子项均已完成；R9 已收口（final-v5 + 彩排 PASS + midterm-handoff）。正式演示库 `univ_course_rag_cn_v2`；具体步骤见 [中期演示运行卡](midterm-demo-runbook.md)。不再启动新的解析器选型循环。OCR/公式/视觉仅针对确认的具体页面另立任务。R7B 历史实施步骤与门槛见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan) 和 [validation](validation.md#r7b-parser-selection)。复制源码保留原声明；不扩大为通用检索、模型或插件框架。
+分词、BM25、重排、解析等算法优先直接复用；本地保留课程授权、ID/索引映射、生命周期、上限与错误适配。**PDF 生产默认路径已是 PyMuPDF 原生文字提取与页级质量门禁；Docling 全量主解析路线已停止。** R7B-L1…L3、R7B-5、R7B-6B/6C、R7B-7、R8 与 P7-3 恢复子项均已完成；R9 已收口（final-v5 + 彩排 PASS + 中期答辩材料）。正式演示库 `univ_course_rag_cn_v2`；具体步骤见 [中期演示运行卡](中期演示运行卡.md)。不再启动新的解析器选型循环。OCR/公式/视觉仅针对确认的具体页面另立任务。R7B 历史实施步骤与门槛见 [轻量解析计划](implementation-plan.md#r7b-lightweight-plan) 和 [validation](validation.md#r7b-parser-selection)。复制源码保留原声明；不扩大为通用检索、模型或插件框架。
 
 开源“抄作业”以最小复用单元为准：优先调用成熟 API/CLI，其次参考稳定的数据结构或适配代码，最后才复制短小且许可证明确的必要源码。每次复制必须保留原版权/许可证声明并记录来源 commit。不要复制整仓库、默认配置、模型权重或第三方素材；模型和权重的许可单独核对。
 
@@ -39,7 +39,7 @@
 
 ## 环境与启动
 
-**中期演示：** 目标库必须是 `univ_course_rag_cn_v2`（默认 `.env.example` 已对齐）；课件 `UPLOAD_DIR=corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2`。完整步骤与固定问句见 [中期演示运行卡](midterm-demo-runbook.md)。勿再切 `r7b6_real` / 旧 `univ_course_rag` 做答辩演示。
+**中期演示：** 目标库必须是 `univ_course_rag_cn_v2`（默认 `.env.example` 已对齐）；课件 `UPLOAD_DIR=corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2`。完整步骤与固定问句见 [中期演示运行卡](中期演示运行卡.md)。勿再切 `r7b6_real` / 旧 `univ_course_rag` 做答辩演示。
 
 后端只用 backend/.venv，禁止系统 Python/默认 Conda。已有环境不重复创建；新环境使用 Python 3.12：
 
@@ -98,7 +98,7 @@ Grok Bot 的 hosted computer 是独立的云 Linux 工作区，不是本机 D:\w
 
 ## 文档与删除
 
-固定六份：workflow 管操作，implementation-plan 管施工（含 R7B 唯一步骤叙述），NEXT-SESSION 管当前交接，engineering 管现行合同/复用许可，validation 管验收方法，evaluation-results 管已跑数字与运行日志。README 只导航，AGENTS 管协作，新开题资料管研究目标。
+固定六份：workflow 管操作，implementation-plan 管施工（含 R7B 唯一步骤叙述），当前交接 管当前交接，engineering 管现行合同/复用许可，validation 管验收方法，evaluation-results 管已跑数字与运行日志。README 只导航，AGENTS 管协作，新开题资料管研究目标。
 
 文档不再累积旧阶段报告、旧评测数字、逐次测试流水或过时汇报。中期前按改进后的版本重新建基线、跑数据；旧数字不补作新结果。保留仍有效的许可与现行合同，修复引用；过时说明可迁入 `docs/archive/`，不另写阶段报告冒充现行口径。
 
@@ -106,4 +106,6 @@ Grok Bot 的 hosted computer 是独立的云 Linux 工作区，不是本机 D:\w
 
 ## 实验与交付
 
-PyMuPDF 轻量入口、页级质量门禁、固定代表页核对、历史 17 份离线冻结与 R7B-7 英文四课基线均已完成（历史）；**当前正式演示**为中文四课 `univ_course_rag_cn_v2`（4/27/2501）+ PPT **final-v5** + 彩排 PASS，见 [evaluation-results](evaluation-results.md)、[NEXT-SESSION](NEXT-SESSION.md)、[midterm-handoff](../midterm-handoff/README.md)。Docling 全量冻结停在 8/17，不续跑。弱规则 / AI 预标**不能**冒充人工事实正确率。R8 / P7-3 / R9 已通过或收口；产品下一阶段待用户定。若另称独立试用，仍须非开发者实际独立完成。
+PyMuPDF 轻量入口、页级质量门禁、固定代表页核对、历史 17 份离线冻结与 R7B-7 英文四课基线均已完成（历史）；**当前正式演示**为中文四课 `univ_course_rag_cn_v2`（4/27/2501）+ PPT **final-v5** + 彩排 PASS，见 [evaluation-results](evaluation-results.md)、[当前交接](当前交接.md)、[中期答辩材料](../中期答辩材料/README.md)。Docling 全量冻结停在 8/17，不续跑。弱规则 / AI 预标**不能**冒充人工事实正确率。R8 / P7-3 / R9 已通过或收口；产品下一阶段待用户定。若另称独立试用，仍须非开发者实际独立完成。
+
+

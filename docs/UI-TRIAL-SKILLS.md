@@ -2,7 +2,7 @@
 
 更新：2026-10-19。技能装在仓库内，供 Codex（及本机 Cursor）发现；**不要**用 `--global` 装到用户主目录。
 
-> **非中期答辩材料**：本文档与 `tools/ui-trial-skills/` 仅供 UI trial / 视觉试验，**不是**中期汇报或演示口径。答辩请用 [`midterm-handoff/`](../midterm-handoff/README.md) 与 [`docs/midterm-demo-runbook.md`](midterm-demo-runbook.md)。
+> **非中期答辩材料**：本文档与 `tools/ui-trial-skills/` 仅供 UI trial / 视觉试验，**不是**中期汇报或演示口径。答辩请用 [`中期答辩材料/`](../中期答辩材料/README.md) 与 [`docs/中期演示运行卡.md`](中期演示运行卡.md)。
 
 ## 安装位置
 
@@ -79,3 +79,4 @@ npx --yes impeccable install --scope=project --providers=codex -y
 - **勿全局安装**（Pro Max 的 `-g`、skills 的 `-g`、impeccable `--global` 都不要用）。
 - Taste 需要本机 Chrome/Edge；Impeccable hooks 会在 Edit/Write 后跑检测，可接受。
 - 五版对比时每版附 `DESIGN-NOTES.md`。
+

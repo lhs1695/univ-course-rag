@@ -1,8 +1,8 @@
-# 中期答辩队友参考包（midterm-handoff）
+# 中期答辩材料
 
 给两位大创队友做**中期汇报答辩**用的材料包。本目录已纳入 Git，克隆本私人仓库即可拿到。
 
-更新：2026-10-19（Asia/Shanghai）
+更新：2026-10-20（Asia/Shanghai）
 
 ## 项目一句话
 
@@ -12,13 +12,14 @@
 
 | 路径 | 说明 |
 | --- | --- |
-| `pptx/final-v5.pptx` | 中期汇报 PPT（约 6–8 分钟） |
-| `pptx/speaker-notes-v5.md` | 逐页讲稿提示 |
-| `docs/midterm-demo-runbook.md` | 指向仓库根正式运行卡的短指针（正文见根 `docs/midterm-demo-runbook.md`） |
-| `screenshots/` | 彩排关键截图（书架、作答+引用、拒答、教师、Admin） |
-| `evidence/` | 彩排 PASS、R9 刷新摘要、rerank 关闭说明、PPT v5 变更说明 |
+| `汇报PPT/中期汇报-v5.pptx` | 中期汇报 PPT（约 6–8 分钟） |
+| `汇报PPT/讲稿-v5.md` | 逐页讲稿提示 |
+| `docs/打开仓库运行卡.md` | 指向仓库根正式运行卡的短指针 |
+| `彩排截图/` | 精选彩排截图（书架、作答+引用、拒答、教师、Admin），**非全量** |
+| `验收摘要/彩排验收-PASS.md` | 彩排 PASS 一页摘要（本包仅保留此页） |
+| `图示/架构总览.png` | 架构静态图（由 mermaid 导出，以 `docs/架构说明.md` 为准） |
 
-仓库根还有完整代码与文档；演示操作以本包 + 根目录 `docs/midterm-demo-runbook.md` 为准。系统结构见根目录 [docs/architecture.md](../docs/architecture.md)。
+仓库根还有完整代码与文档；演示操作以本包 + 根目录 [`docs/中期演示运行卡.md`](../docs/中期演示运行卡.md) 为准。系统结构见 [`docs/架构说明.md`](../docs/架构说明.md)。
 
 ## 演示口径（务必对齐）
 
@@ -47,7 +48,7 @@
 2. **LA-R（拒答）**：`根据线性代数讲义，如何用 SQL 创建数据库表并插入数据？`  
    预期：依据不足 / `NO_EVIDENCE`，不编造 SQL。
 
-完整顺序见 `docs/midterm-demo-runbook.md`。
+完整顺序见 [`docs/中期演示运行卡.md`](../docs/中期演示运行卡.md) 或本包 [`docs/打开仓库运行卡.md`](docs/打开仓库运行卡.md)。
 
 ## 角色账号（本地 seed）
 
@@ -56,21 +57,21 @@
 
 ## 怎么用 PPT
 
-1. 用本机 **Microsoft Office / WPS** 打开 `pptx/final-v5.pptx`（结构已校验；字体与换行需人工看一眼）。
-2. 对照 `pptx/speaker-notes-v5.md` 练习 6–8 分钟；每页只讲已验证事实。
-3. 现场若演示失败：改用 `screenshots/` 备用图，并按 runbook「故障降级」说明边界。
+1. 用本机 **Microsoft Office / WPS** 打开 `汇报PPT/中期汇报-v5.pptx`（结构已校验；字体与换行需人工看一眼）。
+2. 对照 `汇报PPT/讲稿-v5.md` 练习 6–8 分钟；每页只讲已验证事实。
+3. 现场若演示失败：改用 `彩排截图/` 备用图，并按运行卡「故障降级」说明边界。
 
 ## 怎么彩排（有本机环境时）
 
-按 `docs/midterm-demo-runbook.md`：确认默认库 `cn_v2` 与 `UPLOAD_DIR=.../uploads_v2`，`RERANKER_BACKEND=disabled`，启动后端 `:8000` 与前端 `:5173`，走学生 → 教师 → Admin。  
+按 [`docs/中期演示运行卡.md`](../docs/中期演示运行卡.md)：确认默认库 `cn_v2` 与 `UPLOAD_DIR=.../uploads_v2`，`RERANKER_BACKEND=disabled`，启动后端 `:8000` 与前端 `:5173`，走学生 → 教师 → Admin。  
 **不要**在答辩现场提交 `.env`、重新入库或启用 rerank。
 
 ## 队友下一步
 
 1. 打开 PPT + 讲稿，对齐口径数字（4/27/2501，新四课名）。
 2. 熟记两道固定问句与「引用回原页 / 依据不足」讲解点。
-3. 有条件则按 runbook 彩排一遍；否则用本包截图演练讲解。
-4. 需要代码或完整文档：克隆本私人仓，读根 `README.md` 与 `docs/NEXT-SESSION.md`。
+3. 有条件则按运行卡彩排一遍；否则用本包截图演练讲解。
+4. 需要代码或完整文档：克隆本私人仓，读根 `README.md` 与 [`docs/当前交接.md`](../docs/当前交接.md)。
 
 ## 不要做的事
 

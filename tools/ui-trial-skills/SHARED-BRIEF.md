@@ -1,6 +1,6 @@
 # UI Trial Shared Brief（五版共用）
 
-> **非中期答辩材料**：本 Brief 仅供 UI trial 五版试验；中期答辩口径以 `midterm-handoff/` 与 runbook 为准。
+> **非中期答辩材料**：本 Brief 仅供 UI trial 五版试验；中期答辩口径以 `中期答辩材料/` 与 runbook 为准。
 
 ## 产品
 
@@ -40,3 +40,4 @@
 1. 学生端全部页面可点、演示账号能走完闭环。
 2. 根目录或 `docs/` 下短文 **`DESIGN-NOTES.md`**：本版选择了什么气质/结构/交互、为什么（一屏以内）。
 3. 不要为炫技引入第二套 RAG、大依赖或 Agent 基建。
+

@@ -2,7 +2,7 @@
 
 更新：2026-10-19。R7 有限对照与运行日志见 [evaluation-results](evaluation-results.md)；R7B **当前施工步骤**见 [轻量解析路线计划](implementation-plan.md#r7b-lightweight-plan)。Docling 代表页和全量试验均为历史记录，不能作为当前主解析路线。本文只保留验收方法与通过/失败门槛。操作规则见 [workflow](workflow.md)。
 
-> **口径说明（2026-10-19）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；下文若出现 17 份 / `r7b6_real` / `univ_course_rag`，均为 R7B 历史口径。现场演示步骤以 [中期演示运行卡](midterm-demo-runbook.md) 为准。
+> **口径说明（2026-10-19）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；下文若出现 17 份 / `r7b6_real` / `univ_course_rag`，均为 R7B 历史口径。现场演示步骤以 [中期演示运行卡](中期演示运行卡.md) 为准。
 
 <a id="r7b-parser-selection"></a>
 
@@ -137,7 +137,7 @@ Postgres需明确--database postgres --allow-postgres；会临时写入受控库
 
 按顺序核对，任一步失败先停再继续：
 
-1. **数据库**：目标 Postgres 已启动；正式演示指向 `univ_course_rag_cn_v2`（默认 `.env` / `.env.example` 已对齐；历史 `r7b6_real` 勿当当前演示）。完整步骤见 [中期演示运行卡](midterm-demo-runbook.md)。
+1. **数据库**：目标 Postgres 已启动；正式演示指向 `univ_course_rag_cn_v2`（默认 `.env` / `.env.example` 已对齐；历史 `r7b6_real` 勿当当前演示）。完整步骤见 [中期演示运行卡](中期演示运行卡.md)。
 2. **migration**：目标库已到最新 Alembic head（当前合同为 `0011`）。
 3. **backend**：仓库根用 `backend/.venv` 启动 uvicorn（见 [workflow](workflow.md)）。
 4. **frontend**：`npm run dev`；浏览器走 Vite 地址，不直连后端端口登录。
@@ -155,7 +155,7 @@ Postgres需明确--database postgres --allow-postgres；会临时写入受控库
 
 持续标明 Fake/真实模式；未实现的逐主张支持、同义组或主题反馈不伪造展示。录屏不拍入凭据、Cookie、学生身份或私密原文。P7 只提供上述可操作说明与 UI 闭环；**真人共同走通记入 R8**，不把开发者自测冒充联合验收或独立试用。
 
-R9 已收口：PPT **final-v5**、彩排 PASS、队友包 `midterm-handoff/`；现场操作以 [中期演示运行卡](midterm-demo-runbook.md) 为准。数据库 dump + 上传资料/解析产物隔离恢复实操已于 2026-10-18 通过；Demo Reset、成本/资源限制专项展示仍可单独标为待验，不得将其与恢复实测混为一项。
+R9 已收口：PPT **final-v5**、彩排 PASS、队友包 `中期答辩材料/`；现场操作以 [中期演示运行卡](中期演示运行卡.md) 为准。数据库 dump + 上传资料/解析产物隔离恢复实操已于 2026-10-18 通过；Demo Reset、成本/资源限制专项展示仍可单独标为待验，不得将其与恢复实测混为一项。
 
 <a id="usability-test-template"></a>
 <a id="r8-internal-acceptance"></a>
@@ -187,7 +187,7 @@ R8 正式结果由 API 关键路径与用户授权的本机 Playwright UI 操作
 
 ### R8 启动核对
 
-> **历史环境（R8 当日 2026-10-17）：** 下表目标库为当时的 `univ_course_rag_r7b6_real`（英文四课 17/385）。**现正式演示**见 [中期演示运行卡](midterm-demo-runbook.md) 的 `univ_course_rag_cn_v2`（4/27/2501），勿按本表切库做中期答辩。
+> **历史环境（R8 当日 2026-10-17）：** 下表目标库为当时的 `univ_course_rag_r7b6_real`（英文四课 17/385）。**现正式演示**见 [中期演示运行卡](中期演示运行卡.md) 的 `univ_course_rag_cn_v2`（4/27/2501），勿按本表切库做中期答辩。
 
 | 检查 | 预期 | 结果 |
 | --- | --- | --- |
@@ -215,4 +215,5 @@ R8 正式结果由 API 关键路径与用户授权的本机 Playwright UI 操作
 | 撤权 / 串课 | 移出成员后再问；打开未授权课 | 下一次请求拒绝 | API 通过（后已恢复成员） |
 | PHIL-T02 观察 | Frege / Hesperus 题 | 允许「检索命中但生成拒答」；记命中≠答案正确，不标系统失败 | 已记：`/search` 命中 p1，ask `NO_EVIDENCE` |
 
-**R8 正式状态（2026-10-17）：通过。** API 关键路径 + UI 四点均已登记。P7-3 数据库 dump + 上传资料/解析产物隔离恢复子项于 2026-10-18 通过；R9 冻结身份清单已生成。P7 整体仍部分完成，Demo Reset 与成本/资源限制专项展示不冒充已验收。（R8 当日环境如此。）**现演示**须使用 `univ_course_rag_cn_v2`，见 [midterm-demo-runbook](midterm-demo-runbook.md)。
+**R8 正式状态（2026-10-17）：通过。** API 关键路径 + UI 四点均已登记。P7-3 数据库 dump + 上传资料/解析产物隔离恢复子项于 2026-10-18 通过；R9 冻结身份清单已生成。P7 整体仍部分完成，Demo Reset 与成本/资源限制专项展示不冒充已验收。（R8 当日环境如此。）**现演示**须使用 `univ_course_rag_cn_v2`，见 [中期演示运行卡](中期演示运行卡.md)。
+
