@@ -16,7 +16,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    database_url: str = "postgresql+psycopg://univ:univ@localhost:5432/univ_course_rag"
+    database_url: str = "postgresql+psycopg://univ:univ@localhost:5432/univ_course_rag_cn_v2"
     session_cookie_name: str = "session_id"
     session_ttl_seconds: int = 60 * 60 * 24 * 7
     session_cookie_secure: bool = False

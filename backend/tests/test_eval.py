@@ -20,6 +20,7 @@ from app.eval import (
 from app.models.course import Course
 from app.models.document import Chunk, Document
 from app.services.embedder import FakeEmbedder
+from app.services.generate import GENERATION_CONTRACT
 from app.services.llm import FakeLLM
 from app.services.rerank import FakeReranker
 from sqlalchemy.orm import Session
@@ -273,7 +274,7 @@ def test_checkpoint_cannot_resume_an_older_generation_contract(tmp_path) -> None
     case_file = tmp_path / "synthetic.json"
     case_file.write_text("{}", encoding="utf-8")
     metadata = _metadata(case_file, uuid4(), Settings(_env_file=None))
-    assert metadata["generation_contract"] == "r6-context-citations-refusal-v1"
+    assert metadata["generation_contract"] == GENERATION_CONTRACT
     old = {key: value for key, value in metadata.items() if key != "generation_contract"}
     cases = [EvalCase("case", "pdf_fact", "synthetic", ("lecture.pdf",), False, ())]
     checkpoint = tmp_path / "checkpoint.json"

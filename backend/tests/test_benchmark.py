@@ -53,7 +53,7 @@ def test_sqlite_benchmark_reports_only_aggregates(tmp_path: Path) -> None:
 
     assert report["benchmark_version"] == BENCHMARK_VERSION
     assert report["database_path"] == "sqlite_exact_python"
-    assert report["synthetic_data"]["generator"] == "deterministic-v1"
+    assert report["synthetic_data"]["generator"] == "deterministic-v2"
     assert report["synthetic_data"]["raw_payload_persisted"] is False
     assert [row["actual_chunk_count"] for row in report["results"]] == [3, 7]
     assert [row["ingest"]["embedding_batch_count"] for row in report["results"]] == [2, 4]

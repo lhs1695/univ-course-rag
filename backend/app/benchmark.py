@@ -71,17 +71,26 @@ def parse_scales(value: str) -> tuple[int, ...]:
 
 
 def synthetic_markdown(scale: int) -> str:
-    """Create deterministic, non-sensitive text that splits into exactly `scale` chunks."""
+    """Create deterministic, non-sensitive text that splits into exactly `scale` chunks.
+
+    Each unit is sized just under the production MarkdownSplitter capacity (char800)
+    so short headings are not packed into fewer chunks than `scale`. The identifying
+    sentence is repeated so FakeEmbedder retrieval still ranks the matching unit first.
+    """
     if scale < 1 or scale > MAX_CHUNKS_PER_SCALE:
         raise BenchmarkError("synthetic scale is outside the supported range")
-    return "\n\n".join(
-        (
-            f"# Synthetic Unit {index}\n"
+    parts: list[str] = []
+    for index in range(scale):
+        head = f"# Synthetic Unit {index}\n"
+        core = (
             f"Synthetic benchmark scale{scale} unit{index}. "
             "This generated course material measures local indexing and retrieval behavior."
         )
-        for index in range(scale)
-    )
+        body = head + core
+        while len(body) < 740:
+            body += " " + core
+        parts.append(body[:750] if len(body) > 750 else body)
+    return "\n\n".join(parts)
 
 
 def _percentile(values: list[float], percentile: float) -> float:
@@ -238,7 +247,7 @@ def run_benchmark(
         "generated_at": datetime.now(UTC).isoformat(),
         "database_path": database_path,
         "synthetic_data": {
-            "generator": "deterministic-v1",
+            "generator": "deterministic-v2",
             "scales": list(config.scales),
             "source_kind": "generated_markdown",
             "raw_payload_persisted": False,
