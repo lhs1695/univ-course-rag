@@ -1,0 +1,27 @@
+sequenceDiagram
+  participant U as 学生浏览器
+  participant FE as Vue AskView
+  participant API as FastAPI /ask
+  participant R as retrieve
+  participant E as Embedder
+  participant DB as Postgres/pgvector
+  participant G as generate + LLM
+
+  U->>FE: 提交问句（课内）
+  FE->>API: POST（Cookie Session）
+  API->>API: 校验课内成员权限
+  API->>R: 检索请求（strategy=dense）
+  R->>E: 问句向量化
+  E-->>R: query embedding
+  R->>DB: 课内向量 Top-K + 阈值过滤
+  DB-->>R: chunk 候选（含 page / document）
+  alt 无合格证据
+    R-->>API: 空候选
+    API-->>FE: NO_EVIDENCE / 依据不足
+  else 有证据
+    R-->>API: 上下文清单
+    API->>G: 仅允许引用清单内来源
+    G-->>API: answer + citations
+    API-->>FE: 回答与引用卡片
+    FE->>U: 点引用打开 PDF#page=
+  end
