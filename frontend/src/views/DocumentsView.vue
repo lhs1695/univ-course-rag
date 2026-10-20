@@ -43,6 +43,18 @@
             <div>
               {{ documentQualityLabel(row) }}
             </div>
+            <el-tag
+              v-if="documentCoverage(row).type === 'warning'"
+              :type="documentCoverage(row).type"
+              size="small"
+              class="coverage-tag"
+              style="margin-top: 6px"
+            >
+              {{ documentCoverage(row).label }}
+            </el-tag>
+            <p v-if="documentCoverageHint(row)" class="subtle" style="margin: 6px 0 0; line-height: 1.4">
+              {{ documentCoverageHint(row) }}
+            </p>
           </template>
           <span v-else>—</span>
         </template>
@@ -90,7 +102,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 import { session } from "../session";
 import { courseAccess } from "../courseAccess";
-import { clampDocumentPage, documentQualityLabel, documentContentUrl, isPdfDocument } from "../documentDisplay";
+import { clampDocumentPage, documentCoverage, documentCoverageHint, documentQualityLabel, documentContentUrl, isPdfDocument } from "../documentDisplay";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));

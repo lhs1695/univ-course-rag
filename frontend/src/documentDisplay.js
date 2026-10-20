@@ -19,12 +19,28 @@ export function documentCoverage(document) {
     if (document.quality_warning === "LOW_EXTRACTED_TEXT") {
       return { label: "文本较少", type: "warning" };
     }
+    if (document.quality_warning === "COVERAGE_INCOMPLETE") {
+      // Document-level flag only; page lists are not stored in API/DB.
+      return { label: "部分页面需核对", type: "warning" };
+    }
     return { label: "已入库", type: "success" };
   }
   if (document?.job_status === "failed") {
     return { label: "暂不可用", type: "danger" };
   }
   return { label: "处理中", type: "warning" };
+}
+
+/** Fixed, verifiable reason for teacher UI; never invents page numbers. */
+export function documentCoverageHint(document) {
+  if (document?.job_status !== "succeeded") return "";
+  if (document.quality_warning === "COVERAGE_INCOMPLETE") {
+    return "解析标记存在空页、稀疏文字页或异常控制字符等，不等于整份入库失败；重要结论请打开原 PDF 核对。";
+  }
+  if (document.quality_warning === "LOW_EXTRACTED_TEXT") {
+    return "抽取文字偏少，重要结论请打开原文件核对。";
+  }
+  return "";
 }
 
 export function clampDocumentPage(page, document) {

@@ -5,6 +5,7 @@ import {
   documentContentUrl,
   documentCoverage,
   documentPageLabel,
+  documentCoverageHint,
   documentQualityLabel,
   isPdfDocument,
 } from "../src/documentDisplay.js";
@@ -20,7 +21,9 @@ test("page label only calls PDF source units pages", () => {
 
 test("coverage maps ingest state to student-friendly labels", () => {
   assert.deepEqual(documentCoverage(pdf), { label: "已入库", type: "success" });
-  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), { label: "已入库", type: "success" });
+  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), { label: "部分页面需核对", type: "warning" });
+  assert.match(documentCoverageHint({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), /空页|稀疏|异常/);
+  assert.equal(documentCoverageHint(pdf), "");
   assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "LOW_EXTRACTED_TEXT" }), { label: "文本较少", type: "warning" });
   assert.deepEqual(documentCoverage({ ...pdf, job_status: "running" }), { label: "处理中", type: "warning" });
   assert.deepEqual(documentCoverage({ ...pdf, job_status: "failed" }), { label: "暂不可用", type: "danger" });
