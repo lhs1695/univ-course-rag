@@ -1,0 +1,1316 @@
+{
+  "meta": {
+    "date": "2026-10-20",
+    "timezone": "Asia/Shanghai",
+    "database": "univ_course_rag_cn_v2",
+    "strategy": "hybrid",
+    "rerank": "disabled",
+    "embedder": "siliconflow|BAAI/bge-m3",
+    "llm": "deepseek|deepseek-flash",
+    "git_sha": "5292d54",
+    "verifier": "developer",
+    "cloud_auth_note": "用户 2026-10-20 明确授权阶段 A：≤22 题 × Dense+Hybrid Embedding/LLM；rerank 仍 disabled；禁止全量重入库/Vision",
+    "case_set": "中期答辩材料/研究证据/02-人工核验题集-v1.json",
+    "case_set_sha256": "33437a164e41f1f35ac39399994a2c6bfde927f28daa261890127cd8dede12a0",
+    "human_fields": "completed",
+    "upload_dir": "corpus\\local\\cn-replace-2026-10-18\\rechunk\\uploads_v2",
+    "verification_note": "开发者核验；对照 expected_* 写于看模型前的题集，未回改题集预期页"
+  },
+  "totals": {
+    "n": 22,
+    "answered": 16,
+    "no_evidence": 6,
+    "system_failures": 0,
+    "answerable_n": 17,
+    "refuse_n": 5,
+    "fact_pass": {
+      "pass": 16,
+      "fail": 1,
+      "unclear": 0,
+      "n": 17,
+      "pass_rate": 0.941
+    },
+    "citation_supports_pass": {
+      "pass": 16,
+      "fail": 1,
+      "unclear": 0,
+      "n": 17,
+      "pass_rate": 0.941
+    },
+    "page_ok_pass": {
+      "pass": 12,
+      "fail": 5,
+      "unclear": 0,
+      "n": 17,
+      "pass_rate": 0.706
+    },
+    "no_hallucination_pass": {
+      "pass": 17,
+      "fail": 0,
+      "unclear": 0,
+      "n": 17,
+      "pass_rate": 1.0
+    },
+    "refuse_correct": {
+      "pass": 5,
+      "fail": 0,
+      "unclear": 0,
+      "n": 5,
+      "pass_rate": 1.0
+    },
+    "note": "分层统计；禁止合成单一准确率。verifier=developer"
+  },
+  "usage": {
+    "embedding_calls": 44,
+    "embedding_texts": 44,
+    "embedding_prompt_tokens": 1058,
+    "embedding_total_tokens": 1058,
+    "embedding_usage_returned_by_api": true,
+    "llm_calls": 22,
+    "llm_prompt_tokens": 57149,
+    "llm_completion_tokens": 1797,
+    "llm_total_tokens": 58946,
+    "llm_usage_returned_by_api": true,
+    "cny_cost": null,
+    "cny_cost_note": "未查账单；禁止估算"
+  },
+  "items": [
+    {
+      "id": "LA-F01",
+      "course": "线性代数",
+      "category": "in_course_fact",
+      "query": "根据线性代数讲义，线性代数主要研究哪两类对象？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "线性代数研究向量空间，以及向量空间之间的线性变换（线性映射）。[Source 753cd1dc-deae-4263-b4f0-7855caf428cb]",
+      "cited_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "cited_pages": [
+        10
+      ],
+      "citations": [
+        {
+          "chunk_id": "753cd1dc-deae-4263-b4f0-7855caf428cb",
+          "document": "01-linear-algebra-full.pdf",
+          "page": 10,
+          "score": 0.6531198827552877,
+          "snippet": "线性代数课程介绍(Introduction to Linear Algebra) 线性代数课程介绍(Introduction to Linear Algebra) 什么是线性代数 课程目标 高中数学到大学数学的飞跃 1. 从强调计算（算术）到理解数学结构的转变。 2. 从牢记结论到掌握证明的转变。 3. 建立抽象的几何直观。 什么是线性代数？ 线性代数研究： 1. 向量空间（vector space）。 2. 向量空间之间的线性变换（linear transformations or linear map） 一个线性函数 考虑如下的函数： f(x) := 3x 这是一个R →R 的线性函数。 • 从几何的角度来讲，这是平面R2 上的一条线。 • 从代数的角度来讲，对于任意的x1, x2, c, x ∈R 我们有： f(x1 + x2) = f(x1) + f(x2) f(cx) = cf("
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "retrieval_hit_pages": [
+        2,
+        5,
+        10,
+        13,
+        17,
+        294,
+        303,
+        552
+      ],
+      "latency_ms": 8821.8,
+      "retrieval_candidate_stats": {
+        "candidate_count": 54,
+        "dense_only": 22,
+        "keyword_only": 22,
+        "both": 10,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": "±1 页"
+    },
+    {
+      "id": "LA-F02",
+      "course": "线性代数",
+      "category": "in_course_fact",
+      "query": "讲义里用 f(x)=3x 说明线性函数时，从代数角度给出了哪两条性质？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "从代数角度，对任意 \\(x_1,x_2,c,x\\in\\mathbb R\\)，满足：\n- \\(f(x_1+x_2)=f(x_1)+f(x_2)\\)\n- \\(f(cx)=cf(x)\\)\n\n[Source 753cd1dc-deae-4263-b4f0-7855caf428cb]",
+      "cited_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "cited_pages": [
+        10
+      ],
+      "citations": [
+        {
+          "chunk_id": "753cd1dc-deae-4263-b4f0-7855caf428cb",
+          "document": "01-linear-algebra-full.pdf",
+          "page": 10,
+          "score": 0.6009448170661926,
+          "snippet": "线性代数课程介绍(Introduction to Linear Algebra) 线性代数课程介绍(Introduction to Linear Algebra) 什么是线性代数 课程目标 高中数学到大学数学的飞跃 1. 从强调计算（算术）到理解数学结构的转变。 2. 从牢记结论到掌握证明的转变。 3. 建立抽象的几何直观。 什么是线性代数？ 线性代数研究： 1. 向量空间（vector space）。 2. 向量空间之间的线性变换（linear transformations or linear map） 一个线性函数 考虑如下的函数： f(x) := 3x 这是一个R →R 的线性函数。 • 从几何的角度来讲，这是平面R2 上的一条线。 • 从代数的角度来讲，对于任意的x1, x2, c, x ∈R 我们有： f(x1 + x2) = f(x1) + f(x2) f(cx) = cf("
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "retrieval_hit_pages": [
+        10,
+        13,
+        17,
+        51,
+        56,
+        421,
+        458,
+        552
+      ],
+      "latency_ms": 2783.2,
+      "retrieval_candidate_stats": {
+        "candidate_count": 53,
+        "dense_only": 21,
+        "keyword_only": 21,
+        "both": 11,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "LA-T01",
+      "course": "线性代数",
+      "category": "term_paraphrase",
+      "query": "线性代数里说的「线性映射」一般指什么？和向量空间有什么关系？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "线性代数研究向量空间以及向量空间之间的线性变换（linear transformations or linear map）[Source 753cd1dc-deae-4263-b4f0-7855caf428cb]。线性映射是向量空间之间的映射；例如线性泛函是一个向量空间到 R 上的线性映射，即 L ∈ T(V, R)[Source 04fb1edc-d9b4-4db2-bbe4-d61b904180f2]。",
+      "cited_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "cited_pages": [
+        10,
+        610
+      ],
+      "citations": [
+        {
+          "chunk_id": "753cd1dc-deae-4263-b4f0-7855caf428cb",
+          "document": "01-linear-algebra-full.pdf",
+          "page": 10,
+          "score": 0.627787709236145,
+          "snippet": "线性代数课程介绍(Introduction to Linear Algebra) 线性代数课程介绍(Introduction to Linear Algebra) 什么是线性代数 课程目标 高中数学到大学数学的飞跃 1. 从强调计算（算术）到理解数学结构的转变。 2. 从牢记结论到掌握证明的转变。 3. 建立抽象的几何直观。 什么是线性代数？ 线性代数研究： 1. 向量空间（vector space）。 2. 向量空间之间的线性变换（linear transformations or linear map） 一个线性函数 考虑如下的函数： f(x) := 3x 这是一个R →R 的线性函数。 • 从几何的角度来讲，这是平面R2 上的一条线。 • 从代数的角度来讲，对于任意的x1, x2, c, x ∈R 我们有： f(x1 + x2) = f(x1) + f(x2) f(cx) = cf("
+        },
+        {
+          "chunk_id": "04fb1edc-d9b4-4db2-bbe4-d61b904180f2",
+          "document": "01-linear-algebra-full.pdf",
+          "page": 610,
+          "score": 0.6371946334838867,
+          "snippet": "阶段总结 • 线性变换的核与像，矩阵的零空间与列空间。 • Rank-Nullity 定理。 线性变换(Linear Transformation) 对偶性(Duality) 线性泛函(Linear Functional) 我们固定一个向量空间V。我们考察其到R 上的线性映射 定义251 [线性泛函]. 一个V 上的泛函L 是一个线性映射f : V −→R，即：L ∈T(V, R)。 例252. 1. F : R3 =⇒R： F(x, y, z) = 4x −5y + 2z 是一个线性泛函。 2. 固定(c1, · · · , cn) ∈Rn，定义F : Rn =⇒R: F(x) = n X i=1 cixi 是一个线性泛函。"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "retrieval_hit_pages": [
+        2,
+        10,
+        13,
+        17,
+        26,
+        159,
+        175,
+        610
+      ],
+      "latency_ms": 2911.8,
+      "retrieval_candidate_stats": {
+        "candidate_count": 49,
+        "dense_only": 17,
+        "keyword_only": 17,
+        "both": 15,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": "另引 p610 线性泛函例；主要点仍在 p10；±1"
+    },
+    {
+      "id": "LA-X01",
+      "course": "线性代数",
+      "category": "cross_span",
+      "query": "讲义如何用牛顿第二定律说明「这是一个线性的转换」？请指出力和加速度的关系要点。",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "讲义在 R² 上把牛顿第二定律写成 \\(a=\\frac{F}{m}\\)，即 \\(a=(a_x,a_y)=\\left(\\frac{F_x}{m},\\frac{F_y}{m}\\right)\\)，并说明这是一个线性的转换：  \n\\[\n\\left(\\frac{F_x+F'_x}{m},\\frac{F_y+F'_y}{m}\\right)\n=\n\\left(\\frac{F_x}{m},\\frac{F_y}{m}\\right)\n+\n\\left(\\frac{F'_x}{m},\\frac{F'_y}{m}\\right),\n\\]\n\\[\n\\left(\\frac{cF_x}{m},\\frac{cF_y}{m}\\right)\n=\nc\\left(\\frac{F_x}{m},\\frac{F_y}{m}\\right).\n\\]\n[Source c9218c6f-384e-430b-8f5b-82d74fdfb130]\n\n力和加速度的关系要点是：\\(F=ma\\) 或 \\(a=\\frac{F}{m}\\)；在 R² 上力是向量 \\((F_x,F_y)\\)，加速度相应为 \\(\\left(\\frac{F_x}{m},\\frac{F_y}{m}\\right)\\)。[Source c9218c6f-384e-430b-8f5b-82d74fdfb130] 在 R³ 上同样有 \\(a=(a_x,a_y,a_z)=\\left(\\frac{F_x}{m},\\frac{F_y}{m},\\frac{F_z}{m}\\right)\\)，并可用矩阵\n\\[\n\\begin{pmatrix}\n\\frac1m&0&0\\\\\n0&\\frac1m&0\\\\\n0&0&\\frac1m\n\\end{pmatrix}\n\\]\n表示该线性变换。[Source 2df915c5-9a29-45f3-ad9f-53598bb1e718]",
+      "cited_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "cited_pages": [
+        11,
+        12
+      ],
+      "citations": [
+        {
+          "chunk_id": "c9218c6f-384e-430b-8f5b-82d74fdfb130",
+          "document": "01-linear-algebra-full.pdf",
+          "page": 11,
+          "score": 0.6571860126035245,
+          "snippet": "牛顿第二定律(I) 牛顿第二定律告诉我们： F = ma 或者a = F m 在R2 上 • F 是一个向量(Fx, Fy)，从而： a = (ax, ay) = Fx m , Fy m • 这是一个线性的转换。 Fx + F′ x m , Fy + F′ y m = Fx m , Fy m + F′ x m , F′ y m cFx m , cFy m = c Fx m , Fy m"
+        },
+        {
+          "chunk_id": "2df915c5-9a29-45f3-ad9f-53598bb1e718",
+          "document": "01-linear-algebra-full.pdf",
+          "page": 12,
+          "score": 0.6121335723161281,
+          "snippet": "牛顿第二定律(II) 在R3 上 F = (Fx, Fy, Fz) 和a = (ax, ay, az) = Fx m , Fy m , Fz m • 我们有： ax = mFx + 0Fy + 0Fz ay = 0Fx + 1 mFy + 0Fz az = 0Fx + 0Fy + 1 mFz • 该线性变换可以用如下的矩阵(matrix)表示。 m m m"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "retrieval_hit_pages": [
+        11,
+        12,
+        552,
+        553,
+        576,
+        580,
+        586,
+        615
+      ],
+      "latency_ms": 3230.3,
+      "retrieval_candidate_stats": {
+        "candidate_count": 53,
+        "dense_only": 21,
+        "keyword_only": 21,
+        "both": 11,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": "附带 p12 R3 矩阵表述，仍课内"
+    },
+    {
+      "id": "LA-X02",
+      "course": "线性代数",
+      "category": "cross_span",
+      "query": "向量长度∥u∥在讲义中如何用点积定义？并写出垂直向量时的勾股关系。",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "向量长度定义为  \n\\[\n\\|u\\|=\\sqrt{u\\cdot u}\n\\]\n[Source 7a113eec-c05d-4a81-ad6b-0d0e237661b7]\n\n对于垂直的向量 \\(u\\) 和 \\(v\\)，有  \n\\[\n\\|u\\|^2+\\|v\\|^2=\\|u+v\\|^2=\\|u-v\\|^2\n\\]\n[Source 7a113eec-c05d-4a81-ad6b-0d0e237661b7]",
+      "cited_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "cited_pages": [
+        30
+      ],
+      "citations": [
+        {
+          "chunk_id": "7a113eec-c05d-4a81-ad6b-0d0e237661b7",
+          "document": "01-linear-algebra-full.pdf",
+          "page": 30,
+          "score": 0.7555949396604281,
+          "snippet": "向量的长度 定义4 [向量的长度]. 向量u = (u1, u2, . . . , un) 的长度∥u∥定义为： ∥u∥= q u2 1 + u2 2 + · · · + u2n = √ u · u 勾股定理(Pythagorean Law) √ (0, 2) (4, 0) u = (2, 4) 一般来说，对于垂直的u 和v： ∥u∥2 + ∥v∥2 = ∥u + v∥2 = ∥u −v∥2"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "retrieval_hit_pages": [
+        17,
+        28,
+        29,
+        30,
+        32,
+        33,
+        39,
+        178
+      ],
+      "latency_ms": 2492.5,
+      "retrieval_candidate_stats": {
+        "candidate_count": 55,
+        "dense_only": 23,
+        "keyword_only": 23,
+        "both": 9,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "LA-R01",
+      "course": "线性代数",
+      "category": "insufficient",
+      "query": "根据线性代数讲义，如何用 SQL 创建数据库表并插入数据？",
+      "should_refuse": true,
+      "status": "no_evidence",
+      "answer": "",
+      "cited_documents": [],
+      "cited_pages": [],
+      "citations": [],
+      "retrieval_hit_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "retrieval_hit_pages": [
+        2,
+        5,
+        10,
+        13,
+        17,
+        294,
+        657,
+        658
+      ],
+      "latency_ms": 2083.4,
+      "retrieval_candidate_stats": {
+        "candidate_count": 53,
+        "dense_only": 21,
+        "keyword_only": 21,
+        "both": 11,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "n/a",
+      "citation_supports": "n/a",
+      "page_ok": "n/a",
+      "no_hallucination": "n/a",
+      "refuse_correct": "pass",
+      "notes": ""
+    },
+    {
+      "id": "LA-R02",
+      "course": "线性代数",
+      "category": "insufficient",
+      "query": "根据线性代数讲义，如何用 PyTorch 训练一个神经网络？",
+      "should_refuse": true,
+      "status": "no_evidence",
+      "answer": "",
+      "cited_documents": [],
+      "cited_pages": [],
+      "citations": [],
+      "retrieval_hit_documents": [
+        "01-linear-algebra-full.pdf"
+      ],
+      "retrieval_hit_pages": [
+        2,
+        13,
+        17,
+        657
+      ],
+      "latency_ms": 1930.7,
+      "retrieval_candidate_stats": {
+        "candidate_count": 56,
+        "dense_only": 24,
+        "keyword_only": 24,
+        "both": 8,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "n/a",
+      "citation_supports": "n/a",
+      "page_ok": "n/a",
+      "no_hallucination": "n/a",
+      "refuse_correct": "pass",
+      "notes": ""
+    },
+    {
+      "id": "PROB-F01",
+      "course": "概率论与统计学",
+      "category": "in_course_fact",
+      "query": "根据概率论课件，什么是随机试验？请给出定义要点。",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "随机试验是指：一项试验能够在相同条件下重复进行，并且该试验至少有两种可能的结果，但在每一次试验前无法确定哪个结果会实现；换言之，随机试验是无法确切预知结果的一种机制。[Source e1181bf9-36af-4e24-ac7e-4adf41bcc2c6]",
+      "cited_documents": [
+        "02-prob.pdf"
+      ],
+      "cited_pages": [
+        3
+      ],
+      "citations": [
+        {
+          "chunk_id": "e1181bf9-36af-4e24-ac7e-4adf41bcc2c6",
+          "document": "02-prob.pdf",
+          "page": 3,
+          "score": 0.7234145998954773,
+          "snippet": "第一节随机试验 第二节概率论的基本概念 第三节集合理论概述 第四节概率论基础 第五节计数方法 第六节条件概率 第七节贝叶斯定理 第八节独立性 第九节小结 目 录 第二章概率论基础 概率论与统计学 2024-12-30 • 如果一项试验能够在相同条件下重复进行，并且该试验至少 有两种可能的结果，但在每一次试验前无法确定哪个结果会 实现，则称之为随机试验。 • 换言之，随机试验是无法确切预知结果的一种机制。 定义2.1: 随机试验(Random Experiment) 此处“试验”表示一般意义上 的观察或测度的过程，而未必 是类似于物理学等自然科学中 真正实施的实验。 第一节随机试验"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "02-prob.pdf",
+        "12-prob.pdf"
+      ],
+      "retrieval_hit_pages": [
+        3,
+        4,
+        5,
+        6,
+        8,
+        34,
+        37,
+        45
+      ],
+      "latency_ms": 5073.5,
+      "retrieval_candidate_stats": {
+        "candidate_count": 50,
+        "dense_only": 18,
+        "keyword_only": 18,
+        "both": 14,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "PROB-F02",
+      "course": "概率论与统计学",
+      "category": "in_course_fact",
+      "query": "概率论与统计学导论课件目录中，第一章包含哪些主要小节？",
+      "should_refuse": false,
+      "status": "no_evidence",
+      "answer": "",
+      "cited_documents": [],
+      "cited_pages": [],
+      "citations": [],
+      "retrieval_hit_documents": [
+        "01-prob.pdf",
+        "12-prob.pdf",
+        "02-prob.pdf"
+      ],
+      "retrieval_hit_pages": [
+        2,
+        50,
+        52,
+        54,
+        55,
+        81,
+        122
+      ],
+      "latency_ms": 4086.9,
+      "retrieval_candidate_stats": {
+        "candidate_count": 59,
+        "dense_only": 27,
+        "keyword_only": 27,
+        "both": 5,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "fail",
+      "citation_supports": "fail",
+      "page_ok": "fail",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": "与 Dense 同：应答题 no_evidence"
+    },
+    {
+      "id": "PROB-T01",
+      "course": "概率论与统计学",
+      "category": "term_paraphrase",
+      "query": "课件里的 Random Experiment 用中文怎么称呼？核心意思是什么？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "课件里 Random Experiment 称为“随机试验”。其核心意思是：一项试验能够在相同条件下重复进行，并且至少有两种可能的结果，但每一次试验前无法确定哪个结果会实现；换言之，随机试验是无法确切预知结果的一种机制。[Source e1181bf9-36af-4e24-ac7e-4adf41bcc2c6]",
+      "cited_documents": [
+        "02-prob.pdf"
+      ],
+      "cited_pages": [
+        3
+      ],
+      "citations": [
+        {
+          "chunk_id": "e1181bf9-36af-4e24-ac7e-4adf41bcc2c6",
+          "document": "02-prob.pdf",
+          "page": 3,
+          "score": 0.5693822842468202,
+          "snippet": "第一节随机试验 第二节概率论的基本概念 第三节集合理论概述 第四节概率论基础 第五节计数方法 第六节条件概率 第七节贝叶斯定理 第八节独立性 第九节小结 目 录 第二章概率论基础 概率论与统计学 2024-12-30 • 如果一项试验能够在相同条件下重复进行，并且该试验至少 有两种可能的结果，但在每一次试验前无法确定哪个结果会 实现，则称之为随机试验。 • 换言之，随机试验是无法确切预知结果的一种机制。 定义2.1: 随机试验(Random Experiment) 此处“试验”表示一般意义上 的观察或测度的过程，而未必 是类似于物理学等自然科学中 真正实施的实验。 第一节随机试验"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "02-prob.pdf",
+        "03-prob.pdf",
+        "06-prob.pdf"
+      ],
+      "retrieval_hit_pages": [
+        3,
+        4,
+        8,
+        13,
+        35,
+        45,
+        47
+      ],
+      "latency_ms": 4528.3,
+      "retrieval_candidate_stats": {
+        "candidate_count": 57,
+        "dense_only": 25,
+        "keyword_only": 25,
+        "both": 7,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "PROB-X01",
+      "course": "概率论与统计学",
+      "category": "cross_span",
+      "query": "导论中「现代经济学研究的基本方法论」提到的步骤 1 强调什么？数据来源举了哪些例子？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "步骤 1 强调数据收集和归纳经验典型特征事实，典型特征事实通常从观测到的经济数据归纳而得 [Source 4c0848a8-ee88-4b02-bfea-362c1fe796fa]。数据来源举了实验经济学、大数据、调查、田野调查等例子 [Source 4c0848a8-ee88-4b02-bfea-362c1fe796fa]。",
+      "cited_documents": [
+        "01-prob.pdf"
+      ],
+      "cited_pages": [
+        3
+      ],
+      "citations": [
+        {
+          "chunk_id": "4c0848a8-ee88-4b02-bfea-362c1fe796fa",
+          "document": "01-prob.pdf",
+          "page": 3,
+          "score": 0.7320580540947396,
+          "snippet": "第一节现代经济学研究的基本方法论 第二节计量经济学的作用 第三节代表性实例 第四节概率论与统计学的作用 第一章导论 概率论与统计学 2024-12-30 步骤1：数据收集和归纳经验典型特征事实 • 数据收集: • 所谓典型特征事实通常是从观测到的经济数据归纳而得。 数据收集 经济理论/ 模型 经验验证 应用 实验经济学 大数据 调查 田野调查 第一节现代经济学研究的基本方法论"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-prob.pdf"
+      ],
+      "retrieval_hit_pages": [
+        3,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10,
+        12
+      ],
+      "latency_ms": 4812.2,
+      "retrieval_candidate_stats": {
+        "candidate_count": 46,
+        "dense_only": 14,
+        "keyword_only": 14,
+        "both": 18,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "PROB-R01",
+      "course": "概率论与统计学",
+      "category": "insufficient",
+      "query": "根据本课概率论课件，如何配置 PostgreSQL 主从复制？",
+      "should_refuse": true,
+      "status": "no_evidence",
+      "answer": "",
+      "cited_documents": [],
+      "cited_pages": [],
+      "citations": [],
+      "retrieval_hit_documents": [
+        "02-prob.pdf",
+        "05-prob.pdf",
+        "04-prob.pdf",
+        "03-prob.pdf"
+      ],
+      "retrieval_hit_pages": [
+        1,
+        59,
+        100,
+        116,
+        206
+      ],
+      "latency_ms": 4979.0,
+      "retrieval_candidate_stats": {
+        "candidate_count": 61,
+        "dense_only": 29,
+        "keyword_only": 29,
+        "both": 3,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "n/a",
+      "citation_supports": "n/a",
+      "page_ok": "n/a",
+      "no_hallucination": "n/a",
+      "refuse_correct": "pass",
+      "notes": ""
+    },
+    {
+      "id": "HR-F01",
+      "course": "人力资源管理",
+      "category": "in_course_fact",
+      "query": "人力资源管理概论课件的「课程框架」列出了哪些主要模块？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "人力资源管理概论课件的「课程框架」列出的主要模块包括：职位分析、人力资源管理绪论、人力资源规划、人力资源管理的发展、招聘管理、绩效管理、薪酬管理、劳动关系管理、培训管理 [Source 033b1030-6728-4d90-92c3-aa85007529b4]。",
+      "cited_documents": [
+        "01-L1-3-HRM概论.pdf"
+      ],
+      "cited_pages": [
+        9
+      ],
+      "citations": [
+        {
+          "chunk_id": "033b1030-6728-4d90-92c3-aa85007529b4",
+          "document": "01-L1-3-HRM概论.pdf",
+          "page": 9,
+          "score": 0.5851414378029539,
+          "snippet": "中央财经大学商学院组织与人力资源管理系 嵇月婷 副教授 人力资源管理 课程介绍 人力资源管理是什么 人力资源管理从哪来 人力资源管理到哪去 课程介绍 人力资源管理是什么 人力资源管理从哪来 人力资源管理到哪去 朱飞 主编 《人力资源管理》 机械工业出版社 2013年版 教材 课程介绍 课程框架 课程介绍 职位分析 人力资源管理绪论 人力资源规划 人力资源管理的发展 招聘管理 绩效管理 薪酬管理 劳动关系管理 培训管理 出勤，课堂参与 (10%) 成绩评价 课程介绍 期末大作业 (60%) 期中作业 (30%) 人力资源管理是什么 人力资源管理到哪去 课程介绍 人力资源管理从哪来 劳动经济 人力资源管理 劳动关系 产业关系（IR）和人力资源管理（HRM）的历史发展 • IR产生的原因和条件是19世纪最后的25年，人们开始关注劳动的条件，当时的社会背景 是：大规模的移民、工厂系统的发展、经济长"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-L1-3-HRM概论.pdf",
+        "07-L6-7-招聘管理.pdf",
+        "08-L8-9-培训与开发.pdf",
+        "06-L5-人力资源规划.pdf",
+        "03-L12-14-薪酬管理-(1).pdf"
+      ],
+      "retrieval_hit_pages": [
+        3,
+        4,
+        6,
+        9,
+        19,
+        34,
+        52
+      ],
+      "latency_ms": 2499.3,
+      "retrieval_candidate_stats": {
+        "candidate_count": 48,
+        "dense_only": 16,
+        "keyword_only": 16,
+        "both": 16,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "fail",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": "expected p5 cited p9"
+    },
+    {
+      "id": "HR-F02",
+      "course": "人力资源管理",
+      "category": "in_course_fact",
+      "query": "绩效管理课件目录包含哪几大部分？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "绩效管理课件目录包含四大部分：课程回顾、绩效管理流程、绩效管理概述、绩效管理基础知识问答 [Source c16a6512-6475-4b99-8c05-1b15a79b65e3][Source 3b17e7ca-d098-473d-b9f1-b6c9c94d4015][Source 13cd3ac2-60f2-46eb-accf-3e60fc369021]。",
+      "cited_documents": [
+        "02-L10-11-绩效管理.pdf",
+        "03-L12-14-薪酬管理-(1).pdf"
+      ],
+      "cited_pages": [
+        3,
+        6,
+        16
+      ],
+      "citations": [
+        {
+          "chunk_id": "c16a6512-6475-4b99-8c05-1b15a79b65e3",
+          "document": "02-L10-11-绩效管理.pdf",
+          "page": 16,
+          "score": 0.666645884513855,
+          "snippet": "课程回顾 绩效管理流程 绩效管理概述 绩效管理基础知识问答 绩效内容与计划 活动：与员工一起确定 绩效目标、行动计划 时间：新绩效期间开始 绩效评估 活动：评估员工的绩效 时间：绩效间隔期间 绩效辅导实施 活动：观察、记录和总结绩 效，反馈、探讨、指导 时间：整个绩效期间 绩效反馈面谈 活动：主管就评估的结 果与员工讨论 时间：绩效期间结束时 评估结果应用 员工发展计划、人事变动 薪酬奖金、培训 组织目标分解 绩效管理循环PDCA 绩效管理流程"
+        },
+        {
+          "chunk_id": "3b17e7ca-d098-473d-b9f1-b6c9c94d4015",
+          "document": "02-L10-11-绩效管理.pdf",
+          "page": 6,
+          "score": 0.6252000331878662,
+          "snippet": "中央财经大学商学院 嵇月婷 人力资源管理 课程回顾 绩效管理流程 绩效管理概述 绩效管理基础知识问答 课程回顾 选人 育人 用人 留人 •人力资源规划 •招聘管理 •培训管理 •职业生涯管理 •绩效管理 •劳动关系管理 •薪酬管理 绩效管理是企业送给员工的礼物 课程回顾 绩效管理流程 绩效管理概述 绩效管理基础知识问答 绩效的概念 • 绩效的一般定义： 绩效（Performance），也称为业绩、效绩、成效等，反映的是人们从事某一种活动所产生的成绩 和成果。 • 从组织层面看： ü“绩效就是利润，就是销售收入” ü“绩效就是规模，就是市值，就是市场占有率” ü“绩效就是企业可持续发展的能力” ü… • 从个体层面看： ü“绩效是个人工作的行为（符合组织需要的行为）” ü“绩效是个人表现出来的素质（符合组织需要的素质）” ü“绩效是工作成果”…… 到底什么是 绩效？"
+        },
+        {
+          "chunk_id": "13cd3ac2-60f2-46eb-accf-3e60fc369021",
+          "document": "03-L12-14-薪酬管理-(1).pdf",
+          "page": 3,
+          "score": 0.6481917710189967,
+          "snippet": "中央财经大学商学院 嵇月婷 人力资源管理 课程回顾 固定薪酬 薪酬管理概述 可变薪酬 绩效内容与计划 活动：与员工一起确定 绩效目标、行动计划 时间：新绩效期间开始 绩效评估 活动：评估员工的绩效 时间：绩效间隔期间 绩效辅导实施 活动：观察、记录和总结绩 效，反馈、探讨、指导 时间：整个绩效期间 绩效反馈面谈 活动：主管就评估的结 果与员工讨论 时间：绩效期间结束时 评估结果应用 员工发展计划、人事变动 薪酬奖金、培训 组织目标分解 绩效管理循环PDCA 绩效管理流程"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "02-L10-11-绩效管理.pdf",
+        "03-L12-14-薪酬管理-(1).pdf"
+      ],
+      "retrieval_hit_pages": [
+        3,
+        6,
+        16,
+        18,
+        26,
+        33,
+        42,
+        58
+      ],
+      "latency_ms": 2824.0,
+      "retrieval_candidate_stats": {
+        "candidate_count": 47,
+        "dense_only": 15,
+        "keyword_only": 15,
+        "both": 17,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "fail",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": "多引了薪酬管理 PDF 片段；目录四块仍由绩效管理页支持；页码非 expected p2"
+    },
+    {
+      "id": "HR-T01",
+      "course": "人力资源管理",
+      "category": "term_paraphrase",
+      "query": "课件用「选人、育人、用人、留人」概括时，分别对应哪些人力资源管理活动？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "课件中「选人、育人、用人、留人」对应的人力资源管理活动为：\n\n- **选人**：人力资源规划、招聘管理 [Source 3b17e7ca-d098-473d-b9f1-b6c9c94d4015]\n- **育人**：培训管理、职业生涯管理 [Source 3b17e7ca-d098-473d-b9f1-b6c9c94d4015]\n- **用人**：绩效管理 [Source 3b17e7ca-d098-473d-b9f1-b6c9c94d4015]\n- **留人**：劳动关系管理、薪酬管理 [Source 3b17e7ca-d098-473d-b9f1-b6c9c94d4015]",
+      "cited_documents": [
+        "02-L10-11-绩效管理.pdf"
+      ],
+      "cited_pages": [
+        6
+      ],
+      "citations": [
+        {
+          "chunk_id": "3b17e7ca-d098-473d-b9f1-b6c9c94d4015",
+          "document": "02-L10-11-绩效管理.pdf",
+          "page": 6,
+          "score": 0.5505621969029708,
+          "snippet": "中央财经大学商学院 嵇月婷 人力资源管理 课程回顾 绩效管理流程 绩效管理概述 绩效管理基础知识问答 课程回顾 选人 育人 用人 留人 •人力资源规划 •招聘管理 •培训管理 •职业生涯管理 •绩效管理 •劳动关系管理 •薪酬管理 绩效管理是企业送给员工的礼物 课程回顾 绩效管理流程 绩效管理概述 绩效管理基础知识问答 绩效的概念 • 绩效的一般定义： 绩效（Performance），也称为业绩、效绩、成效等，反映的是人们从事某一种活动所产生的成绩 和成果。 • 从组织层面看： ü“绩效就是利润，就是销售收入” ü“绩效就是规模，就是市值，就是市场占有率” ü“绩效就是企业可持续发展的能力” ü… • 从个体层面看： ü“绩效是个人工作的行为（符合组织需要的行为）” ü“绩效是个人表现出来的素质（符合组织需要的素质）” ü“绩效是工作成果”…… 到底什么是 绩效？"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-L1-3-HRM概论.pdf",
+        "07-L6-7-招聘管理.pdf",
+        "02-L10-11-绩效管理.pdf",
+        "08-L8-9-培训与开发.pdf"
+      ],
+      "retrieval_hit_pages": [
+        4,
+        6,
+        9,
+        19,
+        34,
+        47,
+        52
+      ],
+      "latency_ms": 2712.1,
+      "retrieval_candidate_stats": {
+        "candidate_count": 48,
+        "dense_only": 16,
+        "keyword_only": 16,
+        "both": 16,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "fail",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": "Hybrid 命中绩效管理回顾页，must_include 覆盖；cited p6 非 expected p3"
+    },
+    {
+      "id": "HR-X01",
+      "course": "人力资源管理",
+      "category": "cross_span",
+      "query": "概论课件目录里「人力资源管理是什么 / 从哪来 / 到哪去」与课程介绍是什么关系？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "在课程目录中，“人力资源管理是什么”“人力资源管理从哪来”“人力资源管理到哪去”与“课程介绍”并列为课程内容板块 [Source 033b1030-6728-4d90-92c3-aa85007529b4]。",
+      "cited_documents": [
+        "01-L1-3-HRM概论.pdf"
+      ],
+      "cited_pages": [
+        9
+      ],
+      "citations": [
+        {
+          "chunk_id": "033b1030-6728-4d90-92c3-aa85007529b4",
+          "document": "01-L1-3-HRM概论.pdf",
+          "page": 9,
+          "score": 0.7098787003827882,
+          "snippet": "中央财经大学商学院组织与人力资源管理系 嵇月婷 副教授 人力资源管理 课程介绍 人力资源管理是什么 人力资源管理从哪来 人力资源管理到哪去 课程介绍 人力资源管理是什么 人力资源管理从哪来 人力资源管理到哪去 朱飞 主编 《人力资源管理》 机械工业出版社 2013年版 教材 课程介绍 课程框架 课程介绍 职位分析 人力资源管理绪论 人力资源规划 人力资源管理的发展 招聘管理 绩效管理 薪酬管理 劳动关系管理 培训管理 出勤，课堂参与 (10%) 成绩评价 课程介绍 期末大作业 (60%) 期中作业 (30%) 人力资源管理是什么 人力资源管理到哪去 课程介绍 人力资源管理从哪来 劳动经济 人力资源管理 劳动关系 产业关系（IR）和人力资源管理（HRM）的历史发展 • IR产生的原因和条件是19世纪最后的25年，人们开始关注劳动的条件，当时的社会背景 是：大规模的移民、工厂系统的发展、经济长"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-L1-3-HRM概论.pdf",
+        "08-L8-9-培训与开发.pdf",
+        "07-L6-7-招聘管理.pdf",
+        "06-L5-人力资源规划.pdf"
+      ],
+      "retrieval_hit_pages": [
+        4,
+        6,
+        9,
+        19,
+        28,
+        34,
+        52
+      ],
+      "latency_ms": 5695.6,
+      "retrieval_candidate_stats": {
+        "candidate_count": 42,
+        "dense_only": 10,
+        "keyword_only": 10,
+        "both": 22,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "fail",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": "cited p9 非 expected 2/3"
+    },
+    {
+      "id": "HR-R01",
+      "course": "人力资源管理",
+      "category": "insufficient",
+      "query": "根据本课人力资源课件，明天某只股票会不会涨？请给出买入建议。",
+      "should_refuse": true,
+      "status": "no_evidence",
+      "answer": "",
+      "cited_documents": [],
+      "cited_pages": [],
+      "citations": [],
+      "retrieval_hit_documents": [
+        "03-L12-14-薪酬管理-(1).pdf",
+        "06-L5-人力资源规划.pdf",
+        "07-L6-7-招聘管理.pdf",
+        "01-L1-3-HRM概论.pdf"
+      ],
+      "retrieval_hit_pages": [
+        6,
+        16,
+        26,
+        28,
+        37,
+        41,
+        45,
+        54
+      ],
+      "latency_ms": 2325.7,
+      "retrieval_candidate_stats": {
+        "candidate_count": 53,
+        "dense_only": 21,
+        "keyword_only": 21,
+        "both": 11,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "n/a",
+      "citation_supports": "n/a",
+      "page_ok": "n/a",
+      "no_hallucination": "n/a",
+      "refuse_correct": "pass",
+      "notes": ""
+    },
+    {
+      "id": "EDU-F01",
+      "course": "教育学原理",
+      "category": "in_course_fact",
+      "query": "绪论中给出的教育学定义是什么？研究对象与研究任务分别指什么？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "绪论中给出的教育学定义是：教育学是研究教育现象，揭示教育规律、探讨教育价值和阐明教育方法的学科。其中，研究教育现象指的是教育学的研究对象；揭示教育规律、探讨教育价值和阐明教育方法，指的是教育学的研究任务。[Source affb599a-976a-4031-87ab-712b659654f1]",
+      "cited_documents": [
+        "01-edu.pdf"
+      ],
+      "cited_pages": [
+        1
+      ],
+      "citations": [
+        {
+          "chunk_id": "affb599a-976a-4031-87ab-712b659654f1",
+          "document": "01-edu.pdf",
+          "page": 1,
+          "score": 0.7099712318164857,
+          "snippet": "绪论 大学教学与中小学的重要不同是：中小学教学紧扣课程标准和教材，大学教学会对教学 内容进行更多的改造。我会对教学内容进行较多加工，会加入更多我的思考和见解。教育学 有一种观点，主张教师是最重要的课程。这种观点是很有道理的。不同的教师对于同一个课 程内容往往有不同的理解。 因此，上课时，大家需要对重要的内容记笔记，尤其是标题内容。考试以上课内容为主。 课后，大家需要自学教材，不仅如此，大家要自学大量相关文献，到图书馆，借阅相关 书籍。进行自学，进行比较，进行钻研。 钱钟书：横扫清华图书馆。要博学，必要时要强记。 在绪论中，我主要讲三个内容：一是教育学的定义；二是教育学的产生与发展；三是本 课程的主要内容。 绪论的内容，尤其是教育学的产生与发展内容，相对较难，我们先进行大致了解，以后 还会多次涉及到。 一、教育学的定义 有许多种定义。 教育学是研究教育现象，揭示教育规律、探讨教育价值和阐明教"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-edu.pdf",
+        "02-edu.pdf",
+        "04-edu.pdf",
+        "05-edu.pdf"
+      ],
+      "retrieval_hit_pages": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "latency_ms": 2814.3,
+      "retrieval_candidate_stats": {
+        "candidate_count": 48,
+        "dense_only": 16,
+        "keyword_only": 16,
+        "both": 16,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "EDU-F02",
+      "course": "教育学原理",
+      "category": "in_course_fact",
+      "query": "教育学萌芽阶段常提到的世界最早教育学著作是什么？可能作者是谁？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "教育学萌芽阶段常提到的世界最早教育学著作是《学记》，作者可能是孟子的学生乐正克。[Source 554cb344-3438-493f-9eb9-e0e9ba6f8ef3][Source 477efac1-4ae6-4a56-bdfd-c93f4e0fb5c0]",
+      "cited_documents": [
+        "01-edu.pdf"
+      ],
+      "cited_pages": [
+        2
+      ],
+      "citations": [
+        {
+          "chunk_id": "554cb344-3438-493f-9eb9-e0e9ba6f8ef3",
+          "document": "01-edu.pdf",
+          "page": 2,
+          "score": 0.6980131296527207,
+          "snippet": "有教育思想，但是，没有系统的教育学理论。 此阶段的教育学的特点： 我们先来看一个文献。世界最早的教育学著作是我国战国末期的《学记》，作者可能是 孟子的学生乐正克。该书专门论述教育，对教育目的、教育制度、学校管理、教学原则、教 学方法等方面进行了阐述，至今仍有重要意义。 但是，该文献的缺点是：全文才有1229 个字。学生打开手机，查阅《学记》。自己同 时查阅。 问题：从该文献来看，教育学的萌芽阶段的特点是什么？ 1. 缺乏理论分析。最多属于小论文。没有展开论述。论点明确，但是，论据、论证过 程简陋。高考作为还有800 字。现在一篇教育学论文，在字数上，一般来说，需要"
+        },
+        {
+          "chunk_id": "477efac1-4ae6-4a56-bdfd-c93f4e0fb5c0",
+          "document": "01-edu.pdf",
+          "page": 2,
+          "score": 0.5668488055630453,
+          "snippet": "规律、价值和方法之间的关系 规律：说明是什么。譬如，触电会致人死亡。 价值：说明应该作什么。譬如，应该防止人触电。 方法：说明如何做。譬如，如何正确使用电热水器。 三者之间的关系：规律和价值是基础性研究成果，方法是应用性研究成果。 教育学的种类。德国元教育学家布蕾津卡把教育学分为三大领域：教育哲学、教育科学 和实践教育学三类。其中，教育哲学提供价值和规范取向，回答“教育应该是什么”问题； 教育科学描述和解释事实，回答“教育是什么”问题；实践教育学给教育者提供关于其任务 和完成任务的手段的信息，回答“教育应该怎样做”问题。在这三类教育学中，教育哲学与 教育科学处于基础层次，不具有可操作性；实践教育学基于二者之上，处于应用层次，具有 可操作性。 布蕾津卡认为，当今世界教育学的理论水平，与其他学科相比，比较落后，重要原因是 教育学的研究是大杂烩研究。 一项教育学研究，既研究教育科学，又研究教育哲"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-edu.pdf",
+        "06-edu.pdf"
+      ],
+      "retrieval_hit_pages": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "latency_ms": 2652.0,
+      "retrieval_candidate_stats": {
+        "candidate_count": 50,
+        "dense_only": 18,
+        "keyword_only": 18,
+        "both": 14,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "EDU-T01",
+      "course": "教育学原理",
+      "category": "term_paraphrase",
+      "query": "什么事件标志着教育学开始成为一门独立的学科？规范学科正式形成又与哪本书相关？",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "教育学开始成为一门独立的学科，以捷克教育家夸美纽斯于1632年出版《大教学论》为标志 [Source 372ca3a4-97d5-4ea3-a4cf-55b8233312e2]。教育学作为一门规范的学科正式形成，则与德国教育家赫尔巴特于1806年出版的《普通教育学》相关 [Source 372ca3a4-97d5-4ea3-a4cf-55b8233312e2]。",
+      "cited_documents": [
+        "01-edu.pdf"
+      ],
+      "cited_pages": [
+        3
+      ],
+      "citations": [
+        {
+          "chunk_id": "372ca3a4-97d5-4ea3-a4cf-55b8233312e2",
+          "document": "01-edu.pdf",
+          "page": 3,
+          "score": 0.6056219809506005,
+          "snippet": "5000 字左右。 2. 没有形成体系。教育目的、教育制度、学校管理、教学原则、教学方法等方面进行 了阐述，是后人对其进行分析得出的。本文没有明确进行分别论述。 （二）教育学的独立阶段 近代社会，教育学成为一门独立的学科。 捷克教育家夸美纽斯在1632 年出版《大教学论》，标志着教育学开始成为一门独立的学 科。 德国教育家赫尔巴特于1806 年出版《普通教育学》一书，标志着教育学作为一门规范 的学科正式形成。 此阶段的教育学的特征： 1.体系完整。赫尔巴特教育学：教育目的论，教育方法论，学生管理论。 2.分析充分。赫尔巴特以伦理学理论为基础建立教育目的论，以心理学为基础建立教育 方法论。 3.研究方法的科学性不强。 科学的研究方法，主要是观察、问卷、访谈、实验等。 独立阶段教育学的研究方法主要是简单的类比、思辨。 夸美纽斯：类比。他举例说，鸟儿选择在春天繁殖，园丁选择在春天播种，因此，教育"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-edu.pdf",
+        "06-edu.pdf",
+        "02-edu.pdf"
+      ],
+      "retrieval_hit_pages": [
+        2,
+        3,
+        4,
+        7,
+        10
+      ],
+      "latency_ms": 3002.0,
+      "retrieval_candidate_stats": {
+        "candidate_count": 49,
+        "dense_only": 17,
+        "keyword_only": 17,
+        "both": 15,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "EDU-X01",
+      "course": "教育学原理",
+      "category": "cross_span",
+      "query": "讲义如何说明规律、价值、方法三者的关系？并联系布蕾津卡对教育学领域的划分。",
+      "should_refuse": false,
+      "status": "answered",
+      "answer": "规律说明“是什么”，价值说明“应该作什么”，方法说明“如何做”；规律和价值是基础性研究成果，方法是应用性研究成果 [Source 477efac1-4ae6-4a56-bdfd-c93f4e0fb5c0]。\n\n联系布蕾津卡对教育学领域的划分：教育哲学提供价值和规范取向，回答“教育应该是什么”；教育科学描述和解释事实，回答“教育是什么”；实践教育学提供关于任务和完成任务的手段的信息，回答“教育应该怎样做”。教育哲学与教育科学处于基础层次、不具有可操作性；实践教育学基于二者之上，处于应用层次、具有可操作性 [Source 477efac1-4ae6-4a56-bdfd-c93f4e0fb5c0]。",
+      "cited_documents": [
+        "01-edu.pdf"
+      ],
+      "cited_pages": [
+        2
+      ],
+      "citations": [
+        {
+          "chunk_id": "477efac1-4ae6-4a56-bdfd-c93f4e0fb5c0",
+          "document": "01-edu.pdf",
+          "page": 2,
+          "score": 0.6956886053085377,
+          "snippet": "规律、价值和方法之间的关系 规律：说明是什么。譬如，触电会致人死亡。 价值：说明应该作什么。譬如，应该防止人触电。 方法：说明如何做。譬如，如何正确使用电热水器。 三者之间的关系：规律和价值是基础性研究成果，方法是应用性研究成果。 教育学的种类。德国元教育学家布蕾津卡把教育学分为三大领域：教育哲学、教育科学 和实践教育学三类。其中，教育哲学提供价值和规范取向，回答“教育应该是什么”问题； 教育科学描述和解释事实，回答“教育是什么”问题；实践教育学给教育者提供关于其任务 和完成任务的手段的信息，回答“教育应该怎样做”问题。在这三类教育学中，教育哲学与 教育科学处于基础层次，不具有可操作性；实践教育学基于二者之上，处于应用层次，具有 可操作性。 布蕾津卡认为，当今世界教育学的理论水平，与其他学科相比，比较落后，重要原因是 教育学的研究是大杂烩研究。 一项教育学研究，既研究教育科学，又研究教育哲"
+        }
+      ],
+      "retrieval_hit_documents": [
+        "01-edu.pdf",
+        "05-edu.pdf",
+        "02-edu.pdf",
+        "06-edu.pdf"
+      ],
+      "retrieval_hit_pages": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        9,
+        12
+      ],
+      "latency_ms": 2866.2,
+      "retrieval_candidate_stats": {
+        "candidate_count": 50,
+        "dense_only": 18,
+        "keyword_only": 18,
+        "both": 14,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "pass",
+      "citation_supports": "pass",
+      "page_ok": "pass",
+      "no_hallucination": "pass",
+      "refuse_correct": "n/a",
+      "notes": ""
+    },
+    {
+      "id": "EDU-R01",
+      "course": "教育学原理",
+      "category": "insufficient",
+      "query": "根据教育学原理讲义，请写出用 Kubernetes 部署问答系统的 YAML。",
+      "should_refuse": true,
+      "status": "no_evidence",
+      "answer": "",
+      "cited_documents": [],
+      "cited_pages": [],
+      "citations": [],
+      "retrieval_hit_documents": [
+        "01-edu.pdf"
+      ],
+      "retrieval_hit_pages": [
+        3,
+        4
+      ],
+      "latency_ms": 2620.5,
+      "retrieval_candidate_stats": {
+        "candidate_count": 54,
+        "dense_only": 22,
+        "keyword_only": 22,
+        "both": 10,
+        "keyword_only_in_final_evidence": 0,
+        "keyword_only_in_final_evidence_ids": [],
+        "min_score_gate": 0.45,
+        "note": "Keyword-only rows lack cosine_score; conservative gate excludes them from evidence."
+      },
+      "error": null,
+      "fact_ok": "n/a",
+      "citation_supports": "n/a",
+      "page_ok": "n/a",
+      "no_hallucination": "n/a",
+      "refuse_correct": "pass",
+      "notes": ""
+    }
+  ],
+  "failures": [
+    {
+      "id": "PROB-F02",
+      "kind": "answer",
+      "failed_dims": [
+        "fact_ok",
+        "citation_supports",
+        "page_ok"
+      ],
+      "status": "no_evidence",
+      "notes": "与 Dense 同：应答题 no_evidence"
+    },
+    {
+      "id": "HR-F01",
+      "kind": "answer",
+      "failed_dims": [
+        "page_ok"
+      ],
+      "status": "answered",
+      "notes": "expected p5 cited p9"
+    },
+    {
+      "id": "HR-F02",
+      "kind": "answer",
+      "failed_dims": [
+        "page_ok"
+      ],
+      "status": "answered",
+      "notes": "多引了薪酬管理 PDF 片段；目录四块仍由绩效管理页支持；页码非 expected p2"
+    },
+    {
+      "id": "HR-T01",
+      "kind": "answer",
+      "failed_dims": [
+        "page_ok"
+      ],
+      "status": "answered",
+      "notes": "Hybrid 命中绩效管理回顾页，must_include 覆盖；cited p6 非 expected p3"
+    },
+    {
+      "id": "HR-X01",
+      "kind": "answer",
+      "failed_dims": [
+        "page_ok"
+      ],
+      "status": "answered",
+      "notes": "cited p9 非 expected 2/3"
+    }
+  ],
+  "method_limits": [
+    "verifier=developer 时不得称独立评测",
+    "弱规则命中不得写入 fact_ok=pass 的替代",
+    "Hybrid 最终证据仍过 cosine 门；本轮 Keyword-only_in_final_evidence 全为 0",
+    "page_ok 相对 expected_pages（允许笔记中的 ±1）；未为刷命中回改题集",
+    "cny_cost=null（未查账单，禁止估算）"
+  ]
+}

@@ -1,7 +1,7 @@
 # Dense vs Hybrid：代码评估与小样本对照设计
 
 更新：2026-10-20（Asia/Shanghai）  
-**本轮未执行真实 Hybrid/Dense 对照云调用**（AGENTS：真实 embedding/LLM 须当次明确授权）。以下为只读代码结论 + 授权后实验设计。
+**阶段 A（2026-10-20）已实跑**：同一 22 题集 Dense + Hybrid（rerank=disabled），结果见 `results/manual-verify-2026-10-20-*.json` 与 `results/retrieval-compare-2026-10-20.md`。以下保留代码事实；对照数字以 results 为准。
 
 ## 1. 实现要点（代码事实）
 
@@ -43,3 +43,10 @@
 - 范围：≤22 题 × 2 策略的 Embedding；若比答案再 ×1 次 LLM/题（Dense 已有彩排则可只补 Hybrid 生成）。
 - 禁止：全量 Vision、全量重嵌、启用计费不明的第三方。
 - 交付：本目录结果 JSON + 方法限制重申；不美化数字。
+
+
+## 5. 实跑摘要（2026-10-20，verifier=developer）
+
+- Keyword-only 进入最终 evidence：**0**（验证 cosine 门）
+- 分层指标见 `results/retrieval-compare-2026-10-20.md`；**禁止**合成单一准确率或宣称 Hybrid 整体显著优于 Dense
+- Hybrid 对个别题排序有可见影响（例 HR-T01 must_include 由 Dense fail → Hybrid pass），主因仍是 Dense 也命中后的 Top-k 组成，而非 Keyword-only 直接答
