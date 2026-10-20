@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Thin runner for midterm manual-verify set (cn_v2). Does not use eval.py categories.
 
 Usage (from repo root):
@@ -31,9 +30,6 @@ BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from sqlalchemy import select
-from openai import APITimeoutError
-
 from app.config import get_settings
 from app.db import SessionLocal
 from app.models.course import Course
@@ -54,6 +50,8 @@ from app.services.retrieve import (
     retrieve_hybrid_candidates,
 )
 from app.services.upstream import UpstreamTimeout, UpstreamUnavailable
+from openai import APITimeoutError
+from sqlalchemy import select
 
 TZ = ZoneInfo("Asia/Shanghai")
 CASE_SET = ROOT / "中期答辩材料" / "研究证据" / "02-人工核验题集-v1.json"
@@ -117,7 +115,7 @@ def _wrap_embedder(embedder, tracker: UsageTracker):
             return [list(by_index[i]) for i in range(len(texts))]
         except APITimeoutError:
             raise UpstreamTimeout() from None
-        except Exception:
+        except Exception:  # noqa: BLE001 - provider client exception hierarchy is external.
             raise UpstreamUnavailable() from None
 
     embedder.embed = embed  # type: ignore[method-assign]
@@ -174,7 +172,7 @@ def _wrap_llm(llm, tracker: UsageTracker):
             return choice or ""
         except APITimeoutError:
             raise UpstreamTimeout() from None
-        except Exception:
+        except Exception:  # noqa: BLE001 - provider client exception hierarchy is external.
             raise UpstreamUnavailable() from None
 
     llm.generate = generate  # type: ignore[method-assign]
@@ -188,7 +186,7 @@ def _git_sha() -> str:
                 ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True
             ).strip()
         )
-    except Exception:
+    except (OSError, subprocess.SubprocessError):
         return ""
 
 

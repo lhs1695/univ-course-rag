@@ -9,7 +9,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
 from app.services.generate import NO_EVIDENCE
 from app.services.retrieve import SearchHit
 
