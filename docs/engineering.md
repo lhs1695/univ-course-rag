@@ -9,7 +9,7 @@
 | 前端 | Vue 3 + Vite + Element Plus；学生壳 / 教师·管理壳 |
 | 后端 | FastAPI + SQLAlchemy + Alembic |
 | 数据 | PostgreSQL + pgvector；正式库 `univ_course_rag_cn_v2` |
-| 解析 | 生产 PDF：**PyMuPDF** + 页级质量门禁（Docling 全量路线已停） |
+| 解析 | 生产 PDF：**PyMuPDF** + 页级质量门禁 |
 | 切分 | `semantic-text-splitter` |
 | Embedding | SiliconFlow `BAAI/bge-m3`（1024 维）；pytest 默认 Fake |
 | LLM | DeepSeek 文本生成；pytest 默认 Fake |

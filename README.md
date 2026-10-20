@@ -7,9 +7,9 @@
 ## 许可与课件说明
 
 - **自有代码与文档**：见根目录 [`LICENSE`](LICENSE)（MIT）。该许可证**不**覆盖第三方课件版权。
-- **课内 PDF / corpus**：见 [`NOTICE`](NOTICE)。`uploads_v2` 按公开分享教学资料收录，供演示与队友复现；**MIT 仅覆盖自有代码/文档**，不覆盖课件本身。
+- **课内 PDF / corpus**：见 [`NOTICE`](NOTICE)。`uploads_v2` 按公开分享教学资料收录，供演示与复现；**MIT 仅覆盖自有代码/文档**，不覆盖课件本身。
 
-## 队友三件套（中期答辩优先看）
+## 快速入门（中期答辩优先看）
 
 | 材料 | 说明 |
 | --- | --- |
@@ -30,13 +30,11 @@
 | 正式库 | `univ_course_rag_cn_v2` |
 | 规模 | **4 门课 / 27 份 PDF / 2,501 chunks** |
 | 课程 | 线性代数、概率论与统计学、人力资源管理、教育学原理 |
-| 课件路径 | `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/`（私人仓已纳入，约 57MB） |
+| 课件路径 | `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/`（约 57MB / 27 PDF） |
 | 检索 | dense；**rerank 未启用** |
 | 弱规则验收 | 可答题预期文档/页 12/12，拒答 4/4（**≠ 人工事实正确率**） |
 
-旧英文四课与 `r7b6_real` 的 17/385 仅为历史对照。
-
-另有 **22 题真实模型 Dense/Hybrid 小样本对照**，由开发者核验（非独立评测）：端到端可答题成功率 Dense/Hybrid **15/17、16/17**；已回答题事实要点通过率 **15/16、16/16**；引用支持均 **16/16**；严格预期页命中均 **12/16**；明显课外问题正确拒答均 **5/5**。不得合成单一准确率或宣称 Hybrid 整体显著更优，详见 [当前评测登记](docs/evaluation-results.md)。
+另有 **22 题真实模型 Dense/Hybrid 小样本对照**（开发者核验，非独立评测）。分层结果见 [评测登记](docs/evaluation-results.md)；**不得宣称 Hybrid 整体显著优于 Dense**，亦勿合成单一准确率。
 
 ## 技术栈（仓库事实）
 
@@ -53,7 +51,7 @@
 
 **教学闭环**：课界权限贯穿检索—生成—原文件；证据不足可拒；引用回原页；三角色与教师问答反馈。
 
-**检索 / 生成**：页级解析与质量门禁；BGE-M3 向量检索 + DeepSeek（`deepseek-flash`）证据约束生成；dense / hybrid / rerank **已实现可开关**。22 题 Dense/Hybrid 开发者核验小样本对照已完成，但证据不足以证明 Hybrid 整体显著更优；中期主演示仍为 **dense、rerank 关**。勿用弱规则数字冒充人工准确率。
+**检索 / 生成**：页级解析与质量门禁；BGE-M3 向量检索 + DeepSeek（`deepseek-flash`）证据约束生成；dense / hybrid / rerank **已实现可开关**。22 题 Dense/Hybrid 开发者核验已完成，但证据不足以证明 Hybrid 整体显著更优；中期主演示仍为 **dense、rerank 关**。勿用弱规则数字冒充人工准确率。
 
 详见 [中期答辩材料/答辩提纲.md](中期答辩材料/答辩提纲.md)。
 
@@ -67,15 +65,15 @@
 
 全局角色 ≠ 自动拥有课内读写权；须课程成员关系。登录为 HTTP-only Cookie Session（非 JWT）。
 
-## 克隆后启动（队友可操作）
+## 克隆后启动
 
-以下命令以 Windows PowerShell、仓库根目录为准；与 [workflow](docs/workflow.md)、[中期演示运行卡](docs/中期演示运行卡.md) 对齐。**不要**把 API Key、真实口令或 `.env` 全文写进 README / PPT / 公开群。
+以下命令以 Windows PowerShell、仓库根目录为准；与 [workflow](docs/workflow.md)、[中期演示运行卡](docs/中期演示运行卡.md) 对齐。**勿将密钥写入仓库或公开渠道**。
 
 ### 0. 演示策略与仓库公开计划
 
-- **Key：队友自备**。Real 问答需本机 SiliconFlow + DeepSeek Key（见 `.env.example`）；无 Key 时 Fake 仅能验证 UI。
+- **Key：本机自备**。Real 问答需本机 SiliconFlow + DeepSeek Key（见 `.env.example`）；无 Key 时 Fake 仅能验证 UI。
 - **演示可在任意配好环境的机器上跑**：Docker Postgres、`univ_course_rag_cn_v2` 数据、`UPLOAD_DIR`、前后端。点引用打不开时优先查 `UPLOAD_DIR` 与库内路径是否一致。
-- **仓库计划公开**：公开前清查未跟踪密钥（**勿提交 `.env`**）；课件按公开分享资料收录，说明见 [`NOTICE`](NOTICE)；改过的演示口令勿写回仓库文件。
+- **仓库计划公开**：公开前清查未跟踪密钥（**勿将 `.env` / Key 写入仓库**）；课件按公开分享资料收录，说明见 [`NOTICE`](NOTICE)；改过的演示口令勿写回仓库文件。
 
 
 ### 1. 需要的环境
@@ -83,11 +81,11 @@
 | 项 | 说明 |
 | --- | --- |
 | 系统 | Windows（本仓库演示与脚本按此写） |
-| Git | 克隆本**私人**仓 |
+| Git | 克隆本仓库 |
 | Python | **3.12**；在 `backend` 建 `.venv` 并安装依赖 |
 | Node.js | 建议 20+；在 `frontend` 执行 `npm ci` / `npm run dev` |
 | Docker Desktop | 用于 `docker compose up -d` 起 Postgres + pgvector |
-| 可选云 Key | **仅真实演示**需要：SiliconFlow（Embedding）与 DeepSeek（生成）。在本地 `.env` 配置，**参见 `.env.example`，勿提交、勿贴聊天**。无 Key 时保持 `EMBEDDER_BACKEND=fake` / `LLM_BACKEND=fake` 仍可跑通 UI 与 Fake 测试，但回答是假的 |
+| 可选云 Key | **仅真实演示**需要：SiliconFlow（Embedding）与 DeepSeek（生成）。在本地 `.env` 配置，参见 `.env.example`；**勿将密钥写入仓库或公开渠道**。无 Key 时保持 `EMBEDDER_BACKEND=fake` / `LLM_BACKEND=fake` 仍可跑通 UI 与 Fake 测试，但回答是假的 |
 
 ### 2. 配置 `.env`
 
@@ -100,7 +98,7 @@ Copy-Item .env.example .env
 # DEEPSEEK_MODEL=deepseek-flash；演示建议 RERANKER_BACKEND=disabled、RETRIEVAL_STRATEGY=dense
 ```
 
-正式库名是 **`univ_course_rag_cn_v2`**。课件树已在私人仓（约 57MB / 27 PDF）。密钥只放本机 `.env`。
+正式库名是 **`univ_course_rag_cn_v2`**。课件树已纳入仓库（约 57MB / 27 PDF）。密钥只放本机 `.env`。
 
 ### 3. 安装依赖
 
@@ -136,9 +134,9 @@ cd backend
 cd ..
 ```
 
-`python -m app` 会按配置 **seed 演示三角色**（只补不存在的账号）。默认用户名在代码里是 `admin` / `teacher` / `student`；默认口令见 `backend/app/config.py` 的 `seed_*_password`（形如 `change-me-*`）。**口令不要写进 PPT 或公开渠道**；若负责人改过本机口令，以私聊为准。
+`python -m app` 会按配置 **seed 演示三角色**（只补不存在的账号）。默认用户名在代码里是 `admin` / `teacher` / `student`；默认口令见 `backend/app/config.py` 的 `seed_*_password`（形如 `change-me-*`）。**口令不要写进 PPT 或公开渠道**；若本机改过口令，**以本机实际配置为准**。
 
-> 注意：seed **不会**自动重建四课 27 份 PDF 的向量库。完整「点引用开 PDF」需要库内已有 cn_v2 数据，且本机 `UPLOAD_DIR` 能对上文件。负责人本机 DB 里 `storage_path` 可能是绝对路径；队友机器若路径对不上，需协调导出/重入库或校正路径（见下方常见坑）。
+> 注意：账号 seed **不等于**向量库。完整「点引用开 PDF」需要库内已有 cn_v2 数据，且本机 `UPLOAD_DIR` 与库内路径一致。路径细节见 [docs/当前交接.md](docs/当前交接.md)。
 
 ### 6. 启动后端与前端
 
@@ -166,11 +164,11 @@ npm run dev
 
 完整顺序与故障降级见 [中期演示运行卡](docs/中期演示运行卡.md)。
 
-### 8. 常见坑
+### 8. 故障排查
 
 | 现象 | 处理方向 |
 | --- | --- |
-| 点引用 PDF 黑屏 / 打不开 | 查 `UPLOAD_DIR` 是否指向 `.../uploads_v2`；库内路径若是别人机器的绝对路径，本机文件对不上；等预览加载完成再截图 |
+| 点引用 PDF 黑屏 / 打不开 | 查 `UPLOAD_DIR` 是否指向 `.../uploads_v2`，并与库内路径一致；等预览加载完成再截图 |
 | 回答很假或 Embedding 报错 | 分清 **Fake vs Real**：`.env.example` 默认 Fake；真实演示须 SiliconFlow + DeepSeek Key（只写在 `.env`） |
 | 连错库 / 课不对 | 确认库名 `univ_course_rag_cn_v2`，不要用已删除的旧默认库或历史隔离库 |
 | 登录页异常 | 必须走 Vite 端口，勿直连后端 |
@@ -186,19 +184,19 @@ npm run dev
 | --- | --- |
 | [新开题资料](新开题资料.md) | 研究方案详版 |
 | [AGENTS](AGENTS.md) | 协作纪律与禁区 |
-| [架构说明](docs/架构说明.md) | 系统结构（队友详解） |
+| [架构说明](docs/架构说明.md) | 系统结构详解 |
 | [中期演示运行卡](docs/中期演示运行卡.md) | 答辩演示操作 |
-| [当前交接](docs/当前交接.md) | 最新状态与下一项 |
+| [当前交接](docs/当前交接.md) | 最新状态与下一项（内部） |
 | [workflow](docs/workflow.md) | 启动 / 测试 / 禁区（一页） |
 | [engineering](docs/engineering.md) | 现行组件边界摘要 |
 | [validation](docs/validation.md) | 验收分层摘要 |
 | [implementation-plan](docs/implementation-plan.md) | 当前阶段状态摘要（历史全文归档） |
 | [evaluation-results](docs/evaluation-results.md) | 当前评测登记与结果口径 |
 | [docs/archive/](docs/archive/README.md) | 历史长文与 UI-trial 说明 |
-| [中期答辩材料](中期答辩材料/README.md) | 队友材料包 |
+| [中期答辩材料](中期答辩材料/README.md) | 中期材料包 |
 
 ## 当前现状（三行）
 
 1. 产品骨架可用；正式演示库 cn_v2 **4 / 27 / 2,501**；中期材料有 v6-candidate PPT/讲稿（知识点详解）；核心演示路径复彩排 **PASS**。
 2. 生产 PDF 为 PyMuPDF；演示默认 dense、rerank 关；22 题真实模型结果由开发者核验，**尚非独立评测**。
-3. CI 对代码变更跑 Fake 后端 + 前端构建；纯文档变更可跳过。仓库计划公开——**勿提交本机 `.env` / Key**；队友 Real 演示自备 Key。
+3. CI 对代码变更跑 Fake 后端 + 前端构建；纯文档变更可跳过。仓库计划公开——**勿将本机 `.env` / Key 写入仓库**；Real 演示自备 Key。

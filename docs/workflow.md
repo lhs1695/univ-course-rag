@@ -7,7 +7,7 @@
 1. 先查 Git 状态；禁止 reset/checkout/restore 覆盖用户未提交工作；禁止无关批量 add；禁止默认 push。
 2. 任务卡验收通过后本地 Conventional Commit；仍须用户点名才 push。
 3. 一次一项；Python 只用 `backend/.venv`；UI 改动跑 `frontend` 的 `npm run build`。
-4. 复用顺序：成熟 API/组件 → 合法源码改造 → 本地实现。生产 PDF：**PyMuPDF**（Docling 全量已停）。
+4. 复用顺序：成熟 API/组件 → 合法源码改造 → 本地实现。生产 PDF：**PyMuPDF** + 页级质量门禁。
 
 ## 环境与启动
 
