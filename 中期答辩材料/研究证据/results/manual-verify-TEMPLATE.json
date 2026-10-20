@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "date": "YYYY-MM-DD",
+    "timezone": "Asia/Shanghai",
+    "database": "univ_course_rag_cn_v2",
+    "strategy": "dense",
+    "rerank": "disabled",
+    "embedder": "siliconflow|BAAI/bge-m3|…",
+    "llm": "deepseek-flash",
+    "git_sha": "",
+    "verifier": "developer",
+    "cloud_auth_note": "须写明当次授权范围；未授权不得填写效果字段",
+    "case_set": "中期答辩材料/研究证据/02-人工核验题集-v1.json"
+  },
+  "totals": {
+    "n": 0,
+    "fact_pass": null,
+    "citation_supports_pass": null,
+    "page_ok_pass": null,
+    "refuse_correct": null,
+    "system_failures": 0
+  },
+  "usage": {
+    "embedding_tokens_or_batches": null,
+    "llm_tokens": null,
+    "cny_cost": "未查账单则填 null，禁止估算"
+  },
+  "items": [
+    {
+      "id": "LA-F01",
+      "status": "answered|no_evidence|system_error",
+      "cited_documents": [],
+      "cited_pages": [],
+      "fact_ok": "pass|fail|unclear|n/a",
+      "citation_supports": "pass|fail|unclear|n/a",
+      "page_ok": "pass|fail|unclear|n/a",
+      "no_hallucination": "pass|fail|unclear|n/a",
+      "notes": ""
+    }
+  ],
+  "failures": [],
+  "method_limits": [
+    "verifier=developer 时不得称独立评测",
+    "弱规则命中不得写入 fact_ok=pass 的替代"
+  ]
+}
