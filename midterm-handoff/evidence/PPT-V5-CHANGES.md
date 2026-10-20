@@ -9,7 +9,8 @@
 - **User must open in Office** for real font/wrapping review (no PowerPoint renderer on this machine)
 
 Paths:
+- 队友副本：`midterm-handoff/pptx/final-v5.pptx`
 - `build/midterm-presentation/output/final-v5.pptx`
 - `build/midterm-presentation/output/speaker-notes-v5.md`
 - `build/midterm-presentation/build_v5.py`
-- v4 kept: `output/final-v4.pptx`
+- **以 handoff / `final-v5` 为准**；v4 已淘汰（对照说明仅作历史差异，勿再当演示稿；本机 `build/.../output/` 若仍有 v4 文件可不保留）

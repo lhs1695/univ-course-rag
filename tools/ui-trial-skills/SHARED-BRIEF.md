@@ -1,5 +1,7 @@
 # UI Trial Shared Brief（五版共用）
 
+> **非中期答辩材料**：本 Brief 仅供 UI trial 五版试验；中期答辩口径以 `midterm-handoff/` 与 runbook 为准。
+
 ## 产品
 
 - 产品名：**课程知识库**

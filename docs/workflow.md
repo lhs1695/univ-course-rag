@@ -39,6 +39,8 @@
 
 ## 环境与启动
 
+**中期演示：** 目标库必须是 `univ_course_rag_cn_v2`（默认 `.env.example` 已对齐）；课件 `UPLOAD_DIR=corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2`。完整步骤与固定问句见 [中期演示运行卡](midterm-demo-runbook.md)。勿再切 `r7b6_real` / 旧 `univ_course_rag` 做答辩演示。
+
 后端只用 backend/.venv，禁止系统 Python/默认 Conda。已有环境不重复创建；新环境使用 Python 3.12：
 
 ```powershell
@@ -98,10 +100,10 @@ Grok Bot 的 hosted computer 是独立的云 Linux 工作区，不是本机 D:\w
 
 固定六份：workflow 管操作，implementation-plan 管施工（含 R7B 唯一步骤叙述），NEXT-SESSION 管当前交接，engineering 管现行合同/复用许可，validation 管验收方法，evaluation-results 管已跑数字与运行日志。README 只导航，AGENTS 管协作，新开题资料管研究目标。
 
-文档不再累积旧阶段报告、旧评测数字、逐次测试流水或过时汇报。中期前按改进后的版本重新建基线、跑数据；旧数字不补作新结果。保留仍有效的许可与现行合同，修复引用，不新增历史归档目录或阶段报告。
+文档不再累积旧阶段报告、旧评测数字、逐次测试流水或过时汇报。中期前按改进后的版本重新建基线、跑数据；旧数字不补作新结果。保留仍有效的许可与现行合同，修复引用；过时说明可迁入 `docs/archive/`，不另写阶段报告冒充现行口径。
 
 删除文件须使用明确工作区清单，核对绝对路径与重解析点；Windows 使用 Remove-Item -LiteralPath，不递归清空。文档清理不触碰 .git、.env、依赖环境、测试夹具、corpus/local 或数据库。搜索限定当前项路径，排除 .venv/node_modules、构建产物和真实资料。
 
 ## 实验与交付
 
-PyMuPDF 轻量入口、页级质量门禁、固定代表页核对、17 份离线冻结、题集 dry-run、真实 embedding 小样本及四课真实基线均已完成；结果见 [evaluation-results](evaluation-results.md)。Docling 全量冻结停在 8/17，不续跑，旧产物只作历史证据。R7 是历史单课对照，R7B-7 是当前四课基线；其 AI 预标与弱引用支持判定未经人工复核，不能冒充人工事实正确率。R8 已于 2026-10-17 正式通过，P7-3 隔离恢复子项已于 2026-10-18 通过，R9 冻结身份清单与 PPT v4 初稿已生成；当前下一项是本机 PowerPoint 视觉复核与固定 Demo 彩排，步骤见 [中期演示运行卡](midterm-demo-runbook.md)。若另称独立试用，仍须非开发者实际独立完成。
+PyMuPDF 轻量入口、页级质量门禁、固定代表页核对、历史 17 份离线冻结与 R7B-7 英文四课基线均已完成（历史）；**当前正式演示**为中文四课 `univ_course_rag_cn_v2`（4/27/2501）+ PPT **final-v5** + 彩排 PASS，见 [evaluation-results](evaluation-results.md)、[NEXT-SESSION](NEXT-SESSION.md)、[midterm-handoff](../midterm-handoff/README.md)。Docling 全量冻结停在 8/17，不续跑。弱规则 / AI 预标**不能**冒充人工事实正确率。R8 / P7-3 / R9 已通过或收口；产品下一阶段待用户定。若另称独立试用，仍须非开发者实际独立完成。

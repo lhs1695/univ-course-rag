@@ -2,6 +2,8 @@
 
 更新：2026-10-19。技能装在仓库内，供 Codex（及本机 Cursor）发现；**不要**用 `--global` 装到用户主目录。
 
+> **非中期答辩材料**：本文档与 `tools/ui-trial-skills/` 仅供 UI trial / 视觉试验，**不是**中期汇报或演示口径。答辩请用 [`midterm-handoff/`](../midterm-handoff/README.md) 与 [`docs/midterm-demo-runbook.md`](midterm-demo-runbook.md)。
+
 ## 安装位置
 
 | 内容 | 路径 |

@@ -1,6 +1,6 @@
 # 教师与 Admin 设计说明（合并）
 
-更新：2026-10-19。本文合并原 `DESIGN-NOTES-STAFF.md`、`DESIGN-NOTES-STAFF-STUDY-ALIGN.md`、`DESIGN-NOTES-ADMIN-COPY.md`。学生端说明仍见 [DESIGN-NOTES.md](DESIGN-NOTES.md)。旧稿全文见 `docs/archive/`。
+更新：2026-10-19。本文合并原 `DESIGN-NOTES-STAFF.md`、`DESIGN-NOTES-STAFF-STUDY-ALIGN.md`、`DESIGN-NOTES-ADMIN-COPY.md`。学生端说明仍见 [DESIGN-NOTES.md](../DESIGN-NOTES.md)。现行本文即合并稿；旧三份 archive 设计稿已从仓库删除。
 
 ## 定位
 

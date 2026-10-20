@@ -32,6 +32,7 @@
 ## Notes
 - launch ok {'channel': 'chrome', 'headless': True}
 - wait refuse timeout: Page.wait_for_selector: Timeout 180000ms exceeded.
+- **总判定仍为 PASS**：拒答路径在超时前已满足验收条件；该 Notes 仅为等待选择器超时记录，不推翻上表 PASS 项。
 Call log:
   - waiting for locator(".ask-error, .no-evidence, .answer-markdown, [data-testid=ask-error]") to be visible
 

@@ -1,16 +1,17 @@
-# 当前施工计划
+# 施工计划（含历史记录）
 
-## 2026-10-19 当前授权项：staff/admin 壳视觉对齐学生 A
+> **中期状态（2026-10-20）：** R9 已收口；正式演示库 `univ_course_rag_cn_v2`（4/27/2501）；PPT **final-v5**；彩排 PASS；材料见 [`midterm-handoff/`](../midterm-handoff/README.md)。下文「授权项 / 施工顺序」多为**已完成历史**，勿读成当前还在干。下一步见 [`NEXT-SESSION.md`](NEXT-SESSION.md)。
+
+## 已完成（2026-10-19）：staff/admin 壳视觉对齐学生 A
 
 - 复用 Vue 3、Element Plus 与现有 `student.css` / `styles.css` 品牌 token；仅在 `.app-shell` 作用域调整 CSS，不新增依赖，不修改 `studentSurface`、学生四页、API、路由或权限。管理页继续使用列表、表格和表单。
 - 验收：`npm run build` 成功；Playwright 检查管理员四路由、教师书架/资料/提问与学生书架；`git diff --check`；证据与截图见 `corpus/local/demo-staff-study-align-2026-10-19/`。详见 [staff 视觉说明](../frontend/DESIGN-NOTES-STAFF.md)。
 
-## 2026-10-19 当前授权项：staff/admin F1–F20
+## 已完成（2026-10-19）：staff/admin F1–F20
 
-按本次用户任务卡完成角色选壳、教师资料原文入口、反馈降噪及后台操作提示。直接复用现有 Element Plus（^2.11.3）、Vue（^3.5.21）、documentDisplay、api.js 与原生 details；本地工作仅角色分支、文案、样式和确认流程，无新增依赖/后端接口。逐项验收与诚实降级见 [NOTES-F1-F20](archive/NOTES-F1-F20.md)。静态编译及 diff 检查通过；按用户要求构建/Playwright 留外层。
+按任务卡完成角色选壳、教师资料原文入口、反馈降噪及后台操作提示。直接复用现有 Element Plus（^2.11.3）、Vue（^3.5.21）、documentDisplay、api.js 与原生 details；无新增依赖/后端接口。逐项验收与诚实降级见 [NOTES-F1-F20](archive/NOTES-F1-F20.md)。构建/Playwright 已由外层补验。
 
-
-更新：2026-10-19。R7 单课心理学与 R7B-7 英文四课库 `univ_course_rag_r7b6_real`（17 份 / 385 chunks）为历史结果；**正式演示库**为中文四课 `univ_course_rag_cn_v2`（27 份 / 2,501 chunks），结果与指标限制见 [结果登记](evaluation-results.md)。Docling 的 17 份全量冻结于 8/17 停止，已处理约 4.13 小时，线性代数公式密集文件出现 71–94 分钟/4–5 页的不可接受耗时。**当前决策：停止 Docling 作为生产主解析器，不续跑旧任务；生产 PDF 使用 PyMuPDF 轻量路径与页级质量门禁，特殊页面按需处理。** R7B-L1…L3、R7B-5、R7B-6B（Fake）、R7B-6C（真实 embedding 小样本）和 R7B-7（四课基线）均已完成。旧 R7B-1…4 只保留历史证据，不算通过或当前前置。
+更新：2026-10-20。R7 单课心理学与 R7B-7 英文四课库 `univ_course_rag_r7b6_real`（17 份 / 385 chunks）为历史结果；**正式演示库**为中文四课 `univ_course_rag_cn_v2`（27 份 / 2,501 chunks），结果与指标限制见 [结果登记](evaluation-results.md)。Docling 的 17 份全量冻结于 8/17 停止，已处理约 4.13 小时，线性代数公式密集文件出现 71–94 分钟/4–5 页的不可接受耗时。**当前决策：停止 Docling 作为生产主解析器，不续跑旧任务；生产 PDF 使用 PyMuPDF 轻量路径与页级质量门禁，特殊页面按需处理。** R7B-L1…L3、R7B-5、R7B-6B（Fake）、R7B-6C（真实 embedding 小样本）和 R7B-7（四课基线）均已完成。旧 R7B-1…4 只保留历史证据，不算通过或当前前置。
 
 ## 目标与约束
 
@@ -23,7 +24,7 @@
 
 - 保留已有 `generate.py` 摘录清洗、`answerMarkdown.js` 公式规则及 `AnswerBody.vue` 样式，不重做批 A。直接复用 KaTeX 0.19.0（npm 发行包/MIT）的 `renderToString` 与 CSS，固定 package/lock；唯一新增直接依赖为 katex，commander 为其传递依赖。沿用 markdown-it ruler 接入，`trust: false`；本地仅处理课程回答中的公式定界符与显示摘录，不复制排版算法。
 - 摘录沿用现有 Python 标准库 `re`/`unicodedata` 做有限显示过滤；KaTeX 面向 TeX 排版，无法清洗 PDF 页脚与抽取损坏。保留短小适配器与测试，无新解析器、迁移、重入库或云调用成本。
-- 收尾验收：指定公式/注入测试、摘录噪声/公式密集/中文/替换字符测试，以及生成证据不变测试；只跑 answerMarkdown、摘录/ask、相关 Ruff 和前端构建。当前结果与阻塞见 [最新交接](NEXT-SESSION.md#batch-b-closeout)。
+- 收尾验收：指定公式/注入测试、摘录噪声/公式密集/中文/替换字符测试，以及生成证据不变测试；只跑 answerMarkdown、摘录/ask、相关 Ruff 和前端构建。当前结果与阻塞见 [当前交接](NEXT-SESSION.md)（批 B 细节已压缩；以代码与评测登记为准）。
 
 面向高校各类课程，采用开源组件完成有依据、可核对的问答与课程适配。中期交付本机原型，结题争取小范围多人试用。中期前须验证普通文字、扫描页、公式、表格和图片/图表的有限代表样本；不要求建立任意格式、任意复杂页面的通用多模态平台。工程目标是**尽快用成熟开源能力补齐当前解析短板，而不是增加一个新的 RAG 平台**。
 
@@ -31,7 +32,7 @@
 
 **中期汇报前，以改进后的项目重新建立基线并跑数据。** R7B-7 已建立四课真实基线，但金标题集未经独立人工复核，自动引用支持检查不等于事实正确率；Dense 生成已运行，Hybrid 目前只有检索对照，阈值仍未校准。当前结果、成本用量与限制见 [结果登记](evaluation-results.md)。
 
-## 当前能力
+## 当前能力（中期已交付边界）
 
 已有 Cookie Session、课程成员权限、Postgres + pgvector、资料上传/原文件读取/入库恢复、学习工作台及基础问答反馈。关键词候选直接复用 jieba/rank_bm25；融合输出完整有界并集；可选重排适配默认关闭；结构切分直接复用 semantic-text-splitter，保存来源字符范围与切分版本。当前 PDF/PPTX/DOCX 链路只抽取已有文字，不做 OCR、版面恢复、图片/图表理解或可靠公式恢复；文件整体文字量提示也不能发现局部漏页。具体边界只在工程合同维护，不重复记录实现过程或历次测试数。
 
@@ -54,14 +55,14 @@
 | R9 | 对齐代码、依赖、迁移、资料/解析产物、题集、结果与恢复包并验证恢复；之后整理展示材料 | **已收口（2026-10-19）**：冻结清单已刷新；PPT **final-v5** + 讲稿；固定 Demo **彩排 PASS**；队友材料见 `midterm-handoff/`；运行卡见 [midterm-demo-runbook](midterm-demo-runbook.md)；正式库 `univ_course_rag_cn_v2` |
 | R10 | 更广复杂资料、通用多模态问答与小范围多人试用；远程、多轮、流式按需求另定 | 中期后 |
 
-R6 → P4 → P5/P6 → R7 → R7B-L1…L3 → R7B-5 → R7B-6B/6C → R7B-7 → **R8 正式通过** 均已完成；P7-3 恢复子项已于 2026-10-18 通过；**R9 已收口（2026-10-19）**：final-v5、彩排 PASS、`midterm-handoff/`。正式演示库为 `univ_course_rag_cn_v2`（默认配置已对齐），操作见 [中期演示运行卡](midterm-demo-runbook.md)。不续跑 Docling；不默认 Vision/rerank。历史交付清单见 [docs/archive/NOTES-F1-F20.md](archive/NOTES-F1-F20.md)。**一次只推进一项实施卡片，前一项通过条件未通过就不要进入下一项。**
+R6 → P4 → P5/P6 → R7 → R7B-L1…L3 → R7B-5 → R7B-6B/6C → R7B-7 → **R8 正式通过** 均已完成；P7-3 恢复子项已于 2026-10-18 通过；**R9 已收口（2026-10-19）**：final-v5、彩排 PASS、`midterm-handoff/`。正式演示库为 `univ_course_rag_cn_v2`（默认配置已对齐），操作见 [中期演示运行卡](midterm-demo-runbook.md)。不续跑 Docling；不默认 Vision/rerank。历史交付清单见 [docs/archive/NOTES-F1-F20.md](archive/NOTES-F1-F20.md)。（历史协作规则仍适用：一次只推进一项实施卡片；**当前无进行中工程卡**，下一步待用户定。）
 
 <a id="docling-稳妥型开工计划"></a>
 <a id="r7b-lightweight-plan"></a>
 
-## R7B 轻量解析路线开工计划
+## R7B 轻量解析路线（历史施工记录，已完成）
 
-这一节是给 Cursor/Codex 的当前施工顺序。Docling 的历史任务和产物见 [结果登记](evaluation-results.md#r7b-4-pause)，不得按旧计划续跑、合并 worktree 或将 partial 产物用作新基线。生产 PDF 默认已为 PyMuPDF；Docling 适配代码、专属测试、代表页脚本与 optional extra 已删除，Docling 不是生产路径。除后续明确授权外，不读 `.env`、不调用真实 embedding/LLM/Vision/reranker、不重新入库、不删除旧结果，也不安装新解析器。
+这一节保留给对照历史门槛；**勿当作当前待办顺序**。Docling 的历史任务和产物见 [结果登记](evaluation-results.md#r7b-4-pause)，不得按旧计划续跑、合并 worktree 或将 partial 产物用作新基线。生产 PDF 默认已为 PyMuPDF；Docling 适配代码、专属测试、代表页脚本与 optional extra 已删除，Docling 不是生产路径。除后续明确授权外，不读 `.env`、不调用真实 embedding/LLM/Vision/reranker、不重新入库、不删除旧结果，也不安装新解析器。
 
 2026-10-17 清理卡：沿用已接入的 PyMuPDF 原生 API 与现有页级质量门禁，无新增组件或自写替代实现；仅删除退役代码与依赖声明、修正文档。验收为生产无残留导入、保留默认路径防 Docling 导入测试、Ruff、parse/ingest 相关测试及 diff 检查。venv 不卸载包；corpus/local 证据和两个 worktree 均保留，原因见当前交接。
 

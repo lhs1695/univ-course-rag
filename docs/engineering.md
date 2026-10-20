@@ -2,7 +2,7 @@
 
 更新：2026-10-19。本文记录当前代码行为、复用与许可；任务见 [施工计划](implementation-plan.md)，验收方法见 [validation](validation.md)。R7 有限真实运行及 Docling 停止原因见 [结果登记](evaluation-results.md)。
 
-> **口径说明（2026-10-19）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；下文若出现 17 份 / `r7b6_real` / `univ_course_rag`，均为 R7B 历史口径。
+> **口径说明（2026-10-20）：** 正式演示库为 `univ_course_rag_cn_v2`（中文四课 27 份 PDF / 2,501 chunks）；启动与固定问句见 [midterm-demo-runbook](midterm-demo-runbook.md)。下文若出现 17 份 / `r7b6_real` / 旧 `univ_course_rag`，均为 R7B 历史口径。
 
 ## 目录
 
@@ -279,14 +279,14 @@ GET /courses/{course_id}/documents/{document_id}/content先做Session/成员鉴�
 - 保持现有本机启动方式；至少有数据库、migration、backend、frontend、health/ready、登录六步检查。
 - health/ready/runtime 只说明进程、数据库和本地配置状态；configured 不等于供应商连通或模型可用。
 - Demo 使用固定课程、账号、资料和题目，不在现场临时解析、入库或换模型。
-- 四课真实基线演示时，后端进程级数据库应指向 `univ_course_rag_r7b6_real`；根 `.env` 可能仍指向旧库，勿改密钥进 Git，也不要把旧库结果当成 R7B-7。
+- **中期演示**时，后端数据库应指向 `univ_course_rag_cn_v2`（默认配置已对齐）；并设置 `UPLOAD_DIR` 指向 `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2`。历史 `r7b6_real`（17/385）勿当当前演示；勿改密钥进 Git。
 - 准备最小恢复/重置路径，只作用于明确的 Demo 数据；真实资料、旧结果和数据库恢复副本不得被“重置”顺手删除。
 
 ### AI 编程环境
 
 - 权威工作区仍是本机 D:\workspace\univ-course-rag；Git 状态和最终验收以本机工作区为准。
 - 一个工作区同一时刻只允许一个写入型 coding agent 负责代码修改；其他 Agent 只做只读检查、研究或 review，避免两个 agent 同时改同一工作树。
-- 如果使用远程云电脑，只同步代码和合成/公开测试资料；17 份受控课程资料、数据库恢复包、.env 和其他本机数据默认不上传。远程结果必须回到本机 Git 工作区核对后才算项目事实。
+- 如果使用远程云电脑，只同步代码和合成/公开测试资料；课程课件 PDF、数据库恢复包、.env 和其他本机受控数据默认不上传（私仓已跟踪的 cn_v2 课件除外，仍勿上传密钥）。远程结果必须回到本机 Git 工作区核对后才算项目事实。
 - Windows 原生与 WSL2 均可作为本机执行环境；优先保持与最终演示一致的环境。只有选定工具出现明确兼容 blocker 时才讨论 WSL2，不因解析器试验建立第二套项目事实源。
 
 <a id="query-log-retention"></a>

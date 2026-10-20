@@ -10,14 +10,16 @@
 | --- | --- |
 | 代码与运行版本可追溯性 | R7 历史单课结果对应 `main / 9214ac3`；R7B-7 的 `RESULT.json` 未记录运行时 Git SHA，故不能仅用当前 HEAD 代替当时完整版本。脚本、配置、结果与固定题集保存在 `corpus/local/` 忽略区 |
 | 当前四课演示库 | **正式库** `univ_course_rag_cn_v2`，4 课 / 27 份资料 / 2,501 chunks（中文：线代 / 概率论与统计学 / 人力 / 教育学原理）；默认 `.env` / `.env.example` 已指向此库。历史 R7B-7 库 `univ_course_rag_r7b6_real`（4 / 17 / 385）仅作对照，勿当当前演示 |
-| 新资料清单/许可/哈希与切分版本 | 17 份 PDF 由 R7B-L3 按 inventory 哈希与页数冻结；切分身份 `sts-0.33.0-char800-overlap120-r5-v1`，索引身份 `siliconflow|BAAI/bge-m3|1024|v1` |
-| 支持位置/必需要点/拒答标签与题集划分 | R7B-5 固定 28 题（dev 12 / test 16；应拒答 5）；**AI 预标、无独立人工复核**，开发/测试按知识点隔离 |
+| 当前演示资料（cn_v2） | **27 份**中文四课 PDF，目录 `corpus/local/cn-replace-2026-10-18/rechunk/uploads_v2/`；切分/索引身份见该次 rechunk 证据（忽略区） |
+| 历史资料清单（R7B-7，17 份） | 英文四课 17 份 PDF 由 R7B-L3 按 inventory 哈希与页数冻结；切分身份 `sts-0.33.0-char800-overlap120-r5-v1`，索引身份 `siliconflow|BAAI/bge-m3|1024|v1`（**历史对照，非当前演示**） |
+| 当前演示题集（cn） | 中文四课 16 题（每课 3 答 + 1 拒答）；弱规则验收见 handoff / 彩排；**AI 预标、非人工正确率** |
+| 历史题集（R7B-5，28 题） | 英文四课固定 28 题（dev 12 / test 16；应拒答 5）；**AI 预标、无独立人工复核**（历史） |
 | 新版真实模型连通/预算与校准 | SiliconFlow BAAI/bge-m3 与 DeepSeek `deepseek-v4-flash` 实际调用；沿用默认余弦阈值 0.45，**未校准** |
 | 四课基线与检索对照 | Dense 对 28 题完成检索及有限生成；Hybrid 完成 28 题检索但未生成答案；Hybrid 与 Dense 的预期文档/页命中计数相同，尚未证明 Hybrid 增益 |
 | 真实费用 | 已记录供应商返回的 Token 用量与耗时；**未查账单，人民币费用未知** |
 | R8 用户与开发者内部联合验收 | **正式通过（2026-10-17）**；API 关键路径 + UI 四点均已登记，非开发者独立试用不在本次结论内 |
 | P7-3 数据库与文件恢复子项 | **通过（2026-10-18）**；四课真实基线 dump 在独立库恢复，全部 public 表行数、17 份上传 PDF 与 17 份解析产物来源身份核验通过；P7 整体仍部分完成 |
-| R9 冻结身份清单 | **已生成（2026-10-18）**；`corpus/local/r9-recovery-2026-10-18/freeze/freeze-manifest.json` 记录代码提交、依赖环境、迁移、资料、解析产物、题集、结果与恢复包；已知限制单独保留 |
+| R9 冻结身份清单 | **已收口（2026-10-19 刷新）**；演示身份以 `corpus/local/r9-freeze-refresh-2026-10-19/` 与 [`midterm-handoff/`](../midterm-handoff/README.md) 为准。2026-10-18 的 `r9-recovery-.../freeze/` 为英文四课历史冻结，勿与当前 cn_v2 演示身份混用 |
 
 <a id="current-parameters"></a>
 <!-- 保留现有代码注释的跳转目标；不保留原阶段报告或旧结果。 -->
@@ -29,7 +31,9 @@
 
 关键词独有候选尚不能自动进入生成，重排高分不等于支持充分。不得把合法引用率、正确文档覆盖或合成命中率写成事实正确率，不把未运行项目标成零失败。
 
-## 资料来源与使用条件
+## 资料来源与使用条件（历史：R7 心理学单课）
+
+> 本节及后文 R7 / R7B-7 指标均为**历史登记**。当前正式演示库见上文「当前四课演示库」`univ_course_rag_cn_v2`。
 
 本次仅使用 MIT OpenCourseWare [9.00SC Introduction to Psychology](https://ocw.mit.edu/courses/9-00sc-introduction-to-psychology-fall-2011/) 四份讲义。逐份从 MIT 官方资源流读取并与本机受控 PDF 的字节数、SHA-256 比对一致；下表哈希是原始 PDF，不是抽取文本。
 

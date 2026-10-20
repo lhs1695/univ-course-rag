@@ -1,8 +1,8 @@
-# docs/archive
+# 文档归档
 
-中期收口后迁入的历史说明，避免与现行口径混读。
+本目录存放已从现行入口迁出、但仍有对照价值的历史说明。
 
-- `NOTES-F1-F20.md`：staff/admin F1–F20 逐项交付
-- `DESIGN-NOTES-STAFF-STUDY-ALIGN.md` / `DESIGN-NOTES-ADMIN-COPY.md` / `DESIGN-NOTES-STAFF-pre-merge-2026-10-19.md`：合并前 staff 设计稿
+- `NOTES-F1-F20.md`：staff/admin F1–F20 逐项交付（历史）
+- 现行 staff 设计说明见 [`frontend/DESIGN-NOTES-STAFF.md`](../../frontend/DESIGN-NOTES-STAFF.md)（已合并旧 admin/study-align / pre-merge 三稿；旧全文已从仓库删除）
 
-现行合并稿：`frontend/DESIGN-NOTES-STAFF.md`。
+中期演示与架构以仓库根 [`AGENTS.md`](../../AGENTS.md)、[`docs/architecture.md`](../architecture.md)、[`docs/midterm-demo-runbook.md`](../midterm-demo-runbook.md)、[`midterm-handoff/`](../../midterm-handoff/README.md) 为准。

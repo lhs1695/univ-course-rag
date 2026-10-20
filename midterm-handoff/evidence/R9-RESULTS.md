@@ -19,3 +19,9 @@ Metrics cited from eval/rehearsal remain weak automated checks, **not** human fa
 - Final documented HEAD after NEXT-SESSION commit: `fa67bcf` (`fa67bcfb1c74d59d90c6813867453d7fb17ff3ff`), ahead 62
 - PPT (gitignored `build/`): `build/midterm-presentation/output/final-v5.pptx`
 - Rehearsal: PASS at `corpus/local/midterm-rehearsal-2026-10-19/`
+
+## 文档对齐后的 HEAD（说明）
+
+- 上表 **Code HEAD `9bbb37b` / post-commit `fa67bcf`** 为 **2026-10-19 冻结刷新当时** 的仓库身份，保留作对账，勿改写成事后文档提交。
+- 此后仅有文档/handoff/架构等收口提交；**演示代码与 cn_v2 库身份未因文档提交而改变**。
+- 查阅最新文档树请以 **`origin/main` 当前 HEAD** 为准（本文件所在提交之后的 hash 以远程为准）。

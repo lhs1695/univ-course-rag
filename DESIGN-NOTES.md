@@ -10,4 +10,4 @@
 
 响应式覆盖手机；键盘焦点可见，动效服从减少动态效果设置。本版不新增后端接口、云调用或依赖。
 
-验收记录：六个改动 Vue 组件通过 SFC 编译检查，新增 CSS 通过解析，`git diff --check` 通过。`cd frontend && npm run build` 在 Vite/esbuild 子进程启动时报 `spawn EPERM`；原生配置加载及开发预览也受同一限制。浏览器权限门禁拒绝本地预览，因此完整构建、截图、学生账号实际点击与问答 PDF 闭环尚待外层环境验收；本轮未发起真实云调用。
+验收记录（设计落地当时）：六个改动 Vue 组件通过 SFC 编译检查，新增 CSS 通过解析，`git diff --check` 通过。当时沙箱内 `npm run build` 曾报 `spawn EPERM`（子进程限制），属**历史环境限制**，不是现行阻塞。随后已在外层完成构建，并由中期彩排 / Playwright 覆盖学生问答与 PDF 引用闭环（见 `midterm-handoff/evidence/REHEARSAL-STATUS.md`）。
