@@ -30,3 +30,7 @@ corpus/local/**
 
 # Local demo / rehearsal logs (do not commit)
 .demo-logs/
+
+# Office lock / temp files
+~$*
+*.tmp
