@@ -54,4 +54,4 @@
 | [Arize Phoenix](https://github.com/Arize-ai/phoenix) | Trace、版本化数据集、实验对比与失败样本回流 | 先利用现有运行记录/题集，不默认部署完整平台 |
 | [Jisc 学习分析规范](https://www.jisc.ac.uk/guides/code-of-practice-for-learning-analytics) | 透明、数据最小化、有效性、人工监督 | 将隐私、纠正和非惩罚性用途纳入产品验收 |
 
-任何源码复用都必须核对版本、许可证、传递依赖和实际集成成本，并保留必要声明。执行顺序与仓库纪律见 [workflow.md](workflow.md)；研究目标详版见 [新开题资料.md](../新开题资料.md)。
+任何源码复用都必须核对版本、许可证、传递依赖和实际集成成本，并保留必要声明。执行顺序与仓库纪律见 [workflow.md](workflow.md)；研究目标详版见 [旧开题资料.md](../中期答辩材料/旧开题资料.md)。

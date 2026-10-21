@@ -1,4 +1,4 @@
-> **归档说明（2026-10-20）：** 本文已从中期答辩材料迁出；现行队友包见 [中期答辩材料/](../../中期答辩材料/README.md)，彩排 PASS 见 [验收摘要/彩排验收-PASS.md](../../中期答辩材料/验收摘要/彩排验收-PASS.md)。下文为 R9 刷新当日历史摘要。
+> **归档说明（2026-10-20）：** 本文已从中期答辩材料迁出；现行队友包见 [中期答辩材料/](../../中期答辩材料/README.md)，彩排 PASS 见 [彩排截图/](../../中期答辩材料/彩排截图/)（原验收摘要已移除）。下文为 R9 刷新当日历史摘要。
 # R9 freeze refresh 2026-10-19
 
 - Created: 2026-10-19T22:36:43.727163+08:00 (Asia/Shanghai)
@@ -7,7 +7,7 @@
 - Runtime: RERANKER=`disabled`, RETRIEVAL=`dense`, QUERY_EXP=`llm`
 - Question set: `corpus/local/cn-replace-2026-10-18/cases.json` (16 cases)
 - Eval pointer: `corpus/local/cn-replace-2026-10-18/eval-result.json`
-- Rehearsal: [`中期答辩材料/验收摘要/彩排验收-PASS.md`](../../中期答辩材料/验收摘要/彩排验收-PASS.md)
+- Rehearsal: [`中期答辩材料/彩排截图/`](../../中期答辩材料/彩排截图/)（原验收摘要已移除）
 - Supersedes: `corpus/local/r9-recovery-2026-10-18/freeze/` (historical r7b6_real / 17/385)
 - Excluded dirty file: `新开题资料.md` (not committed)
 - Connection string passwords are **not** recorded.
@@ -19,7 +19,7 @@ Metrics cited from eval/rehearsal remain weak automated checks, **not** human fa
 
 - Final documented HEAD after NEXT-SESSION commit: `fa67bcf` (`fa67bcfb1c74d59d90c6813867453d7fb17ff3ff`), ahead 62
 - PPT（历史）：当时为 `中期汇报-v5.pptx`；**v5 已从仓库移除，当前以 `中期汇报-v6-candidate.pptx` 为准**（`build/midterm-presentation/` 若仍存在仅为历史重建脚本）
-- Rehearsal: PASS — see [`中期答辩材料/验收摘要/彩排验收-PASS.md`](../../中期答辩材料/验收摘要/彩排验收-PASS.md)
+- Rehearsal: PASS — see [`中期答辩材料/彩排截图/`](../../中期答辩材料/彩排截图/)（原验收摘要已移除）
 
 ## 文档对齐后的 HEAD（说明）
 

@@ -6,7 +6,7 @@
 
 架构总览见 [docs/架构说明.md](docs/架构说明.md)。历史前端 F1–F20 交付清单见 [docs/archive/NOTES-F1-F20.md](docs/archive/NOTES-F1-F20.md)。
 
-用户最新明确决定 > docs/当前交接.md（下一步）> 新开题资料.md（研究目标）> docs/implementation-plan.md（现行 stub；历史全文见 docs/archive/implementation-plan-full.md）。具体工作方式见 docs/workflow.md 与专用 skill univ-course-rag-dev-loop。工程/验收现行摘要见 docs/engineering.md、docs/validation.md；长文在 docs/archive/。旧阶段冻结不限制用户已授权重构。
+用户最新明确决定 > docs/当前交接.md（下一步）> 中期答辩材料/旧开题资料.md（开题对照；中期口径见修订稿）> docs/implementation-plan.md（现行 stub；历史全文见 docs/archive/implementation-plan-full.md）。具体工作方式见 docs/workflow.md 与专用 skill univ-course-rag-dev-loop。工程/验收现行摘要见 docs/engineering.md、docs/validation.md；长文在 docs/archive/。旧阶段冻结不限制用户已授权重构。
 
 ## 工作纪律
 

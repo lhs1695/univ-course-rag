@@ -13,7 +13,7 @@
 | 弱规则验收 | 可答题预期文档/页 12/12；拒答 4/4（摘要口径，**不是人工事实正确率**；原始逐题 JSON 不在可跟踪目录） |
 | 22 题真实模型对照 | Dense / Hybrid 已实跑，verifier=developer；**不是独立评测**，详见下表与完整报告 |
 | 资料质量警告 | `COVERAGE_INCOMPLETE`：20/27；表示至少一页需核对，不等于整份解析失败 |
-| 演示复彩排 | 核心路径 PASS（2026-10-20）；不代表生产验收或已完成录屏 |
+| 演示复彩排 | 核心路径 PASS（2026-10-20）；不代表生产验收 |
 
 ## 22 题 Dense / Hybrid 分层结果
 
@@ -31,7 +31,7 @@
 
 ## 其他证据与历史
 
-- Dense/Hybrid 实现与保守 cosine 门：[`03-Dense-vs-Hybrid评估.md`](../中期答辩材料/研究证据/03-Dense-vs-Hybrid评估.md)。
-- `COVERAGE_INCOMPLETE` 只读核实：[`05-COVERAGE_INCOMPLETE现状.md`](../中期答辩材料/研究证据/05-COVERAGE_INCOMPLETE现状.md)。
+- Dense/Hybrid 实现与保守 cosine 门：[`03-Dense-vs-Hybrid评估.md`](archive/midterm-evidence-notes/03-Dense-vs-Hybrid评估.md)（已迁 archive；现行结论见上表与 `retrieval-compare`）。
+- `COVERAGE_INCOMPLETE` 只读核实：[`05-COVERAGE_INCOMPLETE现状.md`](archive/midterm-evidence-notes/05-COVERAGE_INCOMPLETE现状.md)（已迁 archive）。
 - Fake pytest、弱规则验收、真实模型小样本与彩排的区别：[`validation.md`](validation.md)。
 - R7 / R7B-7（英文 17/385）、旧评测口径与其他历史登记：[`archive/evaluation-results-full.md`](archive/evaluation-results-full.md)。历史结果仅作历史对照，不冒充当前中文四课结果。

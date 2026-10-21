@@ -1,27 +1,25 @@
-# 研究证据包（中期冲刺）
+# 研究证据（答辩附件）
 
-更新：2026-10-20（Asia/Shanghai）  
-当前答辩叙事与页序以 [`../答辩提纲.md`](../答辩提纲.md) 为准；本目录只保留可复核的研究证据和演示交接。
+更新：2026-10-21（Asia/Shanghai）
 
-| 文件 | 内容 |
+本目录是中期**可核对附件**，不是第二套答辩正文。对外叙事以 [`../中期报告-修订稿.md`](../中期报告-修订稿.md) 与 [`../答辩提纲.md`](../答辩提纲.md) 为准；仓库评测登记见 [`../../docs/evaluation-results.md`](../../docs/evaluation-results.md)。
+
+## 口径三句（必读）
+
+1. **22 题 = 开发者核验**（`verifier=developer`），不是独立评测，不可外推。
+2. **不得宣称 Hybrid 显著更优**；本轮 Hybrid 相对 Dense 仅有小样本差异，Keyword-only 候选未进入最终 evidence。
+3. **严格预期页命中 ≠ 引用错误率**；事实要点、引用支持、页命中须分层报告，勿呈成单一准确率。
+
+## 目录
+
+| 路径 | 说明 |
 | --- | --- |
-| [00-证据盘点与方法限制.md](00-证据盘点与方法限制.md) | 题集/结果可复现性、开题原件缺口 |
-| [01-标注规则.md](01-标注规则.md) | 人工核验规则 |
-| [02-人工核验题集-v1.md](02-人工核验题集-v1.md) / [.json](02-人工核验题集-v1.json) | 22 题（看模型前预期） |
-| [03-Dense-vs-Hybrid评估.md](03-Dense-vs-Hybrid评估.md) | 代码结论 + **已实跑**小样本对照入口 |
-| [04-运行命令与结果模板.md](04-运行命令与结果模板.md) | runner 命令与授权说明 |
-| [05-COVERAGE_INCOMPLETE现状.md](05-COVERAGE_INCOMPLETE现状.md) | **20/27** 警告核实 |
-| [06-演示交接与失败路径清单.md](06-演示交接与失败路径清单.md) | 演示缺口与录屏检查单 |
-| [results/](results/) | **已实跑** Dense/Hybrid + 开发者核验 |
+| [`02-人工核验题集-v1.json`](02-人工核验题集-v1.json) / [`02-人工核验题集-v1.md`](02-人工核验题集-v1.md) | 22 题题集与预期标注 |
+| [`results/`](results/) | 实跑 JSON、对照说明与只读笔记（硬证据） |
+| [`results/retrieval-compare-2026-10-20.md`](results/retrieval-compare-2026-10-20.md) | Dense / Hybrid 分层指标与分母说明 |
 
-## 阶段 A 实跑状态（2026-10-20）
+历史说明性笔记（盘点、标注规则、Dense/Hybrid 长文、运行模板、`COVERAGE_INCOMPLETE` 核实）已迁至 [`../../docs/archive/midterm-evidence-notes/`](../../docs/archive/midterm-evidence-notes/)，答辩材料包内不再保留。
 
-- 授权：用户明确批准阶段 A（≤22×Dense+Hybrid Embedding/LLM；rerank disabled）
-- 结果：
-  - [`results/manual-verify-2026-10-20-dense.json`](results/manual-verify-2026-10-20-dense.json)
-  - [`results/manual-verify-2026-10-20-hybrid.json`](results/manual-verify-2026-10-20-hybrid.json)
-  - [`results/retrieval-compare-2026-10-20.md`](results/retrieval-compare-2026-10-20.md)
-- verifier=**developer**（不得称独立评测）
-- runner：`backend/scripts/run_manual_verify_cn_v1.py`
-- **未做**：全量重入库、Vision、启用 rerank、人民币费用估算
-- **公开前**：请做密钥清查（见仓库根 [`LICENSE`](../../LICENSE)）；课件说明见 [`NOTICE`](../../NOTICE)（公开分享资料，无需逐份授权清查）
+## 报告对照
+
+评测表述请对齐修订稿「四、项目实施进展」中 22 题分层表，以及「后期」三阶段安排。数字以 `results/` 冻结文件为准，勿凭记忆改写。

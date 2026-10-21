@@ -32,7 +32,7 @@
 - 优先适配现有后端 API / Cookie session；非必要不改后端契约。
 - 技术载体：Vue3 + Vite + Element Plus（frontend/）。
 - 本 trial 分支本地可运行学生路径；不 merge main、不 push。
-- 禁止读/输出 `.env`、API Key、密钥、原题答案；不要动未提交的 `新开题资料.md`。
+- 禁止读/输出 `.env`、API Key、密钥、原题答案；不要动未提交的 `中期答辩材料/旧开题资料.md`。
 - **禁止通读全部 docs**；只读本 Brief、本版 skill/DESIGN.md、以及你实现时必须打开的 `frontend/` 与少量 API 客户端文件。
 
 ## 交付
