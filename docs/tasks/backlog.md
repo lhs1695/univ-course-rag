@@ -10,7 +10,7 @@
 
 | ID | 标题 | 依赖 | 建议优先级 | 对应任务卡文件名 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| PLAN-00 | 开源设计与代码复用审查 | 无；建议首张开工 | P0 | [PLAN-00-opensource-reuse.md](PLAN-00-opensource-reuse.md) | ready |
+| PLAN-00 | 开源设计与代码复用审查 | 无；建议首张开工 | P0 | [PLAN-00-opensource-reuse.md](PLAN-00-opensource-reuse.md) | done |
 | PLAN-01 | 冻结结题指标与数据边界 | PLAN-00 | P0 | [PLAN-01-metrics-data-boundary.md](PLAN-01-metrics-data-boundary.md) | ready |
 | PLAN-02 | 资料生命周期与课程权限收口 | PLAN-00、PLAN-01 | P0 | [PLAN-02-lifecycle-permissions.md](PLAN-02-lifecycle-permissions.md) | ready |
 | PLAN-07 | 检索与证据质量回归 | PLAN-01、PLAN-02 | P0 | [PLAN-07-retrieval-evidence.md](PLAN-07-retrieval-evidence.md) | ready |
@@ -39,4 +39,4 @@
 - PLAN-01 先冻结口径、样本与目标阈值；后续评价不得事后改标准。Fake/弱规则通过不等于事实正确率，开发者核验不等于独立核验，排练不等于真实用户试用。
 - PLAN-06/07/09 缺少人工参与或真实证据时如实登记未完成，PLAN-10 不得以限制说明替代未达成的必需验收门槛。
 - 禁止顺手上 GraphRAG、换向量库、全量 Vision 或重入库；不创建 OpenSpec/Spec Kit 脚手架。
-- 下一步默认 [PLAN-00](PLAN-00-opensource-reuse.md)，依次 PLAN-01 → PLAN-02；详见 [SESSION_STATE](SESSION_STATE.md)。
+- 下一步默认 [PLAN-01](PLAN-01-metrics-data-boundary.md)；PLAN-00 已完成。详见 [SESSION_STATE](SESSION_STATE.md)。

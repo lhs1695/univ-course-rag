@@ -21,6 +21,7 @@
 | [结题产品定义与完工标准.md](结题产品定义与完工标准.md) | 做什么 / 不做 / 完工门槛 |
 | [validation.md](validation.md) | 怎样算验收通过（分层） |
 | [implementation-plan.md](implementation-plan.md) | PLAN-00～13 路线图（待执行，≠已完成） |
+| [opensource-reuse-decisions.md](opensource-reuse-decisions.md) | PLAN-00 开源复用决策表（设计借鉴≠已集成） |
 
 ## 工程与评测
 
