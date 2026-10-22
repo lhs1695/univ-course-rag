@@ -11,7 +11,8 @@ from alembic.script import ScriptDirectory
 
 def test_query_outcome_migration_does_not_invent_historical_facts() -> None:
     scripts = ScriptDirectory(str(Path(__file__).parents[1] / "alembic"))
-    assert scripts.get_current_head() == "0011"
+    # Pin behaviour of additive revision 0011; alembic head may advance (0012/0013+).
+    assert "0011" in {rev.revision for rev in scripts.walk_revisions()}
     migration = scripts.get_revision("0011").module
     assert migration.down_revision == "0010"
     engine = sa.create_engine("sqlite://")

@@ -1,0 +1,31 @@
+PLAN-10 delivery gate raw summaries (Asia/Shanghai 2026-10-23)
+Baseline before this card commit: b7f1b3a (PLAN-09). Cloud spend: JPY/CNY 0. No .env read.
+
+=== pytest (after two stale-test fixes) ===
+Command:
+  backend/.venv/Scripts/python.exe -m pytest backend/tests -q --basetemp output/plan10-pytest-full2 -p no:cacheprovider
+Exit 0:
+  641 passed, 2 skipped, 1 warning in 54.45s
+Warning: DeprecationWarning anyio.abc.BlockingPortal (Starlette).
+First full run before fixes: 2 failed, 639 passed, 2 skipped — see docs/final-delivery-checklist.md §3.
+
+=== ruff ===
+Command:
+  backend/.venv/Scripts/python.exe -m ruff check backend
+Exit 0:
+  All checks passed!
+
+=== frontend build ===
+Command:
+  cd frontend; npm run build
+Exit 0:
+  vite v7.3.6 building client environment for production...
+  ✓ 1670 modules transformed.
+  ✓ built in 8.26s
+  (chunk size warning >500kB; not a failure)
+
+=== not run ===
+- Blank-machine clean install drill
+- Isolated pg_dump/restore against non-demo DB
+- Vite three-role manual loop / citation page navigation
+- Real embedding/LLM/Vision/rerank or re-ingest

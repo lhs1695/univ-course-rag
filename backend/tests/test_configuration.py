@@ -145,7 +145,7 @@ def test_configuration_dependency_failure_is_safe_503(client: TestClient, db, mo
 
 def test_ingest_errors_and_legacy_job_details_do_not_expose_raw_text() -> None:
     assert safe_error(RuntimeError("private-path-and-provider-secret")) == "INGEST_FAILED"
-    document = Document(id=uuid4(), filename="synthetic.txt")
+    document = Document(id=uuid4(), filename="synthetic.txt", retrieval_enabled=True)
     job = IngestJob(status="failed", error_message="private-path-and-provider-secret")
     assert _document_out(document, job).error_message == "INGEST_FAILED"
 

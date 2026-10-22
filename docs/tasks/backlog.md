@@ -20,7 +20,7 @@
 | PLAN-06 | 学情分析质量与使用验证 | PLAN-01、PLAN-04、PLAN-05 | P1 | [PLAN-06-analytics-validation.md](PLAN-06-analytics-validation.md) | framework done（正式人工核验 / 独立教师试用未完成） |
 | PLAN-08 | 流式交互与性能工程 | PLAN-02、PLAN-07 | P1 | [PLAN-08-stream-performance.md](PLAN-08-stream-performance.md) | done（Fake+build；Vite 人工待 PLAN-09；真实模型未测） |
 | PLAN-09 | 学生与教师核心流程体验测试 | PLAN-03、PLAN-05、PLAN-06、PLAN-07、PLAN-08 | P1 | [PLAN-09-core-user-tasks.md](PLAN-09-core-user-tasks.md) | done（脚本+Fake；独立试用未完成） |
-| PLAN-10 | 干净环境与结题交付验收 | PLAN-00～PLAN-09（均有证据；未达门槛不得宣告结题通过） | P1 | [PLAN-10-final-delivery.md](PLAN-10-final-delivery.md) | ready |
+| PLAN-10 | 干净环境与结题交付验收 | PLAN-00～PLAN-09（均有证据；未达门槛不得宣告结题通过） | P1 | [PLAN-10-final-delivery.md](PLAN-10-final-delivery.md) | done（清单+本机门禁；空白机/试用等缺口保留） |
 
 ## 条件项：暂缓
 
@@ -39,5 +39,5 @@
 - PLAN-01 先冻结口径、样本与目标阈值；后续评价不得事后改标准。Fake/弱规则通过不等于事实正确率，开发者核验不等于独立核验，排练不等于真实用户试用。
 - PLAN-06/07/09 缺少人工参与或真实证据时如实登记未完成，PLAN-10 不得以限制说明替代未达成的必需验收门槛。
 - 禁止顺手上 GraphRAG、换向量库、全量 Vision 或重入库；不创建 OpenSpec/Spec Kit 脚手架。
-- 下一步默认 [PLAN-10](PLAN-10-final-delivery.md)。PLAN-09 已冻结 `docs/user-task-scripts/` 与 Fake 4/4；**独立试用与 Vite 人工未完成**，不得宣告试用通过。PLAN-08 构建 EPERM 与 Vite 流式点检仍为缺口。PLAN-06/07 人工与真实证据缺口保留。详见 [SESSION_STATE](SESSION_STATE.md)、[排练日志](../user-task-scripts/rehearsal-log-2026-10-22.md)。
+- PLAN-00～10 本地切片已提交；**不得宣告结题验收通过**。交付核对表见 [final-delivery-checklist.md](../final-delivery-checklist.md)。剩余缺口：独立试用、真实模型测量、空白机安装/备份恢复、Vite 三角色与引用回页；PLAN-06/07 人工与真实证据仍缺。详见 [SESSION_STATE](SESSION_STATE.md)。
 
