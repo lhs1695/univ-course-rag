@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-06 |
-| 状态 | ready |
+| 状态 | framework done；正式人工评价 / 独立教师试用未完成 |
 | 须授权 | 真实问句样本使用/外发须有明确范围与用途；真实 Embedding/LLM 调用须当次明确授权；邀请试用者、发送消息须用户明确指示，本卡不自动对外联系 |
 
 ## 目标
@@ -23,18 +23,27 @@
 - [ ] 教师接受/修正情况仅作辅助信号；合成、真实日志、开发者与独立核验分开报告；不足以达门槛时保留候选并记录限制。
 - [ ] 完成教师查看候选→确认/修正→记录行动→代表问题回归的任务观察，记录完成情况、耗时、困惑和修正；招募不足时写“未完成”，不得勾为试用通过。
 - [ ] 评价报告与原始统计可复算；若新增评价脚本，补定向测试与 ruff 原始输出，不能以脚本绿测替代人工核验。
-- [ ] 若新增脚本/修复代码：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan06_analytics_evaluation.py -q` 与 `backend/.venv/Scripts/python.exe -m ruff check backend` 通过；纯报告则记录代码检查不适用及理由。
-- [ ] 文档验收：产物内容逐项对照本卡；本地相对链接目标存在、章节指针正确；`git diff --check` 通过，贴原始输出与链接自检结果。
+- [x] 新增评估工具：指定 PLAN-06 pytest 与触及 Python 路径的 ruff 通过（按当次用户限定范围，不全量检查 backend）。
+- [x] 文档验收：产物内容逐项对照本卡；本地相对链接目标存在、章节指针正确；`git diff --check` 通过，贴原始输出与链接自检结果。
+
+### 当次授权的框架交付（不替代上方人工验收）
+
+- [x] 冻结协议、合成样本版本/哈希、标注定义、争议流程与指标公式。
+- [x] 无 DB/provider 的纯函数与离线 JSON CLI；覆盖率、单例、未分组及误合并/拆分明细可复算。
+- [x] 空白 n/N 报告模板，知识点/主题单列人工核验；教师接受/修正只作辅助。
+- [x] 合成非空断言测试；INDEX 与 PLAN-04 文档指针。
+- [ ] 正式人工标注、独立核验及知识点/主题人工核验（本轮未执行）。
+- [ ] 独立教师任务观察与代表问题回归（本轮未完成；Fake 演练不算试用）。
 
 ## 约束
 
 - 栈与版本：现有 FastAPI + Vue3 + PostgreSQL+pgvector；Python 3.12，仅用 `backend/.venv`；不引入第二套 RAG 框架。
 - 开工依赖：PLAN-01、PLAN-04、PLAN-05。建议优先级：P1；见 [backlog](backlog.md) 的建议顺序。
-- 本卡为待执行，`ready` 仅表示切片可审阅并按依赖开工，不代表已实现、已授权或已验收；所有勾选保持未完成，执行时凭证据更新。
+- 本轮仅授权 Fake、文档与合成夹具；框架已实现不代表正式质量评价或试用验收通过。
 - 一次会话一个实现项；默认 Dense、rerank 关；Fake、真实模型、开发者核验、独立核验和用户试用分别留证，不相互替代。
 - 高成本动作按“须授权”栏逐次核对；未获授权时继续可独立完成的 Fake/文档部分，依赖真实证据的条目保持未完成。
 - 资料与问句是不可信数据；禁止输出密钥/Cookie/Session/原题答案；本卡不自动授权对外联系、发布或 push。
-- `backend/tests/test_plan06_analytics_evaluation.py` 为拟新增定向测试路径，本阶段未读取业务代码，未核实该路径已存在；开工先核对测试布局，优先复用现有覆盖，将最终真实路径和命令更新到本卡。不得跳过测试或用空测试凑通过。
+- `backend/tests/test_plan06_analytics_evaluation.py` 为本轮新增定向测试；不读取 insights 数据库，直接检验固定簇分配与标注对的算术及非法输入。
 
 ## 禁止改动的路径
 
@@ -61,6 +70,46 @@
 
 ## 完成记录
 
-- 提交：未执行；本阶段仅建卡，不提交。
-- 验证摘要：未执行本卡验收；无已实现声明。
-- 未做 / 风险：依赖、人工核验及授权仍须开工核对；未获授权的高成本动作禁止执行。
+- 日期：2026-10-22。开工 `git status --short` 退出 0、无输出；依赖 PLAN-01/04/05 已完成。当次用户明确限定框架，不邀请/联系他人，不调用真实 Embedding/LLM，不读 `.env`，不 push。
+- 产物：[冻结协议](../analytics-validation-protocol.md)、[报告模板](../analytics-validation-report-TEMPLATE.md)、[评估工具](../../backend/app/services/analytics_evaluation.py)、[合成样本](../../backend/tests/fixtures/plan06_analytics_synthetic_v1.json)、[14 项 Fake 测试](../../backend/tests/test_plan06_analytics_evaluation.py)。复用标准库，无新依赖，未改业务分组/规则/既有金标。
+- 正式人工评价、独立核验、知识点/主题核验及独立教师试用：**未完成**。上方相关验收未勾选；模板空白和算术演练不能替代实测。候选模式保留；下一工程项 PLAN-08，缺口继续约束 PLAN-09/10。
+- 真实模型新增调用 0 次，新增费用 ¥0，约 ¥2 预算保留；无数据库读取或变更、重入库、Vision。
+- 提交：**未完成（环境权限阻断）**。按本轮 10 个文件的明确清单执行 `git add -- ...`，随后实际执行 `git commit -m "docs(PLAN-06): analytics validation protocol and Fake metrics"`，均退出 1：`fatal: Unable to create 'D:/workspace/univ-course-rag/.git/index.lock': Permission denied`。托管环境 `.git` 只读且禁止权限升级；未创建提交、未 push。改动完整保留于工作区，供外部执行器按上述标题提交，不宣称工作区已干净。
+
+### 实际命令与原始输出摘要
+
+仓库根执行：
+
+```powershell
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan06_analytics_evaluation.py -q
+```
+
+退出 0：
+
+```text
+..............                                                           [100%]
+14 passed, 2 warnings in 0.16s
+```
+
+警告原文摘要：`DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated`（既有 Starlette）；`PytestCacheWarning: could not create cache path ...backend\.pytest_cache\v\cache\nodeids: [WinError 5] 拒绝访问`。无失败或跳过，没有为消除警告改环境/测试逻辑。现有 conftest 在 app.db 导入前禁用 dotenv，测试只调本轮纯函数。
+
+```powershell
+backend/.venv/Scripts/python.exe -m ruff check backend/app/services/analytics_evaluation.py backend/tests/test_plan06_analytics_evaluation.py
+```
+
+退出 0：`All checks passed!`。
+
+```powershell
+backend/.venv/Scripts/python.exe backend/app/services/analytics_evaluation.py backend/tests/fixtures/plan06_analytics_synthetic_v1.json
+```
+
+退出 0，stdout JSON 原始字段摘要：`sample_version=plan06-synthetic-v1`，`evidence_level=synthetic_fake_arithmetic`，`tp=1, fp=1, fn=1, tn=2, labeled_pairs=6, evaluated_pairs=5, uncertain_count=1`；precision/recall 各 `n=1,N=2,value=0.5`；coverage/singleton 各 `n=3,N=8,value=0.375`，ungrouped `n=2,N=8,value=0.25`。完整输出由该固定输入确定性复算，不能当真人质量结果。
+
+文档核对：协议 §1～6、模板独立知识点/主题核验列与空白 n/N 表、PLAN-01 §5 和 PLAN-04 §1～2 指针均已核对。用 `backend/.venv/Scripts/python.exe -` 执行标准库 `pathlib/re/hashlib` 只读断言脚本，退出 0：
+
+```text
+Markdown local links: 67 checked, 0 missing (7 files)
+Synthetic fixture SHA-256: match frozen protocol
+```
+
+`git diff --check` 退出 0，无空白错误输出；stderr 仅有 `LF will be replaced by CRLF the next time Git touches it` 换行提示。

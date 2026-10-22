@@ -46,3 +46,5 @@
 ## 5. 产品行为
 
 自动分组与意图均为候选；未达 metrics-v1 阈值或未经教师确认前，不得展示为课程盲区结论。
+
+后续评价遵循 [PLAN-06 冻结协议](analytics-validation-protocol.md)与[报告模板](analytics-validation-report-TEMPLATE.md)：单列知识点/主题人工核验；本轮仅合成 Fake 算术验证，独立教师试用未完成。

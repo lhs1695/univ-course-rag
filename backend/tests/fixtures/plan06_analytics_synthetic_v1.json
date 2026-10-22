@@ -1,0 +1,43 @@
+{
+  "sample_version": "plan06-synthetic-v1",
+  "evidence_level": "synthetic_fake_arithmetic",
+  "config": {
+    "metrics_version": "metrics-v1",
+    "grouping_contract": "p5-complete-cosine-v1",
+    "intent_source": "rule_v1",
+    "min_similarity": 0.9,
+    "threshold_calibrated": false,
+    "embedding_model": "none-fixed-assignments",
+    "embedding_identity": "synthetic-only-no-provider",
+    "assignment_source": "handcrafted-arithmetic-fixture-not-grouping-output",
+    "scope": "synthetic-single-course-distinct-questions-no-real-logs"
+  },
+  "questions": [
+    {"question_id": "q1", "text": "什么是线性无关"},
+    {"question_id": "q2", "text": "线性无关的定义是什么"},
+    {"question_id": "q3", "text": "怎么求秩"},
+    {"question_id": "q4", "text": "矩阵的秩如何计算"},
+    {"question_id": "q5", "text": "什么是特征值"},
+    {"question_id": "q6", "text": "怎么求特征值"},
+    {"question_id": "q7", "text": "这部分我不明白"},
+    {"question_id": "q8", "text": "这个呢"}
+  ],
+  "assignments": [
+    {"question_id": "q1", "cluster_id": "c1"},
+    {"question_id": "q2", "cluster_id": "c1"},
+    {"question_id": "q3", "cluster_id": "c1"},
+    {"question_id": "q4", "cluster_id": "c2"},
+    {"question_id": "q5", "cluster_id": "c3"},
+    {"question_id": "q6", "cluster_id": "c4"},
+    {"question_id": "q7", "cluster_id": null},
+    {"question_id": "q8", "cluster_id": null}
+  ],
+  "labeled_pairs": [
+    {"left": "q1", "right": "q2", "label": "same", "basis": "PLAN-04 A1"},
+    {"left": "q3", "right": "q4", "label": "same", "basis": "PLAN-04 A2"},
+    {"left": "q1", "right": "q3", "label": "different", "basis": "synthetic arithmetic contrast"},
+    {"left": "q5", "right": "q6", "label": "different", "basis": "PLAN-04 B1: different intent"},
+    {"left": "q1", "right": "q5", "label": "different", "basis": "synthetic arithmetic contrast"},
+    {"left": "q7", "right": "q8", "label": "uncertain", "basis": "missing context; do not infer same intent"}
+  ]
+}

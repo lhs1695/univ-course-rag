@@ -17,7 +17,7 @@
 | PLAN-03 | 教师学情分析 V1 描述层与主题总览 | PLAN-01、PLAN-02 | P1 | [PLAN-03-analytics-overview.md](PLAN-03-analytics-overview.md) | done |
 | PLAN-04 | 教师学情分析 V1 语义分组与意图候选 | PLAN-00、PLAN-01、PLAN-03 | P1 | [PLAN-04-semantic-candidates.md](PLAN-04-semantic-candidates.md) | done |
 | PLAN-05 | 教师学情分析 V1 知识点与人工处理闭环 | PLAN-02、PLAN-03、PLAN-04 | P1 | [PLAN-05-teacher-action-loop.md](PLAN-05-teacher-action-loop.md) | done |
-| PLAN-06 | 学情分析质量与使用验证 | PLAN-01、PLAN-04、PLAN-05 | P1 | [PLAN-06-analytics-validation.md](PLAN-06-analytics-validation.md) | ready |
+| PLAN-06 | 学情分析质量与使用验证 | PLAN-01、PLAN-04、PLAN-05 | P1 | [PLAN-06-analytics-validation.md](PLAN-06-analytics-validation.md) | framework done（正式人工核验 / 独立教师试用未完成） |
 | PLAN-08 | 流式交互与性能工程 | PLAN-02、PLAN-07 | P1 | [PLAN-08-stream-performance.md](PLAN-08-stream-performance.md) | ready |
 | PLAN-09 | 学生与教师核心流程体验测试 | PLAN-03、PLAN-05、PLAN-06、PLAN-07、PLAN-08 | P1 | [PLAN-09-core-user-tasks.md](PLAN-09-core-user-tasks.md) | ready |
 | PLAN-10 | 干净环境与结题交付验收 | PLAN-00～PLAN-09（均有证据；未达门槛不得宣告结题通过） | P1 | [PLAN-10-final-delivery.md](PLAN-10-final-delivery.md) | ready |
@@ -39,4 +39,4 @@
 - PLAN-01 先冻结口径、样本与目标阈值；后续评价不得事后改标准。Fake/弱规则通过不等于事实正确率，开发者核验不等于独立核验，排练不等于真实用户试用。
 - PLAN-06/07/09 缺少人工参与或真实证据时如实登记未完成，PLAN-10 不得以限制说明替代未达成的必需验收门槛。
 - 禁止顺手上 GraphRAG、换向量库、全量 Vision 或重入库；不创建 OpenSpec/Spec Kit 脚手架。
-- 下一步默认 [PLAN-06](PLAN-06-analytics-validation.md)；PLAN-00～05 及本次限定范围的 PLAN-07 已完成。PLAN-07 真实复跑、独立核验及 PROB-F02 定位缺口保留，不替代结题验收门槛。详见 [SESSION_STATE](SESSION_STATE.md)。
+- 下一步默认 [PLAN-08](PLAN-08-stream-performance.md)；PLAN-00～05、限定范围 PLAN-07 及 PLAN-06 框架已完成。PLAN-06 正式人工评价/知识点主题核验/独立教师试用未完成；PLAN-07 真实复跑、独立核验及 PROB-F02 定位缺口保留，不替代结题验收门槛。详见 [SESSION_STATE](SESSION_STATE.md)。
