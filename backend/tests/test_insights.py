@@ -156,12 +156,20 @@ def test_insights_aggregates_student_queries_without_identities(
     assert "t1" not in dumped
     assert "unique" not in dumped.lower()
     assert body["retention_days"] == 90
-    assert body["summary"] == {
-        "recorded_attempts": 7, "student_attempts": 5, "cited_answer": 2,
-        "no_evidence": 3, "failure": 0, "unknown_outcome": 0,
-        "non_student_attempts": 2, "unknown_role_attempts": 0,
-        "knowledge_attempts": 5, "no_evidence_rate": 0.6,
-    }
+    assert body["summary"]["recorded_attempts"] == 7
+    assert body["summary"]["student_attempts"] == 5
+    assert body["summary"]["cited_answer"] == 2
+    assert body["summary"]["no_evidence"] == 3
+    assert body["summary"]["failure"] == 0
+    assert body["summary"]["knowledge_attempts"] == 5
+    assert body["summary"]["distinct_student_questions"] >= 1
+    assert body["summary"]["no_evidence_rate"] == 0.6
+    assert body["summary"]["cited_answer_rate"] == 0.4
+    assert body["summary"]["failure_rate"] == 0.0
+    assert body["summary"]["rate_denominator"] == "student_attempts"
+    assert body["summary"]["sample_limited"] is True
+    assert body["metric_contract"] == "metrics-v1"
+    assert isinstance(body["themes"], list) and isinstance(body["clues"], list)
     assert "frequent" in body
     assert "no_evidence" in body
     assert body["frequent"] == [{"query": "什么是 向量检索", "count": 2}]
@@ -252,12 +260,16 @@ def test_historical_roles_are_not_rewritten_by_current_membership(client, db) ->
 
     body = client.get(f"/courses/{course.id}/insights").json()
 
-    assert body["summary"] == {
-        "recorded_attempts": 6, "student_attempts": 4, "cited_answer": 1,
-        "no_evidence": 1, "failure": 1, "unknown_outcome": 1,
-        "non_student_attempts": 1, "unknown_role_attempts": 1,
-        "knowledge_attempts": 2, "no_evidence_rate": 0.5,
-    }
+    assert body["summary"]["student_attempts"] == 4
+    assert body["summary"]["cited_answer"] == 1
+    assert body["summary"]["no_evidence"] == 1
+    assert body["summary"]["failure"] == 1
+    assert body["summary"]["unknown_outcome"] == 1
+    assert body["summary"]["knowledge_attempts"] == 2
+    assert body["summary"]["no_evidence_rate"] == 0.25
+    assert body["summary"]["cited_answer_rate"] == 0.25
+    assert body["summary"]["failure_rate"] == 0.25
+    assert body["summary"]["rate_denominator"] == "student_attempts"
     assert body["frequent"] == [{"query": "学生时的回答", "count": 1}]
     assert [row["query"] for row in body["no_evidence"]] == ["移出前的不足"]
 
@@ -306,7 +318,7 @@ def test_invalid_or_expired_time_windows_are_rejected(client, db, params) -> Non
     assert client.get(f"/courses/{course.id}/insights", params=params).status_code == 422
 
 
-def test_no_known_knowledge_outcomes_has_no_rate(client, db) -> None:
+def test_non_knowledge_outcomes_use_student_denominator_rates(client, db) -> None:
     teacher = add_user(db, "empty-rate", "pass", UserRole.teacher)
     course = add_course(db, "Empty Rate")
     add_member(db, course, teacher, CourseMemberRole.teacher)
@@ -321,7 +333,10 @@ def test_no_known_knowledge_outcomes_has_no_rate(client, db) -> None:
     body = client.get(f"/courses/{course.id}/insights").json()
     assert body["summary"]["student_attempts"] == 3
     assert body["summary"]["unknown_outcome"] == 2
-    assert body["summary"]["no_evidence_rate"] is None
+    # metrics-v1: denominator is student_attempts; zero numerators yield 0.0 not None
+    assert body["summary"]["no_evidence_rate"] == 0.0
+    assert body["summary"]["cited_answer_rate"] == 0.0
+    assert body["summary"]["failure_rate"] == (1 / 3)
     assert body["frequent"] == body["no_evidence"] == []
 
 

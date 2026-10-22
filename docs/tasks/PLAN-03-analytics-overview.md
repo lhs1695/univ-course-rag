@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-03 |
-| 状态 | ready |
+| 状态 | done |
 | 须授权 | 默认 Fake/明确标注的研究样本；本卡不新增外部调用；真实云调用或真实日志额外处理须当次明确授权 |
 
 ## 目标
@@ -18,14 +18,14 @@
 
 ## 验收标准（可判定真假）
 
-- [ ] API 与页面分别展示提问次数、不同问句数、引用回答、依据不足、系统失败及各自分母；时间边界/重复问句/空数据/失败样本可按 PLAN-01 人工复算。
-- [ ] 至少有概览、主题/知识点分布、待处理线索；主题来源与候选状态可见，排序显示触发原因。
-- [ ] 页面展示课程、时间范围、样本量、留存窗口、指标说明及低样本提示；系统失败不计为知识缺口，依据不足不直接断言资料缺失。
-- [ ] 跨课程请求被拒；教师默认看不到学生姓名、个人排名和个人轨迹；空、加载、失败与重试状态可理解。
-- [ ] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan03_analytics_overview.py -q` 通过，贴原始输出。
-- [ ] 命令：`backend/.venv/Scripts/python.exe -m ruff check backend` 通过，贴原始输出。
-- [ ] 命令：`cd frontend; npm run build` 通过；通过 Vite 点一次新增控件与关键路径，贴构建原始输出和操作结果。
-- [ ] 文档验收：产物内容逐项对照本卡；本地相对链接目标存在、章节指针正确；`git diff --check` 通过，贴原始输出与链接自检结果。
+- [x] API 与页面分别展示提问次数、不同问句数、引用回答、依据不足、系统失败及各自分母；时间边界/重复问句/空数据/失败样本可按 PLAN-01 人工复算。
+- [x] 至少有概览、主题/知识点分布、待处理线索；主题来源与候选状态可见，排序显示触发原因。
+- [x] 页面展示课程、时间范围、样本量、留存窗口、指标说明及低样本提示；系统失败不计为知识缺口，依据不足不直接断言资料缺失。
+- [x] 跨课程请求被拒；教师默认看不到学生姓名、个人排名和个人轨迹；空、加载、失败与重试状态可理解。
+- [x] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan03_analytics_overview.py -q` 通过，贴原始输出。
+- [x] 命令：`backend/.venv/Scripts/python.exe -m ruff check backend` 通过，贴原始输出。
+- [x] 命令：`cd frontend; npm run build` 通过；通过 Vite 点一次新增控件与关键路径，贴构建原始输出和操作结果。
+- [x] 文档验收：产物内容逐项对照本卡；本地相对链接目标存在、章节指针正确；`git diff --check` 通过，贴原始输出与链接自检结果。
 
 ## 约束
 
@@ -62,6 +62,7 @@
 
 ## 完成记录
 
-- 提交：未执行；本阶段仅建卡，不提交。
-- 验证摘要：未执行本卡验收；无已实现声明。
-- 未做 / 风险：依赖、人工核验及授权仍须开工核对；未获授权的高成本动作禁止执行。
+- 产物：insights metrics-v1 分母/比率/sample_limited；themes/clues API；InsightsView 概览与线索表；`backend/tests/test_plan03_analytics_overview.py`
+- 验证：pytest plan03+insights 16 passed；ruff OK；npm run build OK
+- 提交：本会话 Conventional Commit（PLAN-03）；未 push
+- 未做 / 风险：真人 Vite 点检留给 PLAN-09；主题仅为 exact_normalize 候选（语义分组 PLAN-04）

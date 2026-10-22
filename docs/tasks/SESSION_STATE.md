@@ -4,19 +4,16 @@
 
 ## 当前目标
 
-**PLAN-00～02 done** → 下一步 **PLAN-03** → PLAN-04 → PLAN-05。
+**PLAN-00～03 done** → 下一步 **PLAN-04** → PLAN-05。
 
-## 已定架构 / 约束
+## 已定
 
-- 指标：`docs/metrics-data-boundary.md`（metrics-v1）
-- 复用：`docs/opensource-reuse-decisions.md`
-- 权限矩阵：`docs/lifecycle-permissions-matrix.md`
-- 只本地 commit；真实模型预算 ≤ 约 2 元
-- Document.retrieval_enabled 软停用；正式库需 Alembic 0012
+- metrics-v1；opensource-reuse；lifecycle matrix；insights 描述层已对齐分母
+- 只本地 commit；模型预算 ≤ 约 2 元
 
 ## 下一步
 
-1. PLAN-03 教师学情描述层/主题总览
+1. PLAN-04 语义分组与意图候选（优先 Fake）
 
 ## 活跃 diff
 

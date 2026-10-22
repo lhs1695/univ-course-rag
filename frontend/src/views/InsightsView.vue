@@ -5,12 +5,22 @@
       <p class="page-lead">把本课学生提问整理成备课线索：哪些问句常被问到、哪些依据不足。这里不推断学生能力，有引用也不等于回答正确。</p>
     </header>
 
+    <el-alert
+      v-if="summary?.sample_limited"
+      type="warning"
+      :closable="false"
+      show-icon
+      title="样本有限（学生提问次数 &lt; 30），以下仅供备课线索，不做强结论。"
+      class="insights-section"
+    />
     <section v-if="summary" class="key-counts" aria-label="本窗口汇总">
-      <div><span>学生提交</span><strong>{{ summary.knowledge_attempts ?? 0 }}</strong></div>
-      <div><span>有引用回答</span><strong>{{ summary.cited_answer ?? 0 }}</strong></div>
-      <div><span>依据不足</span><strong>{{ summary.no_evidence ?? 0 }}</strong></div>
-      <div><span>失败 / 未知</span><strong>{{ (summary.failure ?? 0) + (summary.unknown_outcome ?? 0) }}</strong></div>
+      <div><span>学生提问次数</span><strong>{{ summary.student_attempts ?? 0 }}</strong></div>
+      <div><span>不同问句</span><strong>{{ summary.distinct_student_questions ?? 0 }}</strong></div>
+      <div><span>有引用回答</span><strong>{{ summary.cited_answer ?? 0 }}</strong><small v-if="summary.cited_answer_rate != null"> / {{ pct(summary.cited_answer_rate) }}</small></div>
+      <div><span>依据不足</span><strong>{{ summary.no_evidence ?? 0 }}</strong><small v-if="summary.no_evidence_rate != null"> / {{ pct(summary.no_evidence_rate) }}</small></div>
+      <div><span>系统失败</span><strong>{{ summary.failure ?? 0 }}</strong><small v-if="summary.failure_rate != null"> / {{ pct(summary.failure_rate) }}</small></div>
     </section>
+    <p v-if="summary" class="hint">分母：{{ summary.rate_denominator || "student_attempts" }}（metrics-v1）。系统失败不计知识缺口；依据不足不等于资料缺失。合同 {{ metricContract || "metrics-v1" }}；留存 {{ retentionDays }} 天；窗口 {{ formatTime(windowStart) }}（含）至 {{ formatTime(windowEnd) }}（不含）。</p>
     <p v-else-if="!loading && !failure" class="insights-empty-lead">本窗口还没有可展示的问答统计。学生在本课提问并产生结果后，这里会出现汇总与待核对列表。</p>
 
     <fieldset class="window-filter">
@@ -32,6 +42,26 @@
 
     <el-alert v-if="failure" :title="failure" type="error" :closable="false" show-icon />
     <template v-else>
+      <section class="panel-card insights-section">
+        <h3 class="section-title">待处理线索（含排序原因）</h3>
+        <el-table :data="clues" v-loading="loading" empty-text="暂无待处理线索">
+          <el-table-column label="线索" min-width="280"><template #default="{ row }"><span class="query-clamp">{{ row.title }}</span></template></el-table-column>
+          <el-table-column label="触发原因" min-width="220"><template #default="{ row }">{{ row.trigger_label }}</template></el-table-column>
+          <el-table-column prop="ask_count" label="次数" width="90" />
+          <el-table-column prop="status" label="状态" width="140" />
+        </el-table>
+      </section>
+      <section class="panel-card insights-section">
+        <h3 class="section-title">主题候选（精确归一，非语义聚类）</h3>
+        <p class="hint">来源 exact_normalize，状态均为 candidate；语义分组见下方「相似问句分组」。知识点确认由后续闭环承担。</p>
+        <el-table :data="themes" v-loading="loading" empty-text="暂无主题候选">
+          <el-table-column label="主题/问句" min-width="280"><template #default="{ row }"><span class="query-clamp">{{ row.label }}</span></template></el-table-column>
+          <el-table-column prop="kind" label="类型" width="120" />
+          <el-table-column prop="status" label="状态" width="110" />
+          <el-table-column label="排序原因" min-width="260"><template #default="{ row }">{{ row.sort_reason_label }}</template></el-table-column>
+          <el-table-column prop="ask_count" label="次数" width="90" />
+        </el-table>
+      </section>
       <section class="panel-card insights-section">
         <h3 class="section-title">依据不足的问句（待核对）</h3>
         <el-table :data="noEvidence" v-loading="loading" empty-text="这段时间暂无已登记的依据不足问句">
@@ -144,6 +174,10 @@ const courseId = computed(() => String(route.params.courseId));
 const loading = ref(false);
 const frequent = ref([]);
 const noEvidence = ref([]);
+const themes = ref([]);
+const clues = ref([]);
+const metricContract = ref("");
+const retentionDays = ref(0);
 const trend = ref([]);
 const summary = ref(null);
 const windowStart = ref(null);
@@ -183,6 +217,10 @@ function hoursAgo(hours) {
   return new Date(Date.now() - hours * 60 * 60 * 1000);
 }
 
+function pct(rate) {
+  return `${Math.round(Number(rate) * 1000) / 10}%`;
+}
+
 function formatTime(value) {
   if (!value) return "—";
   const date = new Date(value);
@@ -215,7 +253,13 @@ async function loadInsights() {
   try {
     const data = await api(`/courses/${courseId.value}/insights${appliedQuery.value}`);
     frequent.value = data.frequent || [];
-    noEvidence.value = data.no_evidence || [];
+    noEvidence.value = data.no_evidence || []
+    themes.value = data.themes || []
+    clues.value = data.clues || []
+    metricContract.value = data.metric_contract || "metrics-v1"
+    retentionDays.value = data.retention_days || 0
+    windowStart.value = data.window_start
+    windowEnd.value = data.window_end
     trend.value = data.trend || [];
     summary.value = data.summary;
     windowStart.value = data.window_start;

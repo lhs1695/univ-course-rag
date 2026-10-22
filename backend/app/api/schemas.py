@@ -144,7 +144,12 @@ class InsightsSummary(BaseModel):
     non_student_attempts: int
     unknown_role_attempts: int
     knowledge_attempts: int
+    distinct_student_questions: int
+    cited_answer_rate: float | None = None
     no_evidence_rate: float | None
+    failure_rate: float | None = None
+    rate_denominator: str = "student_attempts"
+    sample_limited: bool = False
 
 
 class InsightsTrendPoint(BaseModel):
@@ -155,14 +160,36 @@ class InsightsTrendPoint(BaseModel):
     unknown_outcome: int
 
 
+class InsightThemeOut(BaseModel):
+    label: str
+    source: Literal["exact_normalize"]
+    status: Literal["candidate"]
+    kind: Literal["no_evidence", "cited_repeat"]
+    ask_count: int
+    distinct_questions: int
+    sort_reason: str
+    sort_reason_label: str
+
+
+class InsightClueOut(BaseModel):
+    title: str
+    trigger: str
+    trigger_label: str
+    ask_count: int
+    status: Literal["pending_review", "pending_ops"]
+
+
 class InsightsResponse(BaseModel):
     retention_days: int
     window_start: datetime
     window_end: datetime
+    metric_contract: str = "metrics-v1"
     summary: InsightsSummary
     trend: list[InsightsTrendPoint]
     frequent: list[FrequentQuestionOut]
     no_evidence: list[NoEvidenceQuestionOut]
+    themes: list[InsightThemeOut] = []
+    clues: list[InsightClueOut] = []
 
 
 class QuestionGroupingRequest(BaseModel):

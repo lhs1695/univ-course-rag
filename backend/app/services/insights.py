@@ -11,6 +11,7 @@ from app.models.course import CourseMemberRole
 from app.models.query_log import QueryLog, QueryOutcome
 
 NORMALIZE_MAX_CHARS = 200
+SAMPLE_LIMIT_N = 30  # metrics-v1 low-sample gate
 SHANGHAI = timezone(timedelta(hours=8), name="Asia/Shanghai")
 
 
@@ -66,33 +67,43 @@ def aggregate_course_insights(
         QueryLog.created_at >= window_start,
         QueryLog.created_at < window_end,
     )
-    listed_query = case((and_(
+    reviewable = and_(
         QueryLog.member_role_at_ask == CourseMemberRole.student.value,
         QueryLog.outcome.in_([QueryOutcome.cited_answer.value, QueryOutcome.no_evidence.value]),
         # Missing-context follow-ups and meaningless inputs are not reviewable course questions.
         or_(QueryLog.error_code.is_(None), QueryLog.error_code.not_in(["NEEDS_CONTEXT", "INVALID_QUESTION"])),
-    ), QueryLog.query), else_=None)
-    # One statement keeps totals and lists consistent if another attempt commits meanwhile.
-    # Do not load identities or non-student/unknown question text.
+    )
+    listed_query = case((reviewable, QueryLog.query), else_=None)
+    student_query = case(
+        (QueryLog.member_role_at_ask == CourseMemberRole.student.value, QueryLog.query),
+        else_=None,
+    )
     bucket = _local_day(QueryLog.created_at, db.get_bind().dialect.name)
     counts = db.execute(
         select(
-            QueryLog.member_role_at_ask, QueryLog.outcome, listed_query, bucket,
+            QueryLog.member_role_at_ask, QueryLog.outcome, listed_query, student_query, bucket,
             func.count(), func.max(QueryLog.created_at),
         )
         .where(*scope)
-        .group_by(QueryLog.member_role_at_ask, QueryLog.outcome, listed_query, bucket)
+        .group_by(
+            QueryLog.member_role_at_ask, QueryLog.outcome, listed_query, student_query, bucket,
+        )
     ).all()
     summary = dict.fromkeys((
         "recorded_attempts", "student_attempts", "cited_answer", "no_evidence", "failure",
         "unknown_outcome", "non_student_attempts", "unknown_role_attempts",
     ), 0)
     frequent_counts: dict[str, int] = defaultdict(int)
+    distinct_queries: set[str] = set()
     no_evidence_groups: dict[str, dict] = {}
     trend_counts: dict[datetime, dict[str, int]] = defaultdict(
         lambda: dict.fromkeys(("cited_answer", "no_evidence", "failure", "unknown_outcome"), 0)
     )
-    for role, outcome, query, day_value, count, last_at in counts:
+    for role, outcome, query, student_query_text, day_value, count, last_at in counts:
+        if role == CourseMemberRole.student.value:
+            distinct_key = normalize_query(student_query_text or "")
+            if distinct_key:
+                distinct_queries.add(distinct_key)
         summary["recorded_attempts"] += count
         if role == CourseMemberRole.student.value:
             summary["student_attempts"] += count
@@ -113,38 +124,95 @@ def aggregate_course_insights(
             group = no_evidence_groups.setdefault(key, {"count": 0, "last_asked_at": last_at})
             group["count"] += count
             group["last_asked_at"] = max(group["last_asked_at"], last_at)
-    denominator = summary["cited_answer"] + summary["no_evidence"]
-    summary["knowledge_attempts"] = denominator
-    summary["no_evidence_rate"] = summary["no_evidence"] / denominator if denominator else None
+    knowledge = summary["cited_answer"] + summary["no_evidence"]
+    summary["knowledge_attempts"] = knowledge
+    student_n = summary["student_attempts"]
+    summary["distinct_student_questions"] = len(distinct_queries)
+    if student_n:
+        summary["cited_answer_rate"] = summary["cited_answer"] / student_n
+        summary["no_evidence_rate"] = summary["no_evidence"] / student_n
+        summary["failure_rate"] = summary["failure"] / student_n
+    else:
+        summary["cited_answer_rate"] = None
+        summary["no_evidence_rate"] = None
+        summary["failure_rate"] = None
+    summary["rate_denominator"] = "student_attempts"
+    summary["sample_limited"] = student_n < SAMPLE_LIMIT_N
 
-    frequent = [
-        {
-            "query": query,
-            "count": count,
-        }
-        for query, count in frequent_counts.items()
-    ]
+    frequent = [{"query": query, "count": count} for query, count in frequent_counts.items()]
     frequent.sort(key=lambda row: (-row["count"], row["query"]))
 
     no_evidence = [
-        {
-            "query": query,
-            "count": group["count"],
-            "last_asked_at": group["last_asked_at"],
-        }
+        {"query": query, "count": group["count"], "last_asked_at": group["last_asked_at"]}
         for query, group in no_evidence_groups.items()
     ]
     no_evidence.sort(key=lambda row: (-row["last_asked_at"].timestamp(), -row["count"], row["query"]))
+
+    themes = []
+    for row in no_evidence[:20]:
+        themes.append({
+            "label": row["query"],
+            "source": "exact_normalize",
+            "status": "candidate",
+            "kind": "no_evidence",
+            "ask_count": row["count"],
+            "distinct_questions": 1,
+            "sort_reason": "no_evidence_repeat",
+            "sort_reason_label": "依据不足重复出现（待核对，不等于资料缺失）",
+        })
+    for row in frequent[:20]:
+        if row["count"] < 2:
+            continue
+        themes.append({
+            "label": row["query"],
+            "source": "exact_normalize",
+            "status": "candidate",
+            "kind": "cited_repeat",
+            "ask_count": row["count"],
+            "distinct_questions": 1,
+            "sort_reason": "repeated_question",
+            "sort_reason_label": "相同问句重复提问（可能为复习，不代表盲区）",
+        })
+    themes.sort(key=lambda row: (0 if row["kind"] == "no_evidence" else 1, -row["ask_count"], row["label"]))
+
+    clues = []
+    for row in no_evidence[:10]:
+        clues.append({
+            "title": row["query"],
+            "trigger": "no_evidence_repeat",
+            "trigger_label": "依据不足次数较高",
+            "ask_count": row["count"],
+            "status": "pending_review",
+        })
+    for row in frequent[:10]:
+        if row["count"] < 3:
+            continue
+        clues.append({
+            "title": row["query"],
+            "trigger": "high_repeat",
+            "trigger_label": "高频重复问句",
+            "ask_count": row["count"],
+            "status": "pending_review",
+        })
+    if summary["failure"] >= max(3, student_n // 10) and summary["failure"] > 0:
+        clues.insert(0, {
+            "title": "系统失败偏多",
+            "trigger": "system_failure_volume",
+            "trigger_label": "系统失败需运维/稳定性核查（不计知识缺口）",
+            "ask_count": summary["failure"],
+            "status": "pending_ops",
+        })
+
     covered = set(_local_days(window_start, window_end))
-    trend = [
-        {"bucket_start": day, **trend_counts[day]}
-        for day in sorted(covered | set(trend_counts))
-    ]
+    trend = [{"bucket_start": day, **trend_counts[day]} for day in sorted(covered | set(trend_counts))]
     return {
         "window_start": window_start,
         "window_end": window_end,
+        "metric_contract": "metrics-v1",
         "summary": summary,
         "trend": trend,
         "frequent": frequent,
         "no_evidence": no_evidence,
+        "themes": themes,
+        "clues": clues,
     }
