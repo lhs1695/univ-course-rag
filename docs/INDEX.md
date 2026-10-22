@@ -38,6 +38,7 @@
 | [tasks/README.md](tasks/README.md) | 任务卡约定 |
 | [tasks/_template.md](tasks/_template.md) | 可复制任务卡模板 |
 | [tasks/SESSION_STATE.md](tasks/SESSION_STATE.md) | 长任务会话外状态（目标/闸门/下一步） |
+| [tasks/backlog.md](tasks/backlog.md) | PLAN-00～10 开工顺序与暂缓项 |
 
 ## 历史与材料（非结题 SSOT）
 

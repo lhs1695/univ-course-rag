@@ -19,4 +19,4 @@
 | 路线图 | [implementation-plan.md](../implementation-plan.md) |
 | 本卡 | `docs/tasks/*.md`（开工与勾选） |
 
-阶段 2 将由 Codex 把 PLAN 拆成具体任务卡；本目录阶段 1 先落模板与状态文件。
+阶段 2 已生成 [backlog](backlog.md) 与 PLAN-00～10 任务卡；按 backlog 的依赖和建议顺序开工，PLAN-11～13 暂缓。所有卡均为待执行，ready 不代表已实现或已获高成本动作授权。

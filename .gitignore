@@ -34,3 +34,5 @@ corpus/local/**
 # Office lock / temp files
 ~$*
 *.tmp
+.codex-prompt*.txt
+.codex-last*.txt

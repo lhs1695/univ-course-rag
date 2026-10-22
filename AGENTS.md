@@ -17,7 +17,7 @@
 - 先 `git status`；禁止 reset/checkout/restore 覆盖用户未提交工作；禁止无关批量 add；**禁止默认 push**（用户点名才推）。
 - 验收通过后本地 Conventional Commit；纯报告无改动可不提交。
 - 复用顺序：成熟 API/组件 → 合法源码薄适配 → 本地实现；记录对象与剩余工作。禁止 LangChain/LlamaIndex/Haystack 整体重构；禁止换掉 PostgreSQL+pgvector；禁止第二套完整 RAG 管线。
-- 小改：本仓 coding bot；其余：Codex CLI（实现 `gpt-6.1-sol` / 子代理 `gpt-6-luna`，思考 medium）。流程见 skill `univ-course-rag-dev-loop`。
+- 小改：本仓 coding bot；其余：Codex CLI（实现 `gpt-6.1-sol` / 子代理 `gpt-6-luna`，思考 high）。流程见 skill `univ-course-rag-dev-loop`。
 - 不要每会话通读全部 docs/；按任务卡指针读。改功能同步改受影响合同与任务卡。
 - 搜索排除 `.venv`、`node_modules`、构建产物与真资料大目录。
 
