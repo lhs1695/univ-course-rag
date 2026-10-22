@@ -29,6 +29,10 @@
 
 限制：本轮为开发者核验，样本仅 22 题；`PROB-F02` 在两种策略下均应答题却返回 `NO_EVIDENCE`，根因未定位；Keyword-only 候选未进入最终 evidence。**不得合成单一准确率或宣称 Hybrid 整体显著优于 Dense。** Hybrid 历史 JSON 的耗时包含诊断重复检索，不与 Dense 耗时直接比较；供应商人民币账单未核，禁止估算。
 
+## PLAN-07 regression
+
+2026-10-22：[检索与证据质量回归](retrieval-evidence-regression.md)复核既有 Dense/Hybrid JSON 与题集指纹，登记 PROB-F02 分层假说、keyword-only 保守准入及引用支持/严格页命中的分母差异，并补充 Fake runner/门控测试。新增产品云调用 0 次；默认 Dense、rerank 关。无新真实复跑、无独立核验；PROB-F02 未修复，根因未完全定位。上方中期数字保留，不作为本次新增质量结果。
+
 ## 其他证据与历史
 
 - Dense/Hybrid 实现与保守 cosine 门：[`03-Dense-vs-Hybrid评估.md`](archive/midterm-evidence-notes/03-Dense-vs-Hybrid评估.md)（已迁 archive；现行结论见上表与 `retrieval-compare`）。

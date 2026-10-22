@@ -287,6 +287,27 @@ def status_from_generation(generation_status: str) -> str:
     return "no_evidence"
 
 
+def summarize_citation_metrics(items: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    """Keep support and strict page judgments separate on answered answerable cases.
+
+    N is the eligible case count, not the reviewed count. Pending/unclear/missing
+    judgments never count as passes; n/N is incomplete until reviewed == N.
+    This only counts verifier labels; it does not infer support from citations.
+    """
+    answered = [
+        item for item in items
+        if item.get("should_refuse") is False and item.get("status") == "answered"
+    ]
+    return {
+        field: {
+            "n": sum(item.get(field) == "pass" for item in answered),
+            "N": len(answered),
+            "reviewed": sum(item.get(field) in ("pass", "fail") for item in answered),
+        }
+        for field in ("citation_supports", "page_ok")
+    }
+
+
 def run_case(db, case, course_id, embedder, llm, strategy: str, tracker: UsageTracker) -> dict:
     query = case["query"]
     started = time.perf_counter()
@@ -629,6 +650,7 @@ def main() -> int:
             "refuse_correct": None,
             "note": "分层人工指标在核验通过后填写；此处仅机器状态计数",
         },
+        "answered_citation_metrics": summarize_citation_metrics(items),
         "usage": tracker.as_dict(),
         "items": items,
         "failures": [x for x in items if x["status"] == "system_error"],

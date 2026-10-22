@@ -34,6 +34,7 @@
 | [架构说明.md](架构说明.md) | 模块、表、时序、配置对照 |
 | [engineering.md](engineering.md) | 现行组件边界摘要 |
 | [evaluation-results.md](evaluation-results.md) | 评测登记与口径（含 22 题分层） |
+| [retrieval-evidence-regression.md](retrieval-evidence-regression.md) | PLAN-07 历史证据分析与 Fake 回归；真实复跑/独立核验缺口 |
 | [中期演示运行卡.md](中期演示运行卡.md) | 演示切库/启动/固定问句（文件名历史遗留） |
 
 ## 任务与会话外状态
