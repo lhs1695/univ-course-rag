@@ -13,6 +13,7 @@ from app.models import (  # noqa: F401
     CourseMember,
     Document,
     IngestJob,
+    InsightReview,
     QueryLog,
 )
 from app.models.user import User, UserRole

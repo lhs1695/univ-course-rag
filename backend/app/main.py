@@ -13,6 +13,7 @@ from app.api.auth import router as auth_router
 from app.api.courses import router as courses_router
 from app.api.documents import router as documents_router
 from app.api.insights import router as insights_router
+from app.api.insight_reviews import router as insight_reviews_router
 from app.api.query_log_retention import router as query_log_retention_router
 from app.api.search import router as search_router
 from app.api.users import router as admin_users_router
@@ -107,6 +108,7 @@ app.include_router(documents_router)
 app.include_router(search_router)
 app.include_router(ask_router)
 app.include_router(insights_router)
+app.include_router(insight_reviews_router)
 app.include_router(query_log_retention_router)
 
 
