@@ -4,8 +4,8 @@
 
 ## 当前目标
 
-阶段 1：文档体系治理（`docs/INDEX.md`、瘦 `AGENTS.md`、`docs/tasks/` 骨架）→ 本地提交。  
-下一阶段（待用户点头后）：Codex 按 PLAN-00～10 拆可勾选任务卡（阶段 2）。
+阶段 1 **已完成**（本地 `5d0c638`）：`docs/INDEX.md`、瘦 `AGENTS.md`、`docs/tasks/` 模板与状态。  
+下一阶段（待用户点头）：**阶段 2** — Codex 按 PLAN-00～10 拆可勾选任务卡到 `docs/tasks/`。
 
 ## 已定架构 / 约束
 
@@ -23,9 +23,9 @@
 
 ## 下一步命令 / 动作
 
-1. 完成阶段 1 本地提交
-2. 用户确认后开阶段 2：Codex 生成 `docs/tasks/PLAN-*.md` backlog
+1. 用户确认后开阶段 2：Codex 生成 `docs/tasks/PLAN-*.md` + backlog
+2. 默认从 PLAN-00 / PLAN-01 / PLAN-02 顺序拆卡（可改）
 
 ## 活跃 diff / 进行中文件
 
-- 阶段 1 已落盘：`docs/INDEX.md`、`docs/tasks/*`、瘦身 `AGENTS.md`、交接/workflow 指针。
+- 无
