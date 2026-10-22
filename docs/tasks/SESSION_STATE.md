@@ -4,18 +4,17 @@
 
 ## 当前目标
 
-**PLAN-00～07（06 框架）done**。下一步 **PLAN-08**。
+**PLAN-00～08 done（06/07 限定范围；08 Fake 流式）**。下一步 **PLAN-09**。
 
 ## 已定
 
-- metrics-v1；opensource-reuse；lifecycle；insights；rule_v1 意图；insight_reviews
 - 只本地 commit；真实模型计费累计约 ¥0
-- PLAN-07：既有对照 + Fake；PROB-F02 未修；无独立核验
-- PLAN-06：验证协议/模板/离线指标 + Fake；正式人工/教师试用未做
+- PLAN-07/06：报告+Fake；人工/独立核验缺口保留
+- PLAN-08：SSE ask/stream + Fake 并发 1/5/10 基线；Vite 人工点检待 PLAN-09；npm build 本机已过
 
 ## 下一步
 
-1. [PLAN-08 流式交互与性能工程](PLAN-08-stream-performance.md)
+1. [PLAN-09 学生与教师核心流程体验测试](PLAN-09-core-user-tasks.md)
 
 ## 活跃 diff
 

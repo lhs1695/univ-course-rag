@@ -49,7 +49,7 @@ function responseError(status, body) {
 }
 
 export async function api(path, options = {}) {
-  const { json, formData, timeoutMs = 90000, signal, ...rest } = options;
+  const { json, formData, timeoutMs = 90000, signal, onEvent, ...rest } = options;
   const method = (rest.method || "GET").toUpperCase();
   const writeKey = ["GET", "HEAD"].includes(method) ? null : `${method}:${path}`;
   if (writeKey && inFlightWrites.has(writeKey)) {
@@ -59,7 +59,7 @@ export async function api(path, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const headers = { Accept: "application/json", ...(rest.headers || {}) };
+    const headers = { Accept: onEvent ? "text/event-stream" : "application/json", ...(rest.headers || {}) };
     let body = rest.body;
     if (json !== undefined) {
       headers["Content-Type"] = "application/json";
@@ -70,6 +70,7 @@ export async function api(path, options = {}) {
       signal: signal ? AbortSignal.any([signal, controller.signal]) : controller.signal,
     });
     if (response.status === 204) return null;
+    if (response.ok && onEvent) return await readAskStream(response, onEvent);
     let payload;
     try { payload = await response.json(); }
     catch (error) {
@@ -99,4 +100,44 @@ export async function api(path, options = {}) {
     clearTimeout(timer);
     if (writeKey) inFlightWrites.delete(writeKey);
   }
+}
+
+async function readAskStream(response, onEvent) {
+  if (!response.body || !response.headers.get("content-type")?.includes("text/event-stream")) {
+    throw new ApiError("服务返回格式异常，请稍后重试。", response.status, "INVALID_RESPONSE");
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+      // Normalize after decoding so UTF-8 and SSE frame boundaries may span reads.
+      let boundary;
+      while ((boundary = /\r?\n\r?\n/.exec(buffer))) {
+        const frame = buffer.slice(0, boundary.index);
+        buffer = buffer.slice(boundary.index + boundary[0].length);
+        const lines = frame.split(/\r?\n/);
+        const event = lines.find(line => line.startsWith("event:"))?.slice(6).trim();
+        const data = lines.filter(line => line.startsWith("data:"))
+          .map(line => line.slice(5).trimStart()).join("\n");
+        if (!data) continue;
+        let payload;
+        try { payload = JSON.parse(data); }
+        catch { throw new ApiError("回答流格式异常，请重试。", 0, "INVALID_RESPONSE"); }
+        if (event === "error") throw responseError(503, payload);
+        if (event === "final") return payload;
+        if (event === "phase" || event === "delta") onEvent(event, payload);
+      }
+      if (done) throw new ApiError("回答连接已中断，请重试本次问题。", 0, "STREAM_INCOMPLETE");
+    }
+  } finally {
+    try { await reader.cancel(); } catch { /* Already aborted or closed. */ }
+    reader.releaseLock();
+  }
+}
+
+export function askStream(path, options) {
+  return api(`${path}/stream`, options);
 }

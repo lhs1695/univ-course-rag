@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Generator
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -9,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
 from app.models.document import Chunk, Document
-from app.services.llm import LLM, parse_cited_ids
+from app.services.llm import LLM, StreamingLLM, parse_cited_ids, text_chunks
 from app.services.question_shape import evidence_context_order
 from app.services.retrieve import SearchHit
 
@@ -170,7 +171,7 @@ def filter_citations(answer: str, allowed: set[UUID] | frozenset[UUID]) -> list[
     return [cited for cited in parse_cited_ids(answer) if cited in allowed]
 
 
-def generate_answer_result(
+def _generation_context(
     db: DbSession,
     query: str,
     hits: list[SearchHit],
@@ -178,7 +179,7 @@ def generate_answer_result(
     *,
     previous_question: str | None = None,
     previous_answer: str | None = None,
-) -> GeneratedAnswer:
+) -> AskContext:
     # Recheck current participation before constructing evidence from cached hits.
     chunks = {
         chunk.id: chunk for chunk in db.scalars(
@@ -189,18 +190,64 @@ def generate_answer_result(
             )
         )
     }
-    context = assemble_ask_context(
+    return assemble_ask_context(
         query, hits, chunks,
         previous_question=previous_question, previous_answer=previous_answer,
     )
-    if not context.source_ids:
-        return GeneratedAnswer("", [], {})
-    answer = llm.generate(context.prompt).strip()
+
+
+def _validated_answer(answer: str, context: AskContext) -> GeneratedAnswer:
+    answer = answer.strip()
     if answer == NO_EVIDENCE:
         return GeneratedAnswer("", [], context.source_texts)
     return GeneratedAnswer(
         answer, filter_citations(answer, context.source_ids), context.source_texts
     )
+
+
+def generate_answer_result(
+    db: DbSession, query: str, hits: list[SearchHit], llm: LLM,
+    *, previous_question: str | None = None, previous_answer: str | None = None,
+) -> GeneratedAnswer:
+    context = _generation_context(
+        db, query, hits, llm,
+        previous_question=previous_question, previous_answer=previous_answer,
+    )
+    if not context.source_ids:
+        return GeneratedAnswer("", [], {})
+    return _validated_answer(llm.generate(context.prompt), context)
+
+
+def generate_answer_result_stream(
+    db: DbSession, query: str, hits: list[SearchHit], llm: LLM,
+    *, previous_question: str | None = None, previous_answer: str | None = None,
+) -> Generator[None, None, GeneratedAnswer]:
+    """Yield cancellation checkpoints, retaining text until citation admission.
+
+    A close propagates into the optional provider iterator. Synchronous provider
+    calls cannot be interrupted mid-call and retain their existing timeout bound.
+    """
+    context = _generation_context(
+        db, query, hits, llm,
+        previous_question=previous_question, previous_answer=previous_answer,
+    )
+    if not context.source_ids:
+        return GeneratedAnswer("", [], {})
+    chunks = (
+        llm.generate_stream(context.prompt) if isinstance(llm, StreamingLLM)
+        else text_chunks(llm.generate(context.prompt))
+    )
+    parts = []
+    try:
+        for chunk in chunks:
+            parts.append(chunk)
+            yield None
+        return _validated_answer("".join(parts), context)
+    finally:
+        close = getattr(chunks, "close", None)
+        if close:
+            close()
+        parts.clear()
 
 
 def generate_answer(

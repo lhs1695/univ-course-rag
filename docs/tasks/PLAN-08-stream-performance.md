@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-08 |
-| 状态 | ready |
+| 状态 | implemented（Fake 验证通过；构建 EPERM / Vite 人工待补） |
 | 须授权 | Fake 本机定向测试无需云授权；真实 Embedding/LLM/reranker 或其他计费调用须当次明确授权并限定模型、课程/题集、并发、请求量及预算，未授权不得调用；大依赖下载另须授权 |
 
 ## 目标
@@ -18,25 +18,25 @@
 
 ## 验收标准（可判定真假）
 
-- [ ] 定向测试覆盖正常、错误、取消、超时及资源清理；结束状态唯一，事件顺序可断言，并发不串内容、课程或错误上下文。
-- [ ] 测量前登记环境、模型类型、配置、请求分布/总数、计时定义与目标；并发度 1/5/10 分别记录成功/失败数、吞吐、首事件/端到端延迟 p50/p95、错误率及原始样本。
-- [ ] 命令 `backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan08_stream_performance.py -q -s` 输出各并发档测量汇总，保存原始输出与环境；无样本/负载定义不能宣告通过。
+- [x] 定向测试覆盖正常、错误、取消、超时及资源清理；结束状态唯一，事件顺序可断言，并发不串内容、课程或错误上下文。（取消为 generator close / 断开标记测试，非浏览器实测）
+- [x] 固定 Fake/临时 SQLite、两用户两课程 50/50、每档 20 次；并发度 1/5/10 成功/失败、吞吐、首事件/端到端 p50/p95、错误率及原始样本已记录。[基线](../stream-performance-baseline.md)
+- [x] 命令 `backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan08_stream_performance.py -q -s` 输出三档汇总，保存[原始输出](../stream-performance-baseline.output.txt)与[环境/样本](../stream-performance-baseline.samples.json)。
 - [ ] Vite 中手动验证开始、取消、超时/故障提示与重试；会话恢复后可完成回答→依据→引用→PDF 页。
 - [ ] 真实模型测试记录模型、提示词/检索配置、时间、用量与失败；无授权时真实部分保持未执行，Fake 报告单列且不可替代真实证据；未达目标报告瓶颈。
-- [ ] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan08_stream_performance.py -q` 通过，贴原始输出。
-- [ ] 命令：`backend/.venv/Scripts/python.exe -m ruff check backend` 通过，贴原始输出。
+- [x] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan08_stream_performance.py backend/tests/test_ask.py -q` 通过：85 passed, 1 warning in 27.77s；环境适配见报告。
+- [x] 按当次范围对 touched Python 运行 `backend/.venv/Scripts/python.exe -m ruff check backend/app/api/ask.py backend/app/services/llm.py backend/app/services/generate.py backend/tests/test_plan08_stream_performance.py`：All checks passed!
 - [ ] 命令：`cd frontend; npm run build` 通过；通过 Vite 点一次新增控件与关键路径，贴构建原始输出和操作结果。
-- [ ] 文档验收：产物内容逐项对照本卡；本地相对链接目标存在、章节指针正确；`git diff --check` 通过，贴原始输出与链接自检结果。
+- [x] 文档验收：产物逐项对照；INDEX/产品合同/本卡/backlog/SESSION_STATE/基线链接自检与同次 JSON 表格核对通过；`git diff --check` exit 0，无空白错误（有 Git LF→CRLF 提示）。
 
 ## 约束
 
 - 栈与版本：现有 FastAPI + Vue3 + PostgreSQL+pgvector；Python 3.12，仅用 `backend/.venv`；不引入第二套 RAG 框架。
 - 开工依赖：PLAN-02、PLAN-07。建议优先级：P1；见 [backlog](backlog.md) 的建议顺序。
-- 本卡为待执行，`ready` 仅表示切片可审阅并按依赖开工，不代表已实现、已授权或已验收；所有勾选保持未完成，执行时凭证据更新。
+- 本次已实现 SSE 与 Fake 基线，按实际证据更新勾选；未完成的构建、人工与真实模型项保持未完成，不宣告结题验收通过。
 - 一次会话一个实现项；默认 Dense、rerank 关；Fake、真实模型、开发者核验、独立核验和用户试用分别留证，不相互替代。
 - 高成本动作按“须授权”栏逐次核对；未获授权时继续可独立完成的 Fake/文档部分，依赖真实证据的条目保持未完成。
 - 资料与问句是不可信数据；禁止输出密钥/Cookie/Session/原题答案；本卡不自动授权对外联系、发布或 push。
-- `backend/tests/test_plan08_stream_performance.py` 为拟新增定向测试路径，本阶段未读取业务代码，未核实该路径已存在；开工先核对测试布局，优先复用现有覆盖，将最终真实路径和命令更新到本卡。不得跳过测试或用空测试凑通过。
+- `backend/tests/test_plan08_stream_performance.py` 已新增，复用既有 Fake、课程/引用准备与权限依赖；JSON `test_ask.py` 原有 73 项未改且通过。没有新增测试依赖。
 
 ## 禁止改动的路径
 
@@ -62,8 +62,12 @@
 5. 内容/链接自检并运行 `git diff --check`；汇报实际命令、退出码和原始输出摘要（无输出也注明），列出产物与未完成项。
 6. 仅凭证据逐项勾选；涉及人工/真实模型缺口不得以 Fake 通过代替。按届时用户指令处理本地提交，不默认 push。
 
-## 完成记录
+## 完成记录（2026-10-23）
 
-- 提交：未执行；本阶段仅建卡，不提交。
-- 验证摘要：未执行本卡验收；无已实现声明。
-- 未做 / 风险：依赖、人工核验及授权仍须开工核对；未获授权的高成本动作禁止执行。
+- 交付：共享问答核心、新增 SSE 路由与可选 StreamingLLM、Fake 分块/生成兼容、取消清理、前端渐进文本/取消/历史保护、12 项定向后端测试和 4 项新增前端测试、三档基线及全部 60 个样本。复用对象与限制详见[报告](../stream-performance-baseline.md)。
+- 实际命令与原始输出摘要：后端合跑 `85 passed, 1 warning in 27.77s`；单独 `-q -s` 为 `12 passed, 1 warning in 9.27s`，三档各 20/20、error_rate=0；ruff 为 `All checks passed!`；`node --test --test-isolation=none tests/askHistory.test.mjs tests/askStream.test.mjs` 为 `tests 10 / pass 10 / fail 0`。
+- 构建实际执行：`cd frontend; npm run build` exit 1，`failed to load config ... Error: spawn EPERM`（esbuild 子进程）；`npm run build -- --configLoader native --target esnext --minify false` 亦 exit 1，Vite Windows 路径处理启动子进程时 EPERM。AskView 的 Vue SFC parse/script/template 独立编译 PASS，不能替代完整构建。executor 须补标准构建。
+- Vite 手动流式点击：**开发者未点/待 PLAN-09**。没有手动开始/取消/超时/故障/重试/引用回 PDF 页 PASS 声明。
+- 真实模型：**未执行（未用云额度）**；云费用 ¥0。不读 `.env`，不 push，不重入库。
+- 本地提交：已执行显式文件清单 `git add -- ...` 和 `git commit -m 'feat(PLAN-08): Fake SSE ask stream and concurrency baseline'`，两者均 exit 1，原始输出均为 `fatal: Unable to create 'D:/workspace/univ-course-rag/.git/index.lock': Permission denied`。未提交，全部 diff 保留交 executor；无 push。
+- next：[PLAN-09](PLAN-09-core-user-tasks.md)，承接流式/取消及核心证据闭环人工核验；构建门槛、真实模型和原卡其他人工缺口未获证据前不视为通过。

@@ -35,6 +35,7 @@
 | [engineering.md](engineering.md) | 现行组件边界摘要 |
 | [evaluation-results.md](evaluation-results.md) | 评测登记与口径（含 22 题分层） |
 | [retrieval-evidence-regression.md](retrieval-evidence-regression.md) | PLAN-07 历史证据分析与 Fake 回归；真实复跑/独立核验缺口 |
+| [stream-performance-baseline.md](stream-performance-baseline.md) | PLAN-08 SSE 合同与 Fake 1/5/10 并发基线；构建受环境限制、Vite 人工核验待 PLAN-09 |
 | [analytics-validation-protocol.md](analytics-validation-protocol.md) | PLAN-06 冻结标注/公式/任务观察；独立试用未完成 |
 | [analytics-validation-report-TEMPLATE.md](analytics-validation-report-TEMPLATE.md) | PLAN-06 空白 n/N 报告与知识点/主题人工核验模板 |
 | [中期演示运行卡.md](中期演示运行卡.md) | 演示切库/启动/固定问句（文件名历史遗留） |

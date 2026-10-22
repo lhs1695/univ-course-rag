@@ -31,9 +31,12 @@ export function createAskHistory() {
   let nextId = 0;
   const courses = new Map();
   const listeners = new Set();
+  const controllers = new Map();
   const notify = () => listeners.forEach(listener => listener());
   function clear() {
     generation++;
+    controllers.forEach(controller => controller.abort());
+    controllers.clear();
     courses.clear();
     ownerId = null;
     notify();
@@ -62,24 +65,40 @@ export function createAskHistory() {
       json.previous_question = previous.question;
       json.previous_answer = previous.result?.answer || '';
     }
-    const round = { id: ++nextId, question: query, result: null, failure: '', pending: true, startedAt: Date.now() };
+    const round = { id: ++nextId, question: query, result: null, failure: '', pending: true,
+      startedAt: Date.now(), text: '', phase: 'retrieve' };
+    const controller = new AbortController();
+    controllers.set(round.id, controller);
     const requestGeneration = generation;
     state.rounds.push(round);
     state.selectedId = round.id;
     notify();
     try {
-      const result = await request(`/courses/${courseId}/ask`, { method: 'POST', json, timeoutMs: 300000 });
+      const result = await request(`/courses/${courseId}/ask`, {
+        method: 'POST', json, timeoutMs: 300000, signal: controller.signal,
+        onEvent(event, payload) {
+          if (generation !== requestGeneration || controller.signal.aborted) return;
+          if (event === 'delta') round.text += payload.text;
+          if (event === 'phase') round.phase = payload.phase;
+          notify();
+        },
+      });
       if (generation === requestGeneration) round.result = result;
     } catch (error) {
       if (generation === requestGeneration) round.failure = error?.message || answerFailureMessage;
     } finally {
+      controllers.delete(round.id);
       if (generation === requestGeneration) {
         round.pending = false;
         notify();
       }
     }
   }
-  return { course, ask, select, clear, subscribe(listener) {
+  function cancel(userId, courseId) {
+    const state = course(userId, courseId);
+    state.rounds.filter(round => round.pending).forEach(round => controllers.get(round.id)?.abort());
+  }
+  return { course, ask, select, clear, cancel, subscribe(listener) {
     listeners.add(listener);
     return () => listeners.delete(listener);
   } };

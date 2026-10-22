@@ -5,7 +5,7 @@
       <div class="question-sheet-label"><h2 id="question-title">我想问</h2><span>{{ readyDocumentCount }} 份可检索资料</span></div>
       <el-form @submit.prevent="submitQuestion">
         <el-input v-model="query" id="question-input" aria-label="课程问题" aria-describedby="question-help" type="textarea" :rows="3" maxlength="2000" show-word-limit placeholder="写下一个概念、一处困惑，或想进一步理解的问题…"/>
-        <div class="question-sheet-footer"><span id="question-help">一次聚焦一个疑问，回答更有方向。</span><el-button type="primary" native-type="submit" :loading="asking" :disabled="asking || !query.trim()">{{ asking ? '正在寻找依据' : '查阅并回答' }}<span class="button-glyph" aria-hidden="true">↗</span></el-button></div>
+        <div class="question-sheet-footer"><span id="question-help">一次聚焦一个疑问，回答更有方向。</span><el-button v-if="asking" @click="cancelQuestion">取消回答</el-button><el-button type="primary" native-type="submit" :loading="asking" :disabled="asking || !query.trim()">{{ asking ? '正在寻找依据' : '查阅并回答' }}<span class="button-glyph" aria-hidden="true">↗</span></el-button></div>
       </el-form>
     </section>
     <p class="desk-memory-note">本页保留本次问答与草稿，刷新后清空。新问题会携带上一轮上下文。</p>
@@ -13,7 +13,7 @@
     <article v-if="selectedRound" class="answer-sheet" :aria-busy="selectedRound.pending" aria-labelledby="response-title">
       <div class="answer-question"><span>你的问题</span><h2>{{ selectedRound.question }}</h2></div>
       <div class="answer-title"><span class="answer-emblem" aria-hidden="true">课</span><h3 id="response-title">课内回答</h3><span v-if="result?.answer" class="answer-reminder">请结合原文核对</span></div>
-      <div v-if="selectedRound.pending" class="answer-content" role="status"><p>正在翻阅本课资料，整理与你的问题有关的依据…</p><p v-if="waitSeconds >= 3" class="desk-memory-note">已等待 {{ waitSeconds }} 秒，请保持页面打开。</p><el-skeleton :rows="4" animated/></div>
+      <div v-if="selectedRound.pending" class="answer-content" role="status"><p>{{ selectedRound.phase === 'generate' ? '正在整理回答，完成后可核对引用…' : '正在翻阅本课资料，寻找与你的问题有关的依据…' }}</p><p v-if="selectedRound.text" style="white-space: pre-wrap">{{ selectedRound.text }}</p><el-skeleton v-else :rows="4" animated/><p v-if="waitSeconds >= 3" class="desk-memory-note">已等待 {{ waitSeconds }} 秒，可取消本次回答。</p></div>
       <div v-else-if="failure" class="answer-content"><el-alert :title="failure" type="error" :closable="false"/><el-button :disabled="asking" @click="retryQuestion">重试本次问题</el-button></div>
       <div v-else-if="notice" class="answer-content"><el-alert :title="notice.message" :type="notice.type" :closable="false"/><p>{{ notice.type === 'error' ? '本次回答未能完成，请稍后重试。' : '试着补充概念名称、章节或更具体的描述，也可以先浏览课程资料。' }}</p><router-link :to="`/courses/${courseId}/documents`">浏览课程资料</router-link></div>
       <div v-else-if="result?.answer" class="answer-content"><AnswerBody :answer="result.answer" :citations="result.citations || []" @citation="focusCitation"/></div>
@@ -31,7 +31,7 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
-import { api } from "../api";
+import { api, askStream } from "../api";
 import { session } from "../session";
 import { questionDraft } from "../drafts";
 import { askHistory, answerNotice, roundStatus } from "../askHistory.js";
@@ -150,6 +150,7 @@ function retryQuestion() {
 }
 
 function askQuestion(text) {
-  return askHistory.ask(userId, courseId.value, text, api);
+  return askHistory.ask(userId, courseId.value, text, askStream);
 }
+function cancelQuestion() { askHistory.cancel(userId, courseId.value); }
 </script>

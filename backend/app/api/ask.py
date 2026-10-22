@@ -5,8 +5,11 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response
+import anyio
+from fastapi import APIRouter, Depends, Request, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session as DbSession
+from starlette.concurrency import run_in_threadpool
 
 from app.api.schemas import AskRequest, AskResponse, CitationOut
 from app.config import get_settings
@@ -19,9 +22,10 @@ from app.services.generate import (
     NO_EVIDENCE,
     NO_EVIDENCE_MESSAGE,
     generate_answer_result,
+    generate_answer_result_stream,
 )
 from app.services.keyword import KeywordLimitExceeded
-from app.services.llm import LLM, get_llm
+from app.services.llm import LLM, get_llm, text_chunks
 from app.services.query_expansion import (
     expand_calculation_subqueries,
     expand_subqueries,
@@ -95,6 +99,14 @@ def ask_course(
     reranker: Annotated[Reranker | None, Depends(get_reranker)],
     response: Response,
 ) -> AskResponse:
+    for event in _ask_events(body, access, db, embedder, llm, reranker, response):
+        if event is not None and event[0] == "final":
+            return event[1]
+    raise RuntimeError("ask did not produce a final result")
+
+
+def _ask_events(body, access, db, embedder, llm, reranker, response, *, stream=False):
+    yield "phase", {"phase": "retrieve"}
     started = time.perf_counter()
     asked_at = datetime.now(UTC)
     member_role_at_ask = access.member.role
@@ -183,11 +195,18 @@ def ask_course(
                 return hits
 
             def generate(hits):
-                return generate_answer_result(
-                    db, body.query, hits, llm,
-                    previous_question=previous_question or None,
-                    previous_answer=body.previous_answer if previous_question else None,
-                )
+                nonlocal llm_called
+                if not llm_called:
+                    yield "phase", {"phase": "generate"}
+                llm_called = True
+                args = (db, body.query, hits, llm)
+                kwargs = {
+                    "previous_question": previous_question or None,
+                    "previous_answer": body.previous_answer if previous_question else None,
+                }
+                if stream:
+                    return (yield from generate_answer_result_stream(*args, **kwargs))
+                return generate_answer_result(*args, **kwargs)
 
             def try_expansion(expand=expand_subqueries):
                 try:
@@ -219,8 +238,7 @@ def ask_course(
             elif not hits:
                 error_code = NO_EVIDENCE
             else:
-                llm_called = True
-                generated = generate(hits)
+                generated = yield from generate(hits)
                 answer, cited_ids = generated.answer, generated.cited_ids
                 source_texts = generated.source_texts
                 if not cited_ids:
@@ -229,8 +247,7 @@ def ask_course(
             if not cited_ids and not index_mismatch and term and term != body.query.strip():
                 hits = supplement(retrieve(term))
                 if hits:
-                    llm_called = True
-                    generated = generate(hits)
+                    generated = yield from generate(hits)
                     answer, cited_ids = generated.answer, generated.cited_ids
                     source_texts = generated.source_texts
                 error_code = None if cited_ids else NO_EVIDENCE
@@ -242,8 +259,7 @@ def ask_course(
                 expanded = try_expansion(expand_calculation_subqueries)
                 if expanded:
                     hits = supplement(expanded)
-                    llm_called = True
-                    generated = generate(hits)
+                    generated = yield from generate(hits)
                     answer, cited_ids = generated.answer, generated.cited_ids
                     source_texts = generated.source_texts
                     error_code = None if cited_ids else NO_EVIDENCE
@@ -253,8 +269,7 @@ def ask_course(
                 expanded = try_expansion()
                 if expanded:
                     hits = supplement(expanded)
-                    llm_called = True
-                    generated = generate(hits)
+                    generated = yield from generate(hits)
                     answer, cited_ids = generated.answer, generated.cited_ids
                     source_texts = generated.source_texts
                     error_code = None if cited_ids else NO_EVIDENCE
@@ -319,7 +334,7 @@ def ask_course(
         RETRIEVAL_STRATEGY: RETRIEVAL_STRATEGY_MESSAGE,
         RETRIEVAL_FAILED: RETRIEVAL_FAILED_MESSAGE,
     }
-    return AskResponse(
+    result = AskResponse(
         error_code=error_code,
         message=(
             upstream_failure.message
@@ -328,4 +343,70 @@ def ask_course(
         ),
         answer=answer,
         citations=citations,
+    )
+    if stream and result.answer:
+        for chunk in text_chunks(result.answer):
+            yield "delta", {"text": chunk}
+    yield "final", result
+
+
+def _next_event(events):
+    # StopIteration cannot cross an asyncio Future/threadpool boundary.
+    return next(events, ("end", None))
+
+
+async def stream_ask_events(request, body, access, db, embedder, llm, reranker):
+    response = Response()
+    events = _ask_events(body, access, db, embedder, llm, reranker, response, stream=True)
+    try:
+        while not await request.is_disconnected():
+            event = await run_in_threadpool(_next_event, events)
+            if await request.is_disconnected():
+                break
+            if event is None:  # Provider checkpoint; never send unvalidated text.
+                continue
+            name, payload = event
+            if name == "end":
+                break
+            if name == "final":
+                if response.status_code >= 400:
+                    name = "error"
+                    payload = {"error_code": payload.error_code, "message": payload.message}
+                else:
+                    payload = payload.model_dump(mode="json")
+            yield _sse(name, payload)
+            if name in {"final", "error"}:
+                break
+    except Exception:  # noqa: BLE001 - never expose provider/DB exception details.
+        logger.warning("ask_stream_failed")
+        if not await request.is_disconnected():
+            yield _sse("error", {
+                "error_code": "ASK_STREAM_FAILED", "message": "暂时无法完成这次回答，请稍后重试。",
+            })
+    finally:
+        # Starlette cancels the response task on disconnect. Finish the current
+        # bounded sync step before closing; never close an executing generator.
+        with anyio.CancelScope(shield=True):
+            await run_in_threadpool(events.close)
+            await run_in_threadpool(db.rollback)
+
+
+def _sse(event, payload):
+    return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+@router.post("/{course_id}/ask/stream")
+def ask_course_stream(
+    request: Request,
+    body: AskRequest,
+    access: Annotated[CourseAccess, Depends(require_course_member)],
+    db: Annotated[DbSession, Depends(get_db)],
+    embedder: Annotated[Embedder, Depends(get_embedder)],
+    llm: Annotated[LLM, Depends(get_llm)],
+    reranker: Annotated[Reranker | None, Depends(get_reranker)],
+) -> StreamingResponse:
+    return StreamingResponse(
+        stream_ask_events(request, body, access, db, embedder, llm, reranker),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

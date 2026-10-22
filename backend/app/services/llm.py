@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from typing import Protocol
+from collections.abc import Iterator
+from typing import Protocol, runtime_checkable
 from uuid import UUID
 
 from openai import APITimeoutError
@@ -17,6 +18,18 @@ _SOURCE_ID = re.compile(
 
 class LLM(Protocol):
     def generate(self, prompt: str) -> str: ...
+
+
+@runtime_checkable
+class StreamingLLM(LLM, Protocol):
+    """Optional capability; providers implementing only generate remain supported."""
+
+    def generate_stream(self, prompt: str) -> Iterator[str]: ...
+
+
+def text_chunks(text: str) -> Iterator[str]:
+    for start in range(0, len(text), 12):
+        yield text[start:start + 12]
 
 
 def parse_cited_ids(text: str) -> list[UUID]:
@@ -45,6 +58,9 @@ class FakeLLM:
         if not cited:
             return "依据来源作答。"
         return f"根据课内资料，[Source {cited[0]}]"
+
+    def generate_stream(self, prompt: str) -> Iterator[str]:
+        yield from text_chunks(self.generate(prompt))
 
 
 class DeepSeekLLM:
