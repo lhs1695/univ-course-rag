@@ -21,6 +21,38 @@ from app.services.upstream import UpstreamUnavailable
 
 MAX_QUESTIONS = 200
 MAX_QUERY_CHARS = 2000
+
+INTENT_CODES = (
+    "concept", "procedure", "example", "compare", "admin_oor", "other_uncertain",
+)
+
+_PROCEDURE = ("怎么", "如何", "步骤", "怎样", "流程", "方法")
+_EXAMPLE = ("例题", "举例", "计算", "求解", "求")
+_COMPARE = ("区别", "对比", "比较", "异同", "versus", "vs")
+_ADMIN = ("作业", "考试", "成绩", "交作业", "截止", "请假", "选课")
+_CONCEPT = ("什么是", "是什么", "定义", "含义", "概念", "为什么")
+
+
+def suggest_intent_candidate(text: str) -> dict:
+    """Rule-only intent suggestion; always candidate, never authoritative."""
+    q = (text or "").strip().lower()
+    code = "other_uncertain"
+    if any(k in q for k in _ADMIN):
+        code = "admin_oor"
+    elif any(k in q for k in _COMPARE):
+        code = "compare"
+    elif any(k in q for k in _PROCEDURE):
+        code = "procedure"
+    elif any(k in q for k in _EXAMPLE):
+        code = "example"
+    elif any(k in q for k in _CONCEPT):
+        code = "concept"
+    return {
+        "intent_code": code,
+        "intent_status": "candidate",
+        "intent_source": "rule_v1",
+    }
+
 MAX_TOTAL_CHARS = 200_000
 GROUPING_CONTRACT = "p5-complete-cosine-v1"
 
@@ -159,6 +191,7 @@ def group_course_questions(
             }
             for i in indices
         ]
+        intent = suggest_intent_candidate(samples[representative].query)
         groups.append({
             "kind": "candidate" if len(indices) > 1 else "singleton",
             "representative": samples[representative].query,
@@ -166,6 +199,7 @@ def group_course_questions(
             "distinct_questions": len(indices),
             "min_pair_similarity": float(1 - within.max()) if len(indices) > 1 else None,
             "members": members,
+            **intent,
         })
     groups.sort(key=lambda group: (-group["count"], group["representative"]))
     singletons = [group for group in groups if group["kind"] == "singleton"]

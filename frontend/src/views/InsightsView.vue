@@ -101,7 +101,40 @@
         </el-table>
       </details>
 
-      <details class="panel-card insights-section">
+            <section class="panel-card insights-section">
+        <h3 class="section-title">教师处理记录</h3>
+        <p class="hint">确认意图/知识点并记录行动；不自动改资料。系统候选须人工确认。</p>
+        <div class="group-controls">
+          <el-input v-model="reviewKey" placeholder="线索或代表问句" aria-label="处理对象" />
+          <el-select v-model="reviewIntent" placeholder="意图" clearable style="width: 160px">
+            <el-option label="概念解释" value="concept" />
+            <el-option label="方法/步骤" value="procedure" />
+            <el-option label="例题/应用" value="example" />
+            <el-option label="比较/总结" value="compare" />
+            <el-option label="课程事务/超范围" value="admin_oor" />
+            <el-option label="其他/不确定" value="other_uncertain" />
+          </el-select>
+          <el-input v-model="reviewKnowledge" placeholder="知识点（可填待归类）" />
+          <el-select v-model="reviewAction" placeholder="行动" clearable style="width: 180px">
+            <el-option label="补充/澄清资料" value="update_material" />
+            <el-option label="课堂澄清" value="clarify_in_class" />
+            <el-option label="加入回归题集" value="add_regression" />
+            <el-option label="暂不处理" value="no_action" />
+            <el-option label="排查系统失败" value="investigate_system" />
+          </el-select>
+          <el-button type="primary" :loading="reviewSaving" :disabled="!reviewKey" @click="saveReview">保存处理</el-button>
+          <el-button :loading="reviewLoading" @click="loadReviews">刷新记录</el-button>
+        </div>
+        <el-alert v-if="reviewFailure" :title="reviewFailure" type="error" :closable="false" show-icon />
+        <el-table :data="reviews" v-loading="reviewLoading" empty-text="暂无处理记录">
+          <el-table-column label="对象" min-width="220"><template #default="{ row }"><span class="query-clamp">{{ row.subject_key }}</span></template></el-table-column>
+          <el-table-column prop="intent_code" label="意图" width="120" />
+          <el-table-column prop="knowledge_point" label="知识点" min-width="160" />
+          <el-table-column prop="review_status" label="状态" width="110" />
+          <el-table-column prop="action_code" label="行动" width="150" />
+        </el-table>
+      </section>
+<details class="panel-card insights-section">
         <summary>相似问句分组（仅供参考，未验证）</summary>
         <div class="group-controls">
         <label>
@@ -142,6 +175,7 @@
         </el-table-column>
         <el-table-column prop="count" label="次数" width="80" />
         <el-table-column prop="distinct_questions" label="不同问句" width="110" />
+        <el-table-column label="意图候选" width="140"><template #default="{ row }">{{ row.intent_code || "—" }} / {{ row.intent_status || "candidate" }}</template></el-table-column>
         <el-table-column label="最低成对相似度" width="150">
           <template #default="{ row }">{{ formatSimilarity(row.min_pair_similarity) }}</template>
         </el-table-column>
@@ -176,6 +210,14 @@ const frequent = ref([]);
 const noEvidence = ref([]);
 const themes = ref([]);
 const clues = ref([]);
+const reviews = ref([]);
+const reviewKey = ref("");
+const reviewIntent = ref("");
+const reviewKnowledge = ref("");
+const reviewAction = ref("");
+const reviewSaving = ref(false);
+const reviewLoading = ref(false);
+const reviewFailure = ref("");
 const metricContract = ref("");
 const retentionDays = ref(0);
 const trend = ref([]);
@@ -243,6 +285,48 @@ function clearGroups() {
   groups.value = null;
   groupingFailure.value = "";
   confirmExternal.value = false;
+}
+
+
+async function loadReviews() {
+  reviewLoading.value = true;
+  reviewFailure.value = "";
+  try {
+    reviews.value = await api(`/courses/${courseId.value}/insight-reviews`);
+  } catch (error) {
+    reviewFailure.value = error.message;
+    if (error.status !== 401) ElMessage.error(error.message);
+  } finally {
+    reviewLoading.value = false;
+  }
+}
+
+async function saveReview() {
+  if (!reviewKey.value || reviewSaving.value) return;
+  reviewSaving.value = true;
+  reviewFailure.value = "";
+  try {
+    await api(`/courses/${courseId.value}/insight-reviews`, {
+      method: "POST",
+      json: {
+        subject_type: "clue",
+        subject_key: reviewKey.value,
+        intent_code: reviewIntent.value || null,
+        knowledge_point: reviewKnowledge.value || null,
+        review_status: "confirmed",
+        cause_code: "undecidable",
+        action_code: reviewAction.value || "no_action",
+      },
+    });
+    ElMessage.success("已保存处理记录");
+    reviewKey.value = "";
+    await loadReviews();
+  } catch (error) {
+    reviewFailure.value = error.message;
+    if (error.status !== 401) ElMessage.error(error.message);
+  } finally {
+    reviewSaving.value = false;
+  }
 }
 
 async function loadInsights() {

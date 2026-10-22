@@ -24,6 +24,8 @@
 | [opensource-reuse-decisions.md](opensource-reuse-decisions.md) | PLAN-00 开源复用决策表（设计借鉴≠已集成） |
 | [metrics-data-boundary.md](metrics-data-boundary.md) | PLAN-01 结题指标/分母/隐私/阈值冻结（metrics-v1） |
 | [lifecycle-permissions-matrix.md](lifecycle-permissions-matrix.md) | PLAN-02 生命周期与权限矩阵 |
+| [semantic-grouping-candidates.md](semantic-grouping-candidates.md) | PLAN-04 分组/意图候选与 LLM 对照方案（未执行计费） |
+| [teacher-action-loop.md](teacher-action-loop.md) | PLAN-05 教师处理闭环与 insight_reviews |
 
 ## 工程与评测
 

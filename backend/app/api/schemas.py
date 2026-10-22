@@ -215,6 +215,9 @@ class QuestionGroupOut(BaseModel):
     distinct_questions: int
     min_pair_similarity: float | None
     members: list[GroupQuestionOut]
+    intent_code: Literal["concept", "procedure", "example", "compare", "admin_oor", "other_uncertain"] = "other_uncertain"
+    intent_status: Literal["candidate"] = "candidate"
+    intent_source: str = "rule_v1"
 
 
 class QuestionGroupingResponse(BaseModel):
@@ -247,3 +250,40 @@ class QueryLogRetentionResponse(BaseModel):
     deleted_count: int
     has_more: bool
     cutoff: datetime
+
+
+class InsightReviewCreate(BaseModel):
+    subject_type: Literal["group", "clue", "query_text"]
+    subject_key: str = Field(min_length=1, max_length=512)
+    intent_code: Literal["concept", "procedure", "example", "compare", "admin_oor", "other_uncertain"] | None = None
+    knowledge_point: str | None = Field(default=None, max_length=256)
+    review_status: Literal["confirmed", "rejected", "deferred", "split"] = "deferred"
+    cause_code: Literal["coverage_gap", "retrieval_citation", "question_wording", "normal_review", "undecidable"] | None = None
+    action_code: Literal["update_material", "clarify_in_class", "add_regression", "no_action", "investigate_system"] | None = None
+    note: str | None = None
+
+
+class InsightReviewUpdate(BaseModel):
+    intent_code: Literal["concept", "procedure", "example", "compare", "admin_oor", "other_uncertain"] | None = None
+    knowledge_point: str | None = Field(default=None, max_length=256)
+    review_status: Literal["confirmed", "rejected", "deferred", "split"] | None = None
+    cause_code: Literal["coverage_gap", "retrieval_citation", "question_wording", "normal_review", "undecidable"] | None = None
+    action_code: Literal["update_material", "clarify_in_class", "add_regression", "no_action", "investigate_system"] | None = None
+    note: str | None = None
+
+
+class InsightReviewOut(BaseModel):
+    id: str
+    course_id: str
+    teacher_id: str
+    subject_type: str
+    subject_key: str
+    intent_code: str | None
+    knowledge_point: str | None
+    review_status: str
+    cause_code: str | None
+    action_code: str | None
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+
