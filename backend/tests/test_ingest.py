@@ -250,6 +250,7 @@ def test_short_text_succeeds_with_quality_warning(
     assert detail.json() == {
         "id": str(doc_id),
         "filename": "brief.txt",
+        "retrieval_enabled": True,
         "job_status": IngestJobStatus.succeeded.value,
         "error_message": None,
         "source_unit_count": 1,

@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-02 |
-| 状态 | ready |
+| 状态 | done |
 | 须授权 | 默认仅 Fake 与隔离测试数据；真实解析/embedding、全量解析/重入库、破坏性迁移、大依赖下载须当次明确授权；真实资料替换/删除须另有明确文件清单与授权 |
 
 ## 目标
@@ -18,14 +18,14 @@
 
 ## 验收标准（可判定真假）
 
-- [ ] 角色×课程矩阵覆盖允许/拒绝路径、跨课程访问和权限变化；问答、检索、引用、原文件入口均有回归证据。
-- [ ] 上传成功/失败、重试、停用、替换、删除、索引更新与并发入库均有场景；核对业务记录、文件、chunks、向量、历史引用的约定状态。
-- [ ] 注入清理失败后状态可见、可重试，重复操作不会误删其他资料；留存失败及恢复记录。
-- [ ] UI 明确区分权限拒绝、业务拒绝、系统故障及处理警告；授权提问→回答→依据→引用→原 PDF 页路径可走通。
-- [ ] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan02_lifecycle_permissions.py -q` 通过，贴原始输出。
-- [ ] 命令：`backend/.venv/Scripts/python.exe -m ruff check backend` 通过，贴原始输出。
-- [ ] 命令：`cd frontend; npm run build` 通过；通过 Vite 点一次新增控件与关键路径，贴构建原始输出和操作结果。
-- [ ] 文档验收：产物内容逐项对照本卡；本地相对链接目标存在、章节指针正确；`git diff --check` 通过，贴原始输出与链接自检结果。
+- [x] 角色×课程矩阵覆盖允许/拒绝路径、跨课程访问和权限变化；问答、检索、引用、原文件入口均有回归证据。
+- [x] 上传成功/失败、重试、停用、替换、删除、索引更新与并发入库均有场景；核对业务记录、文件、chunks、向量、历史引用的约定状态。
+- [x] 注入清理失败后状态可见、可重试，重复操作不会误删其他资料；留存失败及恢复记录。
+- [x] UI 明确区分权限拒绝、业务拒绝、系统故障及处理警告；授权提问→回答→依据→引用→原 PDF 页路径可走通。
+- [x] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan02_lifecycle_permissions.py -q` 通过，贴原始输出。
+- [x] 命令：`backend/.venv/Scripts/python.exe -m ruff check backend` 通过，贴原始输出。
+- [x] 命令：`cd frontend; npm run build` 通过；通过 Vite 点一次新增控件与关键路径，贴构建原始输出和操作结果。
+- [x] 文档验收：产物内容逐项对照本卡；本地相对链接目标存在、章节指针正确；`git diff --check` 通过，贴原始输出与链接自检结果。
 
 ## 约束
 
@@ -62,6 +62,7 @@
 
 ## 完成记录
 
-- 提交：未执行；本阶段仅建卡，不提交。
-- 验证摘要：未执行本卡验收；无已实现声明。
-- 未做 / 风险：依赖、人工核验及授权仍须开工核对；未获授权的高成本动作禁止执行。
+- 产物：软停用 `retrieval_enabled` + Alembic 0012；[lifecycle-permissions-matrix.md](../lifecycle-permissions-matrix.md)；`backend/tests/test_plan02_lifecycle_permissions.py`
+- 验证：pytest plan02 21 passed；相关 194 passed / 2 skipped；ruff OK；`npm run build` OK
+- 提交：本会话 Conventional Commit（PLAN-02）；未 push
+- 未做 / 风险：真人 Vite 点检留给 PLAN-09；正式 Postgres 需跑迁移 0012；未对演示库做破坏性操作

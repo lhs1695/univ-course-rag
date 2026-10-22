@@ -23,6 +23,7 @@
 | [implementation-plan.md](implementation-plan.md) | PLAN-00～13 路线图（待执行，≠已完成） |
 | [opensource-reuse-decisions.md](opensource-reuse-decisions.md) | PLAN-00 开源复用决策表（设计借鉴≠已集成） |
 | [metrics-data-boundary.md](metrics-data-boundary.md) | PLAN-01 结题指标/分母/隐私/阈值冻结（metrics-v1） |
+| [lifecycle-permissions-matrix.md](lifecycle-permissions-matrix.md) | PLAN-02 生命周期与权限矩阵 |
 
 ## 工程与评测
 

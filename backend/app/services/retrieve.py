@@ -8,7 +8,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import exists, func, select, type_coerce
 from sqlalchemy.orm import Session as DbSession
 
-from app.models.document import EMBEDDING_DIM, Chunk
+from app.models.document import EMBEDDING_DIM, Chunk, Document
 from app.services.embedder import Embedder
 from app.services.fusion import (
     MAX_FUSED_CANDIDATES,
@@ -80,6 +80,11 @@ def _chunk_filters(
     filters = [
         Chunk.course_id == course_id,
         Chunk.embedding_model == embedder.index_identity,
+        Chunk.document_id.in_(
+            select(Document.id).where(
+                Document.course_id == course_id, Document.retrieval_enabled.is_(True),
+            )
+        ),
     ]
     if excluded_document_ids:
         filters.append(Chunk.document_id.not_in(excluded_document_ids))
@@ -427,6 +432,11 @@ def has_incompatible_chunks(
     filters = [
         Chunk.course_id == course_id,
         Chunk.embedding_model != embedder.index_identity,
+        Chunk.document_id.in_(
+            select(Document.id).where(
+                Document.course_id == course_id, Document.retrieval_enabled.is_(True),
+            )
+        ),
     ]
     if excluded_document_ids:
         filters.append(Chunk.document_id.not_in(excluded_document_ids))

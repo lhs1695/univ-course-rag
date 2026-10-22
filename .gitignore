@@ -36,3 +36,8 @@ corpus/local/**
 *.tmp
 .codex-prompt*.txt
 .codex-last*.txt
+
+.codex-prompts/
+
+
+output/

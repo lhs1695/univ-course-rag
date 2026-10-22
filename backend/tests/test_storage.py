@@ -319,7 +319,7 @@ def test_upload_database_failure_removes_just_written_file(
     assert not any(path.is_file() for path in tmp_path.rglob("*"))
 
 
-def test_cleanup_failure_is_logged_without_rolling_back_database_delete(
+def test_cleanup_failure_is_logged_and_preserves_document_for_retry(
     client: TestClient,
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -343,8 +343,9 @@ def test_cleanup_failure_is_logged_without_rolling_back_database_delete(
 
     response = client.delete(f"/courses/{course.id}/documents/{document_id}")
 
-    assert response.status_code == 204
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Document storage cleanup unavailable"
     db.expire_all()
-    assert db.get(Document, document_id) is None
+    assert db.get(Document, document_id) is not None
     assert "storage_cleanup_failed scope=document" in caplog.text
     assert "document_id=" in caplog.text

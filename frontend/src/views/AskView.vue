@@ -45,7 +45,7 @@ const filenames = ref({});
 const loadingContext = ref(true);
 const contextFailure = ref("");
 const documents = ref([]);
-const readyDocumentCount = computed(() => documents.value.filter(doc => doc.job_status === "succeeded").length);
+const readyDocumentCount = computed(() => documents.value.filter(doc => doc.job_status === "succeeded" && doc.retrieval_enabled).length);
 const userId = session.user.id;
 const draftRevision = ref(0);
 const query = computed({

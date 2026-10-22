@@ -27,6 +27,7 @@ const knownDetails = {
   "Ingest job is active or already succeeded": "入库任务仍在运行或已完成，请刷新资料状态。",
   "Ingest job is missing": "入库任务不存在，请联系管理员核对。",
   "Upload storage unavailable": "上传存储不可用，请联系管理员检查磁盘和目录权限。",
+  "Document storage cleanup unavailable": "原文件清理失败，资料记录仍保留；请稍后重试删除。",
   "empty file": "文件为空，请选择有内容的文件。",
   "Time window must overlap retained history": "所选时间与当前可统计的留存窗口没有交集，或开始时刻不早于结束时刻。",
   "Explicit external processing confirmation required": "需要先确认本次会把问句原文发送到已配置的嵌入服务。",

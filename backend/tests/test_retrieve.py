@@ -196,6 +196,11 @@ def test_incompatible_check_uses_exists_and_honors_exclusions(db: Session) -> No
     course = add_course(db, "Course 1")
     excluded_document_id = UUID("00000000-0000-0000-0000-000000000003")
     embedder = FakeEmbedder()
+    teacher = add_user(db, "legacy-uploader", "pass", UserRole.teacher)
+    db.add(Document(
+        id=excluded_document_id, course_id=course.id, uploaded_by=teacher.id,
+        filename="legacy.txt", storage_path="unused-synthetic-path",
+    ))
     db.add(
         Chunk(
             course_id=course.id,

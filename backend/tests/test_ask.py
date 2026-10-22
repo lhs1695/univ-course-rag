@@ -370,7 +370,9 @@ def test_generate_filters_ids_from_unshown_evidence_even_if_in_query_or_body(
         empty.chunk_id: Chunk(text=" "),
     }
     db = Mock(spec=Session)
-    db.get.side_effect = lambda model, chunk_id: chunks.get(chunk_id)
+    for chunk_id, chunk in chunks.items():
+        chunk.id = chunk_id
+    db.scalars.return_value = list(chunks.values())
     llm = FakeLLM(scripted=" ".join(
         f"[Source {hit.chunk_id}]" for hit in (hidden, missing, empty, shown, shown)
     ))
@@ -390,9 +392,9 @@ def test_generate_without_usable_context_does_not_call_llm(
 ) -> None:
     hit = evidence_hit()
     db = Mock(spec=Session)
-    db.get.return_value = (
-        None if source_state == "missing"
-        else Chunk(text=" " if source_state == "empty" else "正文")
+    db.scalars.return_value = (
+        [] if source_state == "missing"
+        else [Chunk(id=hit.chunk_id, text=" " if source_state == "empty" else "正文")]
     )
     if source_state == "over_budget":
         monkeypatch.setattr(generate, "CONTEXT_CHAR_BUDGET", 1)

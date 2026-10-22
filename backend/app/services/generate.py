@@ -5,9 +5,10 @@ import unicodedata
 from dataclasses import dataclass
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
-from app.models.document import Chunk
+from app.models.document import Chunk, Document
 from app.services.llm import LLM, parse_cited_ids
 from app.services.question_shape import evidence_context_order
 from app.services.retrieve import SearchHit
@@ -178,8 +179,16 @@ def generate_answer_result(
     previous_question: str | None = None,
     previous_answer: str | None = None,
 ) -> GeneratedAnswer:
-    chunks = {hit.chunk_id: db.get(Chunk, hit.chunk_id) for hit in hits}
-    chunks = {key: value for key, value in chunks.items() if value is not None}
+    # Recheck current participation before constructing evidence from cached hits.
+    chunks = {
+        chunk.id: chunk for chunk in db.scalars(
+            select(Chunk).join(Document, Chunk.document_id == Document.id).where(
+                Chunk.id.in_([hit.chunk_id for hit in hits]),
+                Chunk.course_id == Document.course_id,
+                Document.retrieval_enabled.is_(True),
+            )
+        )
+    }
     context = assemble_ask_context(
         query, hits, chunks,
         previous_question=previous_question, previous_answer=previous_answer,

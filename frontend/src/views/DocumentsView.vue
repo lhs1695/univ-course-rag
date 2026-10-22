@@ -37,6 +37,16 @@
           {{ row.job_status === "failed" ? jobFailure(row.error_message) : "—" }}
         </template>
       </el-table-column>
+      <el-table-column label="参与问答检索" min-width="200">
+        <template #default="{ row }">
+          <el-tag :type="row.retrieval_enabled ? 'success' : 'info'">
+            {{ row.retrieval_enabled ? '已启用' : '已停用 · 仍可预览' }}
+          </el-tag>
+          <el-button v-if="canManage" :disabled="busyIds.has(row.id)" link type="primary" :aria-label="`${row.retrieval_enabled ? '停用检索' : '启用检索'}：${row.filename}`" @click="onToggleRetrieval(row)">
+            {{ row.retrieval_enabled ? '停用检索' : '启用检索' }}
+          </el-button>
+        </template>
+      </el-table-column>
       <el-table-column label="入库质量" min-width="260">
         <template #default="{ row }">
           <template v-if="row.job_status === 'succeeded' && row.extracted_char_count != null">
@@ -300,6 +310,24 @@ async function onDelete(row) {
     await api(`/courses/${courseId.value}/documents/${row.id}`, { method: "DELETE" });
     ElMessage.success("已删除");
     await loadDocuments();
+  } catch (error) {
+    failure.value = error.message;
+    if (error.status !== 401) ElMessage.error(error.message);
+  } finally {
+    busyIds.value.delete(row.id);
+  }
+}
+
+async function onToggleRetrieval(row) {
+  if (busyIds.value.has(row.id)) return;
+  busyIds.value.add(row.id);
+  try {
+    const updated = await api(`/courses/${courseId.value}/documents/${row.id}`, {
+      method: "PATCH", json: { retrieval_enabled: !row.retrieval_enabled },
+    });
+    Object.assign(row, updated);
+    failure.value = "";
+    ElMessage.success(updated.retrieval_enabled ? "已启用检索" : "已停用检索，原文仍可预览");
   } catch (error) {
     failure.value = error.message;
     if (error.status !== 401) ElMessage.error(error.message);

@@ -19,7 +19,7 @@ from rank_bm25 import BM25Okapi
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session as DbSession
 
-from app.models.document import Chunk
+from app.models.document import Chunk, Document
 from app.services.retrieve import SNIPPET_CHARS
 
 MAX_KEYWORD_TOP_K = 100
@@ -136,7 +136,15 @@ def retrieve_keyword_candidates(
     if not query_tokens:
         return []
 
-    filters = [Chunk.course_id == course_id, Chunk.embedding_model == index_identity]
+    filters = [
+        Chunk.course_id == course_id,
+        Chunk.embedding_model == index_identity,
+        Chunk.document_id.in_(
+            select(Document.id).where(
+                Document.course_id == course_id, Document.retrieval_enabled.is_(True),
+            )
+        ),
+    ]
     if excluded_document_ids:
         filters.append(Chunk.document_id.not_in(excluded_document_ids))
     # Fetch only metadata and a bounded prefix (+1 sentinel), never full embeddings

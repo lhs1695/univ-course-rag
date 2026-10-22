@@ -18,7 +18,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session as DbSession
 from sqlalchemy.orm import sessionmaker as SessionMaker
 
-from app.api.schemas import DocumentOut
+from app.api.schemas import DocumentOut, DocumentUpdateRequest
 from app.config import Settings, get_settings
 from app.db import get_db, get_session_maker
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
@@ -65,6 +65,7 @@ def _document_out(document: Document, job: IngestJob | None) -> DocumentOut:
     return DocumentOut(
         id=str(document.id),
         filename=document.filename,
+        retrieval_enabled=document.retrieval_enabled,
         job_status=job.status if job is not None else IngestJobStatus.pending.value,
         error_message=error if error is None or error in SAFE_INGEST_ERRORS else "INGEST_FAILED",
         source_unit_count=document.source_unit_count,
@@ -239,6 +240,22 @@ def get_document(
     return _document_out(document, latest_job(db, document.id))
 
 
+@router.patch("/{document_id}", response_model=DocumentOut)
+def update_document(
+    document_id: UUID,
+    body: DocumentUpdateRequest,
+    access: Annotated[CourseAccess, Depends(require_course_teacher)],
+    db: Annotated[DbSession, Depends(get_db)],
+) -> DocumentOut:
+    document = db.get(Document, document_id)
+    if document is None or document.course_id != access.course.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    document.retrieval_enabled = body.retrieval_enabled
+    db.commit()
+    db.refresh(document)
+    return _document_out(document, latest_job(db, document.id))
+
+
 @router.get("/{document_id}/content", response_class=FileResponse)
 def get_document_content(
     document_id: UUID,
@@ -283,10 +300,8 @@ def delete_document(
     if document is None or document.course_id != access.course.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     storage_path = document.storage_path
-    db.execute(delete(Chunk).where(Chunk.document_id == document.id))
-    db.execute(delete(IngestJob).where(IngestJob.document_id == document.id))
-    db.delete(document)
-    db.commit()
+    # Keep the metadata/job until file cleanup succeeds so a failed DELETE can
+    # be explicitly retried. Missing files are already idempotent in storage.
     try:
         delete_document_upload(
             settings.upload_dir,
@@ -301,3 +316,11 @@ def delete_document(
             document_id,
             type(exc).__name__,
         )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Document storage cleanup unavailable",
+        ) from None
+    db.execute(delete(Chunk).where(Chunk.document_id == document.id))
+    db.execute(delete(IngestJob).where(IngestJob.document_id == document.id))
+    db.delete(document)
+    db.commit()
