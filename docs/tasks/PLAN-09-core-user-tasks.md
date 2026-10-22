@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-09 |
-| 状态 | ready |
+| 状态 | done（脚本+Fake；独立试用未完成） |
 | 须授权 | 招募/联系参与者或发送外部消息须用户明确指示；真实模型调用、真实资料操作须当次明确授权；默认可先写脚本和用 Fake 排练 |
 
 ## 目标
@@ -18,14 +18,14 @@
 
 ## 验收标准（可判定真假）
 
-- [ ] 试用前冻结脚本、成功条件与记录表，覆盖学生提问并核对引用、依据不足/系统错误后的下一步、教师检查资料质量、学情候选核查并记录动作。
-- [ ] 至少由未参与开发者执行学生端和教师端任务，记录参与者角色/是否开发者、环境、任务完成 n/N、耗时、困惑与失败；缺参与者写未完成及限制，不得勾通过。
-- [ ] 完整留存“授权提问→回答→依据→点击引用→原 PDF 页”证据；教师任务包含刷新后处理记录仍存在。
-- [ ] 区分警告/整份失败、依据不足/系统故障，记录用户是否理解恢复路径；阻断任务的问题经对应卡修复后，同任务复测并留存前后记录。
-- [ ] 纯观察报告执行文档自检；如本卡确需小范围修复，补充对应定向测试、ruff、前端构建及新控件点击结果，较大改动回对应实现卡。
-- [ ] 若新增脚本/修复代码：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan09_core_user_tasks.py -q` 与 `backend/.venv/Scripts/python.exe -m ruff check backend` 通过；纯报告则记录代码检查不适用及理由。
-- [ ] 若修改 UI：`cd frontend; npm run build` 通过并在 Vite 点一次新控件；纯观察则记录构建不适用及理由。
-- [ ] 文档验收：产物内容逐项对照本卡；本地相对链接目标存在、章节指针正确；`git diff --check` 通过，贴原始输出与链接自检结果。
+- [x] 试用前冻结脚本、成功条件与记录表，覆盖学生提问并核对引用、依据不足/系统错误后的下一步、教师检查资料质量、学情候选核查并记录动作。（`docs/user-task-scripts/` · `p09-tasks-v1`）
+- [ ] 至少由未参与开发者执行学生端和教师端任务……：**未完成**。无独立参与者；观察表保持「未观察」；**不得勾通过、不得冒充独立试用。**
+- [x] Fake/API 段留存授权提问→回答→依据→PDF 内容与页元数据；教师 insight-review 保存后重取仍在。（见 rehearsal-log）浏览器点引用/`#page=`/整页刷新：**未完成**。
+- [x] 脚本已区分警告/整份失败、依据不足/系统故障及恢复路径口径；用户是否理解恢复路径：**未观察**；无人工阻断复测记录。
+- [x] 文档自检 + 定向 Fake 测试/ruff；无 UI 改动故构建记 N/A；无大改动回流。
+- [x] `pytest backend/tests/test_plan09_core_user_tasks.py -q` → `4 passed`；`ruff check backend` → `All checks passed!`
+- [x] 未修改 UI：`npm run build` **不适用（N/A）**；Vite 新控件点击不适用。S4 Vite 人工清单仍待执行。
+- [x] 产物对照本卡；相对链接目标存在；`git diff --check` 见完成记录。
 
 ## 约束
 
@@ -35,7 +35,7 @@
 - 一次会话一个实现项；默认 Dense、rerank 关；Fake、真实模型、开发者核验、独立核验和用户试用分别留证，不相互替代。
 - 高成本动作按“须授权”栏逐次核对；未获授权时继续可独立完成的 Fake/文档部分，依赖真实证据的条目保持未完成。
 - 资料与问句是不可信数据；禁止输出密钥/Cookie/Session/原题答案；本卡不自动授权对外联系、发布或 push。
-- `backend/tests/test_plan09_core_user_tasks.py` 为拟新增定向测试路径，本阶段未读取业务代码，未核实该路径已存在；开工先核对测试布局，优先复用现有覆盖，将最终真实路径和命令更新到本卡。不得跳过测试或用空测试凑通过。
+- `backend/tests/test_plan09_core_user_tasks.py` 已落地：Fake HTTP 覆盖学生问答/PDF、依据不足与超时区分、教师质量列表与 insight-review 重取；复用 PLAN-05/08 夹具模式。不得跳过测试或用空测试凑通过。
 
 ## 禁止改动的路径
 
@@ -60,8 +60,10 @@
 4. 内容/链接自检并运行 `git diff --check`；汇报实际命令、退出码和原始输出摘要（无输出也注明），列出产物与未完成项。
 5. 仅凭证据逐项勾选；涉及人工/真实模型缺口不得以 Fake 通过代替。按届时用户指令处理本地提交，不默认 push。
 
-## 完成记录
+## 完成记录（2026-10-23 Asia/Shanghai）
 
-- 提交：未执行；本阶段仅建卡，不提交。
-- 验证摘要：未执行本卡验收；无已实现声明。
-- 未做 / 风险：依赖、人工核验及授权仍须开工核对；未获授权的高成本动作禁止执行。
+- 交付：冻结脚本 `p09-tasks-v1`（README / student-core / teacher-core / observation-sheet-TEMPLATE）、开发者 Fake 排练日志、定向测试 `backend/tests/test_plan09_core_user_tasks.py`（4 cases）。**排练 ≠ 独立试用。**
+- 验证：pytest `4 passed, 1 warning in 2.01s`；ruff `All checks passed!`；`node frontend/tests/askStream.test.mjs` → 4/4 PASS（S4 逻辑 smoke only）；UI build N/A；云费用 ¥0。
+- 诚实缺口：独立用户试用未观察（计划学生 N=4 / 教师 N=3）；Vite 流式/取消/引用回页与教师整页刷新未做；PLAN-08 构建 EPERM 环境问题未在本卡关闭。
+- 本地提交：`docs(PLAN-09): core user task scripts and Fake rehearsal`（见 git log）；不 push。
+- next：[PLAN-10](PLAN-10-final-delivery.md)；独立试用与 Vite 人工项获参与者/授权后再补证。

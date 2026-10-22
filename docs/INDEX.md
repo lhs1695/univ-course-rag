@@ -2,7 +2,7 @@
 
 给人与 Agent 的索引。**结题 SSOT** 在本目录结题三件套；中期材料与 archive 为历史/答辩包，不覆盖结题合同。
 
-更新：2026-10-22（Asia/Shanghai）。
+更新：2026-10-23（Asia/Shanghai）。
 
 ## 先读哪里
 
@@ -38,6 +38,7 @@
 | [stream-performance-baseline.md](stream-performance-baseline.md) | PLAN-08 SSE 合同与 Fake 1/5/10 并发基线；构建受环境限制、Vite 人工核验待 PLAN-09 |
 | [analytics-validation-protocol.md](analytics-validation-protocol.md) | PLAN-06 冻结标注/公式/任务观察；独立试用未完成 |
 | [analytics-validation-report-TEMPLATE.md](analytics-validation-report-TEMPLATE.md) | PLAN-06 空白 n/N 报告与知识点/主题人工核验模板 |
+| [user-task-scripts/](user-task-scripts/README.md) | PLAN-09 学生/教师任务脚本与观察表；Fake 排练≠独立试用 |
 | [中期演示运行卡.md](中期演示运行卡.md) | 演示切库/启动/固定问句（文件名历史遗留） |
 
 ## 任务与会话外状态
