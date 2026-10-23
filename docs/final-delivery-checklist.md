@@ -164,3 +164,9 @@ cd frontend; npm run build
 ## 6. 维护
 
 更新本表时同步 [PLAN-10 任务卡](tasks/PLAN-10-final-delivery.md)、[SESSION_STATE](tasks/SESSION_STATE.md)、[INDEX](INDEX.md)。缺口关闭须另附原始命令输出，禁止只改勾选。
+
+## 2026-10-23 进度补记（开发者）
+
+- 独立试用：用户指示取消；开发者 Vite 代观察见 `docs/user-task-scripts/observation-2026-10-23-developer.md`。
+- 空白机安装+备份恢复：用户指示暂缓。
+- 真实小样本：`docs/user-task-scripts/evidence-2026-10-23/real-small-sample-2026-10-23-developer.json`（估费 <¥1）。

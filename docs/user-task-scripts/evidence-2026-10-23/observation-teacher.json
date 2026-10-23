@@ -1,0 +1,26 @@
+{
+  "started_at": "2026-10-23T08:36:54+08:00",
+  "tasks": {
+    "T1": {
+      "href": "/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content#page=10",
+      "count_pdf_links": 1,
+      "popup_url": "",
+      "popup_error": "Page.screenshot: Timeout 30000ms exceeded.\nCall log:\n  - taking page screenshot\n  - waiting for fonts to load...\n  - fonts loaded\n",
+      "status": "href_only"
+    },
+    "T2": {
+      "select_count": 2,
+      "save_toast": true,
+      "row_visible": true,
+      "status": "passed"
+    },
+    "T3": {
+      "after_refresh_records": true,
+      "after_full_reload": true,
+      "relogin_after_reload": false,
+      "status": "passed"
+    }
+  },
+  "blockers": [],
+  "finished_at": "2026-10-23T08:37:43+08:00"
+}

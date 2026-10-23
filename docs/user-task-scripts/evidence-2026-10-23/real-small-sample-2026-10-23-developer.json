@@ -1,0 +1,44 @@
+{
+  "verifier": "developer",
+  "evidence_layer": "real_model_small_sample_api",
+  "finished_at": "2026-10-23T08:41:35+08:00",
+  "retrieval": "dense",
+  "rerank": "off",
+  "n": 2,
+  "rows": [
+    {
+      "id": "LA-01",
+      "http": 200,
+      "elapsed_s": 1.63,
+      "outcome": "cited_answer",
+      "citation_count": 1,
+      "citation_pages": [
+        10
+      ],
+      "citation_files": [
+        "e13976f0-9ef2-4886-81f0-da346caf2c88"
+      ],
+      "response_keys": [
+        "citations",
+        "error_code",
+        "message"
+      ]
+    },
+    {
+      "id": "LA-R",
+      "http": 200,
+      "elapsed_s": 1.36,
+      "outcome": "NO_EVIDENCE",
+      "citation_count": 0,
+      "citation_pages": [],
+      "citation_files": [],
+      "response_keys": [
+        "citations",
+        "error_code",
+        "message"
+      ]
+    }
+  ],
+  "cost_note": "DeepSeek short asks + earlier Vite observation; estimate well under CNY 2; no Vision/reindex",
+  "estimated_cost_cny": "<1"
+}

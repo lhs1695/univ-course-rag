@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-09 |
-| 状态 | done（脚本+Fake；独立试用未完成） |
+| 状态 | done（脚本+Fake；用户授权开发者 Vite 代观察已完成；独立试用按用户指示取消） |
 | 须授权 | 招募/联系参与者或发送外部消息须用户明确指示；真实模型调用、真实资料操作须当次明确授权；默认可先写脚本和用 Fake 排练 |
 
 ## 目标
@@ -19,8 +19,8 @@
 ## 验收标准（可判定真假）
 
 - [x] 试用前冻结脚本、成功条件与记录表，覆盖学生提问并核对引用、依据不足/系统错误后的下一步、教师检查资料质量、学情候选核查并记录动作。（`docs/user-task-scripts/` · `p09-tasks-v1`）
-- [ ] 至少由未参与开发者执行学生端和教师端任务……：**未完成**。无独立参与者；观察表保持「未观察」；**不得勾通过、不得冒充独立试用。**
-- [x] Fake/API 段留存授权提问→回答→依据→PDF 内容与页元数据；教师 insight-review 保存后重取仍在。（见 rehearsal-log）浏览器点引用/`#page=`/整页刷新：**未完成**。
+- [x] 独立试用按用户指示取消；改为开发者 Vite 代观察（`docs/user-task-scripts/observation-2026-10-23-developer.md`）。**不得宣称独立试用通过。** S1/S4/T2/T3 开发者观察通过；S2 近似；T1 部分（无 failed 样例）；S3 前置缺失。
+- [x] Fake/API + 开发者 Vite：提问→回答→依据→`#page=` href + PDF content 字节；教师保存处理→刷新记录/整页刷新仍在。（observation-2026-10-23-developer）
 - [x] 脚本已区分警告/整份失败、依据不足/系统故障及恢复路径口径；用户是否理解恢复路径：**未观察**；无人工阻断复测记录。
 - [x] 文档自检 + 定向 Fake 测试/ruff；无 UI 改动故构建记 N/A；无大改动回流。
 - [x] `pytest backend/tests/test_plan09_core_user_tasks.py -q` → `4 passed`；`ruff check backend` → `All checks passed!`
@@ -61,6 +61,17 @@
 5. 仅凭证据逐项勾选；涉及人工/真实模型缺口不得以 Fake 通过代替。按届时用户指令处理本地提交，不默认 push。
 
 ## 完成记录（2026-10-23 Asia/Shanghai）
+
+### 补充：用户授权开发者 Vite 代观察（同日）
+
+- 用户指示：去掉独立用户试用，改开发者 Vite 观察；空白机+备份恢复暂缓。
+- 观察：`docs/user-task-scripts/observation-2026-10-23-developer.md` + `evidence-2026-10-23/`。
+- 结果：S1/S4/T2/T3 开发者通过；S2 用 LA-R 近似；T1 警告 PDF 可开、无 failed 对照；S3 前置缺失。无产品阻断需立刻改代码（headless PDF 截图不稳属工具限制）。
+- 真实小样本：`docs/user-task-scripts/evidence-2026-10-23/real-small-sample-2026-10-23-developer.json`（LA-01 cited p10；LA-R NO_EVIDENCE；估费 <¥1，累计 <<¥2）。
+- **仍不得宣告独立试用或结题验收通过。**
+
+## 完成记录（既有 Fake 排练 · 2026-10-23 Asia/Shanghai）
+
 
 - 交付：冻结脚本 `p09-tasks-v1`（README / student-core / teacher-core / observation-sheet-TEMPLATE）、开发者 Fake 排练日志、定向测试 `backend/tests/test_plan09_core_user_tasks.py`（4 cases）。**排练 ≠ 独立试用。**
 - 验证：pytest `4 passed, 1 warning in 2.01s`；ruff `All checks passed!`；`node frontend/tests/askStream.test.mjs` → 4/4 PASS（S4 逻辑 smoke only）；UI build N/A；云费用 ¥0。
