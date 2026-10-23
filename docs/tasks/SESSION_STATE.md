@@ -14,13 +14,13 @@
 - 空白机+备份恢复：用户指示暂缓
 - PLAN-08/09 Vite：开发者观察已执行（S1/S4/T2/T3 通过；S2 近似；T1 部分；S3 前置缺失）
 - 本轮未发现需立刻修的产品阻断；PDF headless 截图不稳属工具限制
+- **中期冻结演示 worktree（展示完可删）**：`D:\workspace\univ-course-rag-midterm` ← tag `midterm-freeze-2026-10-21`（`f8278d7`）；后端 `http://127.0.0.1:8001`，前端 `http://127.0.0.1:5174`；共用主库 `univ_course_rag_cn_v2`（0013，只读演示冒烟已通）。删除：先停 8001/5174，再 `git -C D:\workspace\univ-course-rag worktree remove D:\workspace\univ-course-rag-midterm`（未建副本库，勿 DROP 主 `cn_v2`）
 
 ## 下一步
 
-1. 文档口径已与「开发者代观察 / 空白机暂缓」对齐（本轮 sync）
+1. 老师展示用 midterm worktree；展示完按上文删除
 2. 空白机+备份恢复：暂缓，待用户再指示
-3. 给老师展示中期冻结版：优先 `git worktree` 检出 `midterm-freeze-2026-10-21`（`f8278d7`），勿在本工作区硬 checkout 掉 ahead 的 `main`
-4. 用户点名后才考虑 push / 公开发布材料冻结
+3. 用户点名后才考虑 push / 公开发布材料冻结
 
 ## 活跃 diff
 
