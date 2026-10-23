@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-10 |
-| 状态 | done（清单+本机门禁；空白机/独立试用等缺口保留） |
+| 状态 | done（清单+本机门禁；空白机暂缓；开发者 Vite 已补证；不得宣告结题通过） |
 | 须授权 | 新真实云调用、全量解析/重入库、大依赖/大模型下载、破坏性迁移须当次明确授权；恢复演练仅隔离环境；公开发布/推送不在本卡授权内 |
 
 ## 目标
@@ -24,7 +24,7 @@
 - [x] 汇集指针已写入核对表（自动化、题集、PLAN-06/07/08/09 报告等）；独立核验/试用/录屏等**缺口保留**。
 - [x] §6.A～G / validation 分层在核对表 §4 诚实登记；Fake/排练不替代独立证据。
 - [x] 全量 pytest `641 passed, 2 skipped`；ruff PASS；`npm run build` PASS；原始摘要见 [final-delivery-gate.output.txt](../final-delivery-gate.output.txt)。（含两处过时测试最小修复，见完成记录。）
-- [ ] Vite 三角色与引用回原页：**未执行**；版本/配置/数据基线与测试引用已写入核对表；**不宣告结题通过、不发布、不 push**。
+- [x] Vite 核心闭环：开发者代观察已执行（S1/S4/T2/T3 通过；S2 近似；T1 部分；S3 前置缺失），见 [observation-2026-10-23-developer.md](../user-task-scripts/observation-2026-10-23-developer.md)。**不宣告独立试用或结题通过、不发布、不 push**。
 - [x] 产物对照本卡；相对链接自检与 `git diff --check` 见完成记录。
 
 ## 约束
@@ -64,6 +64,6 @@
 
 - 交付：[final-delivery-checklist.md](../final-delivery-checklist.md)、[final-delivery-gate.output.txt](../final-delivery-gate.output.txt)、`scripts/plan10-clean-env-check.ps1`；最小测试修复：`test_configuration.py`（`retrieval_enabled`）、`test_query_outcome_migration.py`（不再钉死 head=0011）。
 - 验证：pytest `641 passed, 2 skipped, 1 warning in 54.45s`；ruff `All checks passed!`；`npm run build` ✓ ~8.26s；云费用 ¥0。
-- 诚实缺口：空白机干净安装与隔离备份恢复未实跑；Vite 三角色/引用回页未做；PLAN-06/07/09 独立核验与用户试用缺口仍在；不得宣告结题验收通过或发布。
-- 本地提交：`docs(PLAN-10): final delivery checklist and gate evidence`（见 git log）；不 push。
-- next：无必须 PLAN；剩余为缺口补证（独立试用、真实测量、空白机演练）或用户授权后的发布流程。
+- 诚实缺口：空白机干净安装与隔离备份恢复未实跑（**用户指示暂缓**）；独立试用按用户指示取消并改为开发者 Vite；PLAN-06/07 正式人工/独立核验仍缺；不得宣告结题验收通过或发布。
+- 本地提交：`docs(PLAN-10): final delivery checklist and gate evidence`；文档对齐见后续 docs sync 提交；不 push。
+- next：无必须 PLAN；可选补证或用户授权后的 push/发布；空白机待再指示。

@@ -10,7 +10,7 @@
 | 后端/前端包版本字段 | `0.0.0`（未做产品发版号 bump） |
 | 默认演示配置口径 | dense、rerank 关；正式库名 `univ_course_rag_cn_v2` |
 | 云费用（本卡） | ¥0；未读 `.env`；未全量重解析/重入库/Vision |
-| 空白隔离机全流程 | **未在全新空白机执行**（见 §4 缺口） |
+| 空白隔离机全流程 | **未执行（用户指示暂缓）**（见 §4 缺口） |
 
 合同入口：[PLAN-10 任务卡](tasks/PLAN-10-final-delivery.md) · [validation §1/§6–7](validation.md) · [完工门槛 §6.A–G](结题产品定义与完工标准.md) · [workflow](workflow.md) · 根 [README](../README.md)
 
@@ -33,7 +33,7 @@
 | 检索证据 | [retrieval-evidence-regression.md](retrieval-evidence-regression.md) | Fake+历史；真实复跑/独立核验缺口 |
 | 学情验证 | [analytics-validation-protocol.md](analytics-validation-protocol.md) 等 | 框架；正式人工/独立教师试用缺口 |
 | 性能 | [stream-performance-baseline.md](stream-performance-baseline.md) | Fake 1/5/10；真实模型未测 |
-| 用户任务 | [user-task-scripts/](user-task-scripts/README.md) | 脚本+Fake；**独立试用未完成** |
+| 用户任务 | [user-task-scripts/](user-task-scripts/README.md) | 脚本+Fake；独立试用取消→[开发者 Vite 观察](user-task-scripts/observation-2026-10-23-developer.md) |
 | 操作指南 / 演示 | README、中期演示运行卡、中期答辩材料 | 有；结题专用「空白机录屏」未做 |
 | 备份恢复说明 | 本文 §2.5（隔离演练步骤） | 有文档；**未在隔离环境实跑** |
 
@@ -130,8 +130,9 @@ cd frontend; npm run build
 ### 未执行 / 不适用
 
 - 真实云调用、全量解析/重入库、Vision、rerank 开启：**未授权未执行**
-- Vite 三角色人工闭环：**未执行**（承接 PLAN-09 缺口）
-- 空白隔离机从零安装 + 备份恢复实操：**未执行**
+- Vite 核心闭环：开发者代观察已执行（见 `user-task-scripts/observation-2026-10-23-developer.md`）；**非独立试用**
+- 空白隔离机从零安装 + 备份恢复实操：**未执行（用户指示暂缓）**
+- 真实模型小样本：已留证（估费 <¥1；见 evidence-2026-10-23）
 
 ---
 
@@ -141,11 +142,11 @@ cd frontend; npm run build
 | --- | --- | --- |
 | §6.A 安全与一致性 | 既有权限/生命周期测试 + PLAN-02 矩阵 | 自动化有；完整人工矩阵点检未在本卡重做 |
 | §6.B 答案与证据 | PLAN-07 报告 + 中期 22 题开发者核验 | **独立核验/真实复跑缺口保留** |
-| §6.C 用户独立任务 | PLAN-09 脚本 + Fake | **独立试用未完成** |
-| §6.D 可复现部署 | 本文步骤 + 本机回归/构建 | **空白机实装与备份恢复未完成** |
+| §6.C 用户任务 | PLAN-09 脚本 + Fake + 开发者 Vite 观察 | **独立试用取消**；开发者观察已留证（非独立） |
+| §6.D 可复现部署 | 本文步骤 + 本机回归/构建 | **空白机实装与备份恢复暂缓** |
 | §6.E 交付完整 | §1 清单 | 材料基本齐；结题录屏/空白机证据缺 |
 | §6.F 学情闭环 | PLAN-03～06 | 功能+Fake；正式人工评价/独立教师试用缺口 |
-| §6.G 流式性能 | PLAN-08 Fake 基线；本机 build 已过 | 真实模型测量与 Vite 人工仍缺 |
+| §6.G 流式性能 | PLAN-08 Fake 基线；本机 build；开发者 Vite S4 | 真实模型高并发测量仍缺 |
 | validation §7 | 本清单 | **不得宣告结题验收通过 / 不得默认发布** |
 
 ---

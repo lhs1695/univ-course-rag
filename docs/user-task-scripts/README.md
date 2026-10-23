@@ -1,6 +1,6 @@
 # PLAN-09 核心用户任务脚本
 
-冻结版本：`p09-tasks-v1`，2026-10-23（Asia/Shanghai）。**脚本与观察表已准备；独立用户试用未完成。排练≠独立试用。** 本轮无未参与开发者，无招募或外发，无真实模型调用，云费用 ¥0。
+冻结版本：`p09-tasks-v1`，2026-10-23（Asia/Shanghai）。**脚本与观察表已准备。独立用户试用按用户指示取消；改由开发者 Vite 代观察**（见 [observation-2026-10-23-developer.md](observation-2026-10-23-developer.md)）。排练≠独立试用；开发者观察≠独立试用。
 
 | 文件 | 用途 |
 | --- | --- |
@@ -8,6 +8,8 @@
 | [teacher-core.md](teacher-core.md) | T1 资料质量；T2 候选核查与动作；T3 刷新持久化 |
 | [observation-sheet-TEMPLATE.md](observation-sheet-TEMPLATE.md) | 一人一角色一轮，记录 n/N、耗时、协助、困惑与复测 |
 | [rehearsal-log-2026-10-22.md](rehearsal-log-2026-10-22.md) | 开发者 Fake/API 排练与检查原始输出；非用户试用 |
+| [observation-2026-10-23-developer.md](observation-2026-10-23-developer.md) | 开发者 Vite 代观察记录（用户授权替代独立试用） |
+| [evidence-2026-10-23/](evidence-2026-10-23/) | 观察与真实小样本证据（含估费记录） |
 
 ## 冻结与执行
 
@@ -22,6 +24,7 @@
 - 学生计划 N=4（S1～S4），教师计划 N=3（T1～T3），按角色分别报告，不混为准确率。n 是无操作协助且满足该任务全部成功条件的项数；协助后完成单列。已分配但失败、跳过、前置缺失的任务仍在该轮 N 中，逐项注明原因。
 - 尚未执行的独立试用填写「未观察；计划 N=4/3」，不能写成已观察的 0/N、100% 或 PASS。开发者/API 测试用例通过数与人类任务 n/N 分栏，pytest 耗时不代替用户耗时。
 - S1 必须保留「授权提问→回答→依据→点引用→实际原 PDF 页」链路；HTTP 返回 PDF 和页码只覆盖接口段，不能证明浏览器跳页或主张正确。T3 的 GET 重取只覆盖数据库持久化，不能证明浏览器刷新体验。
-- S4 的 Vite 流式、取消、重试和引用人工点检保持待执行；既有 Node 单测属于逻辑 smoke。教师候选是备课线索，不表示学生掌握度、知识点事实或教学效果。
+- S4 的 Vite 流式/取消/重试：开发者观察已执行（见 observation-2026-10-23-developer）；Node 单测仍只是逻辑 smoke。教师候选是备课线索，不表示学生掌握度、知识点事实或教学效果。
+- 仍缺可选补证：S3 隔离故障场景、T1 整份失败资料对照。
 
-合同入口：[PLAN-09 任务卡](../tasks/PLAN-09-core-user-tasks.md)、[验收合同](../validation.md)、[PLAN-05 闭环](../teacher-action-loop.md)、[生命周期/权限](../lifecycle-permissions-matrix.md)。下一实现项为 [PLAN-10](../tasks/PLAN-10-final-delivery.md)，不得据此跳过独立试用门槛。
+合同入口：[PLAN-09 任务卡](../tasks/PLAN-09-core-user-tasks.md)、[验收合同](../validation.md)、[PLAN-05 闭环](../teacher-action-loop.md)、[生命周期/权限](../lifecycle-permissions-matrix.md)。PLAN-10 清单已建；**不得宣称独立试用或结题验收通过**。

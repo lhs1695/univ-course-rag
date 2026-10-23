@@ -35,11 +35,11 @@
 | [engineering.md](engineering.md) | 现行组件边界摘要 |
 | [evaluation-results.md](evaluation-results.md) | 评测登记与口径（含 22 题分层） |
 | [retrieval-evidence-regression.md](retrieval-evidence-regression.md) | PLAN-07 历史证据分析与 Fake 回归；真实复跑/独立核验缺口 |
-| [stream-performance-baseline.md](stream-performance-baseline.md) | PLAN-08 SSE 合同与 Fake 1/5/10 并发基线；构建受环境限制、Vite 人工核验待 PLAN-09 |
-| [analytics-validation-protocol.md](analytics-validation-protocol.md) | PLAN-06 冻结标注/公式/任务观察；独立试用未完成 |
+| [stream-performance-baseline.md](stream-performance-baseline.md) | PLAN-08 SSE 合同与 Fake 1/5/10 并发基线；开发者 Vite S4 已观察 |
+| [analytics-validation-protocol.md](analytics-validation-protocol.md) | PLAN-06 冻结标注/公式/任务观察；正式人工/独立教师核验仍缺 |
 | [analytics-validation-report-TEMPLATE.md](analytics-validation-report-TEMPLATE.md) | PLAN-06 空白 n/N 报告与知识点/主题人工核验模板 |
-| [user-task-scripts/](user-task-scripts/README.md) | PLAN-09 学生/教师任务脚本与观察表；Fake 排练≠独立试用 |
-| [final-delivery-checklist.md](final-delivery-checklist.md) | PLAN-10 交付清单/干净环境步骤；空白机与试用缺口保留 |
+| [user-task-scripts/](user-task-scripts/README.md) | PLAN-09 脚本 + Fake + 开发者 Vite 观察；独立试用已取消 |
+| [final-delivery-checklist.md](final-delivery-checklist.md) | PLAN-10 交付清单/干净环境步骤；空白机暂缓；不得宣告结题通过 |
 | [中期演示运行卡.md](中期演示运行卡.md) | 演示切库/启动/固定问句（文件名历史遗留） |
 
 ## 任务与会话外状态

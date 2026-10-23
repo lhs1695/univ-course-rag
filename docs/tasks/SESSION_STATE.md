@@ -17,9 +17,10 @@
 
 ## 下一步
 
-1. 真实模型小样本已留证（`docs/user-task-scripts/evidence-2026-10-23/real-small-sample-2026-10-23-developer.json`；估费 <¥1）
+1. 文档口径已与「开发者代观察 / 空白机暂缓」对齐（本轮 sync）
 2. 空白机+备份恢复：暂缓，待用户再指示
-3. 用户点名后才考虑 push / 公开发布材料冻结
+3. 给老师展示中期冻结版：优先 `git worktree` 检出 `midterm-freeze-2026-10-21`（`f8278d7`），勿在本工作区硬 checkout 掉 ahead 的 `main`
+4. 用户点名后才考虑 push / 公开发布材料冻结
 
 ## 活跃 diff
 
