@@ -22,15 +22,15 @@
       <el-button :disabled="uploading || uploadUncertain" @click="retryUpload">重新上传所选文件</el-button>
     </template>
 
-    <el-table :data="documents" v-loading="loading" empty-text="还没有资料">
-      <el-table-column prop="filename" label="文件" min-width="180" class-name="filename-cell" />
-      <el-table-column label="状态" min-width="140">
+    <el-table class="docs-table" :data="documents" v-loading="loading" empty-text="还没有资料" style="width: 100%">
+      <el-table-column prop="filename" label="文件" min-width="160" class-name="filename-cell" />
+      <el-table-column label="状态" width="120">
         <template #default="{ row }">
           <el-tag :type="statusType(row.job_status)">{{ statusLabel(row.job_status) }}</el-tag>
           <p v-if="row.job_status === 'failed'" class="job-failure">{{ jobFailure(row.error_message) }}</p>
         </template>
       </el-table-column>
-      <el-table-column label="参与检索" width="130">
+      <el-table-column label="参与检索" width="120">
         <template #default="{ row }">
           <el-tag :type="row.retrieval_enabled ? 'success' : 'info'">
             {{ row.retrieval_enabled ? '启用' : '停用' }}
@@ -40,15 +40,7 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="质量" width="130">
-        <template #default="{ row }">
-          <el-tag v-if="row.job_status === 'succeeded'" :type="documentCoverage(row).type" :title="documentCoverageHint(row)" size="small">
-            {{ documentCoverage(row).label }}
-          </el-tag>
-          <span v-else>—</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="打开" width="142">
+      <el-table-column label="打开" width="150">
         <template #default="{ row }">
           <div v-if="row.job_status === 'succeeded'" class="student-open">
             <label v-if="isPdfDocument(row)" :for="`document-page-${row.id}`">页码</label>
@@ -70,7 +62,7 @@
           <span v-else class="subtle">暂不可打开</span>
         </template>
       </el-table-column>
-      <el-table-column v-if="canManage" label="维护" width="100">
+      <el-table-column v-if="canManage" label="维护" width="110">
         <template #default="{ row }">
           <el-button v-if="row.job_status === 'failed'" :disabled="busyIds.has(row.id)" type="primary" link @click="onRetry(row)">
             重试
@@ -90,7 +82,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 import { session } from "../session";
 import { courseAccess } from "../courseAccess";
-import { clampDocumentPage, documentCoverage, documentCoverageHint, documentContentUrl, isPdfDocument } from "../documentDisplay";
+import { clampDocumentPage, documentContentUrl, isPdfDocument } from "../documentDisplay";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
@@ -352,4 +344,10 @@ async function onRetry(row) {
 .student-open .el-link { font-weight: 600; }
 .page-input { width: 48px; }
 .subtle { font-size: 12px; color: var(--text-muted); }
+
+.docs-table { width: 100%; }
+:deep(.docs-table .el-table__header-wrapper),
+:deep(.docs-table .el-table__body-wrapper),
+:deep(.docs-table .el-scrollbar__wrap) { overflow-x: hidden !important; }
+:deep(.docs-table .el-scrollbar__bar.is-horizontal) { display: none !important; }
 </style>
