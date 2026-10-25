@@ -85,7 +85,7 @@ const rangeShortcuts = [
 const questionRows = computed(() => [
   ...frequent.value.map(row => ({ ...row, outcome: "有引用" })),
   ...noEvidence.value.map(row => ({ ...row, outcome: "依据不足" })),
-].sort((a, b) => b.count - a.count || String(a.query).localeCompare(String(b.query), "zh"));
+].sort((a, b) => b.count - a.count || String(a.query).localeCompare(String(b.query), "zh")));
 
 function hoursAgo(hours) {
   return new Date(Date.now() - hours * 60 * 60 * 1000);
@@ -174,3 +174,4 @@ onMounted(loadInsights);
 .section-title { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
 .query-clamp { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; line-height: 1.5; }
 </style>
+
