@@ -18,12 +18,12 @@
       <div v-else-if="notice" class="answer-content"><el-alert :title="notice.message" :type="notice.type" :closable="false"/><p>{{ notice.type === 'error' ? '本次回答未能完成，请稍后重试。' : '试着补充概念名称、章节或更具体的描述，也可以先浏览课程资料。' }}</p><router-link :to="`/courses/${courseId}/documents`">浏览课程资料</router-link></div>
       <div v-else-if="result?.answer" class="answer-content"><AnswerBody :answer="result.answer" :citations="result.citations || []" @citation="focusCitation"/></div>
       <section v-if="!selectedRound.pending" class="source-section" aria-labelledby="evidence-title"><div class="source-section-heading"><h3 id="evidence-title">回答从哪里来</h3><span>{{ result?.citations?.length || 0 }} 条资料依据</span></div>
-        <p v-if="result?.citations?.length" class="source-hint">每条依据标注页码；点「打开原 PDF」会在新窗口打开课件，地址带 <code>#page=</code>，便于回到原页核对（有引用 ≠ 主张已被证明）。</p>
+        <p v-if="result?.citations?.length" class="source-hint">点「打开原文」会在新窗口打开资料；有页码时可按页码进行资料定位，核对回答与原文（有引用 ≠ 主张已被证明）。</p>
         <ol v-if="result?.citations?.length" class="source-list"><li v-for="(citation,index) in result.citations" :key="citation.chunk_id" :id="`source-${citation.chunk_id}`" tabindex="-1" class="source-slip"><div class="source-slip-top"><span class="source-cite-number">[{{ index + 1 }}]</span><h4>{{ citationTitle(filenameOf(citation.document_id)) }}</h4><span class="source-page-badge" v-if="citation.page != null">{{ citationPageLabel(citation.page) }}</span><a :href="citationUrl(citation)" target="_blank" rel="noopener" class="source-page-link" :aria-label="`${citationOpenLabel(citation.page)}：${filenameOf(citation.document_id)}（新窗口）`">{{ citationOpenLabel(citation.page) }} <span aria-hidden="true">↗</span></a></div><blockquote>{{ cleanExcerpt(citation.snippet, citation.page) }}</blockquote><small>{{ filenameOf(citation.document_id) }}<template v-if="citation.page != null"> · #page={{ citation.page }}</template></small></li></ol>
         <p v-else class="source-empty">本次没有可展示的引用，请调整问题或核对课程资料。</p>
       </section>
     </article>
-    <section v-else class="before-reading"><span class="open-book-icon" aria-hidden="true">⌑</span><div><h2>{{ emptyTitle }}</h2><p v-if="isLearnerAsk">回答中的引用连接着课程资料。<br>点开页码，看看原文是怎样说的。</p><p v-else>试问结果若依据不足，请回到资料页补充或检查入库状态。</p></div></section>
+    <section v-else class="before-reading"><span class="open-book-icon" aria-hidden="true">⌑</span><div><h2>{{ emptyTitle }}</h2><p v-if="isLearnerAsk">回答中的引用连接着课程资料。<br>点「打开原文」，核对资料中的依据。</p><p v-else>试问结果若依据不足，请回到资料页补充或检查入库状态。</p></div></section>
     <div class="desk-context"><p v-if="loadingContext" role="status">正在读取资料状态…</p><p v-else-if="contextFailure">{{ contextFailure }} <button class="text-button" @click="loadContext">重新加载</button></p><p v-else-if="!readyDocumentCount">本课还没有可检索资料。请先<router-link :to="`/courses/${courseId}/documents`">查看课程资料</router-link>，或联系教师。</p></div>
   </div>
 </template>
@@ -73,7 +73,7 @@ const deskTitle = computed(() => {
   return history.value.rounds.length ? "沿着问题，继续阅读。" : "把没想明白的，写下来。";
 });
 const deskSubtitle = computed(() => isLearnerAsk.value
-  ? `在${courseTitle.value || "本课"}资料中找答案，每一条依据都可以翻回原页。`
+  ? `在${courseTitle.value || "本课"}资料中找答案，每一条依据都可以打开原文核对。`
   : `用教师视角试问「${courseTitle.value || "本课"}」：检查回答是否有引用、资料是否够用。`);
 const emptyTitle = computed(() => isLearnerAsk.value ? "答案之后，还有原文。" : "先试问，再回资料核对。");
 const now = ref(Date.now());

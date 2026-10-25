@@ -12,7 +12,7 @@ export function cleanExcerpt(text, page) {
   if (!meaningful || meaningful / compact.length < 0.45 || junkRuns >= 3 ||
       (meaningful < 12 && /["#`|\\=∑∫]/.test(raw))) {
     const sourcePage = Number.isInteger(Number(page)) && Number(page) > 0 ? ` 第 ${Number(page)} 页` : ' ';
-    return `摘录含公式或版式噪声，请打开原 PDF${sourcePage}核对。`;
+    return `摘录含公式或版式噪声，请打开原文${sourcePage}核对。`;
   }
   return clean;
 }
@@ -29,9 +29,9 @@ export function citationPageLabel(page) {
   return '原资料';
 }
 
-/** Short CTA: open original PDF at page. */
+/** Short CTA: open the original source, with a page when available. */
 export function citationOpenLabel(page) {
   const n = Number(page);
-  if (Number.isInteger(n) && n > 0) return `打开原 PDF · 第 ${n} 页`;
-  return '打开原 PDF';
+  if (Number.isInteger(n) && n > 0) return `打开原文 · 第 ${n} 页`;
+  return '打开原文';
 }

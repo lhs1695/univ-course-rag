@@ -9,8 +9,8 @@ test('excerpts remove extraction artifacts while retaining readable content', ()
 });
 
 test('garbled matrices degrade with source page; absent pages never become zero', () => {
-  assert.equal(cleanExcerpt('" # a " # b " # c', 60), '摘录含公式或版式噪声，请打开原 PDF 第 60 页核对。');
-  assert.equal(cleanExcerpt('###', null), '摘录含公式或版式噪声，请打开原 PDF 核对。');
+  assert.equal(cleanExcerpt('" # a " # b " # c', 60), '摘录含公式或版式噪声，请打开原文 第 60 页核对。');
+  assert.equal(cleanExcerpt('###', null), '摘录含公式或版式噪声，请打开原文 核对。');
 });
 
 test('titles retain original identity through a friendly display name', () => {
@@ -18,9 +18,9 @@ test('titles retain original identity through a friendly display name', () => {
   assert.equal(citationTitle('chapter_2-introduction.PDF'), 'chapter 2 introduction');
 });
 
-test('page and open labels make PDF page destination explicit', () => {
+test('page and open labels support sources with or without pages', () => {
   assert.equal(citationPageLabel(10), '第 10 页');
   assert.equal(citationPageLabel(null), '原资料');
-  assert.equal(citationOpenLabel(10), '打开原 PDF · 第 10 页');
-  assert.equal(citationOpenLabel(undefined), '打开原 PDF');
+  assert.equal(citationOpenLabel(10), '打开原文 · 第 10 页');
+  assert.equal(citationOpenLabel(undefined), '打开原文');
 });
