@@ -20,11 +20,13 @@ test("page label only calls PDF source units pages", () => {
 });
 
 test("coverage maps ingest state to student-friendly labels", () => {
-  assert.deepEqual(documentCoverage(pdf), { label: "已入库", type: "success" });
-  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), { label: "部分页面需核对", type: "warning" });
-  assert.match(documentCoverageHint({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), /空页|稀疏|异常/);
+  assert.deepEqual(documentCoverage(pdf), { label: "正常", type: "success" });
+  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), { label: "建议核对原文", type: "warning" });
+  assert.match(documentCoverageHint({ ...pdf, quality_warning: "COVERAGE_INCOMPLETE" }), /原文.*核对/);
   assert.equal(documentCoverageHint(pdf), "");
-  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "LOW_EXTRACTED_TEXT" }), { label: "文本较少", type: "warning" });
+  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "LOW_EXTRACTED_TEXT" }), { label: "建议核对原文", type: "warning" });
+  assert.match(documentCoverageHint({ ...pdf, quality_warning: "LOW_EXTRACTED_TEXT" }), /原文.*核对/);
+  assert.deepEqual(documentCoverage({ ...pdf, quality_warning: "OTHER_WARNING" }), { label: "建议核对原文", type: "warning" });
   assert.deepEqual(documentCoverage({ ...pdf, job_status: "running" }), { label: "处理中", type: "warning" });
   assert.deepEqual(documentCoverage({ ...pdf, job_status: "failed" }), { label: "暂不可用", type: "danger" });
 });
@@ -41,9 +43,17 @@ test("PDF content URL clamps page and non-PDF has no hash", () => {
   );
 });
 
-test("quality wording distinguishes PDF pages, slides and content units", () => {
+test("quality labels stay short regardless of file type or ingest statistics", () => {
   const row = { ...pdf, extracted_char_count: 100, chunk_count: 3 };
-  assert.equal(documentQualityLabel(row), "共 12 页内容 · 抽取约 100 字 · 已切成 3 段供检索");
-  assert.match(documentQualityLabel({ ...row, filename: "notes.md" }), /共 12 个内容单元/);
-  assert.match(documentQualityLabel({ ...row, filename: "slides.pptx" }), /共 12 张幻灯片内容/);
+  for (const filename of ["lecture.pdf", "notes.md", "slides.pptx"]) {
+    assert.equal(documentQualityLabel({ ...row, filename }), "正常");
+  }
+  assert.equal(documentQualityLabel({ ...row, source_unit_count: null, extracted_char_count: null, chunk_count: null }), "正常");
+  for (const quality_warning of ["COVERAGE_INCOMPLETE", "LOW_EXTRACTED_TEXT"]) {
+    assert.equal(documentQualityLabel({ ...row, quality_warning }), "建议核对原文");
+  }
+  for (const job_status of ["pending", "running", "failed"]) {
+    assert.equal(documentQualityLabel({ ...row, job_status }), "—");
+    assert.equal(documentCoverageHint({ ...row, job_status, quality_warning: "COVERAGE_INCOMPLETE" }), "");
+  }
 });

@@ -16,14 +16,10 @@ export function documentPageLabel(document) {
 
 export function documentCoverage(document) {
   if (document?.job_status === "succeeded") {
-    if (document.quality_warning === "LOW_EXTRACTED_TEXT") {
-      return { label: "文本较少", type: "warning" };
+    if (document.quality_warning) {
+      return { label: "建议核对原文", type: "warning" };
     }
-    if (document.quality_warning === "COVERAGE_INCOMPLETE") {
-      // Document-level flag only; page lists are not stored in API/DB.
-      return { label: "部分页面需核对", type: "warning" };
-    }
-    return { label: "已入库", type: "success" };
+    return { label: "正常", type: "success" };
   }
   if (document?.job_status === "failed") {
     return { label: "暂不可用", type: "danger" };
@@ -35,12 +31,12 @@ export function documentCoverage(document) {
 export function documentCoverageHint(document) {
   if (document?.job_status !== "succeeded") return "";
   if (document.quality_warning === "COVERAGE_INCOMPLETE") {
-    return "解析标记存在空页、稀疏文字页或异常控制字符等，不等于整份入库失败；重要结论请打开原 PDF 核对。";
+    return "部分内容解析存疑，请打开原文核对。";
   }
   if (document.quality_warning === "LOW_EXTRACTED_TEXT") {
-    return "抽取文字偏少，重要结论请打开原文件核对。";
+    return "抽取文字偏少，请打开原文核对。";
   }
-  return "";
+  return document.quality_warning ? "请打开原文核对解析结果。" : "";
 }
 
 export function clampDocumentPage(page, document) {
@@ -59,6 +55,5 @@ export function documentContentUrl(courseId, document, page = 1) {
 }
 
 export function documentQualityLabel(document) {
-  const unit = isPdfDocument(document) ? "页内容" : isPptxDocument(document) ? "张幻灯片内容" : "个内容单元";
-  return `共 ${document.source_unit_count} ${unit} · 抽取约 ${document.extracted_char_count} 字 · 已切成 ${document.chunk_count} 段供检索`;
+  return document?.job_status === "succeeded" ? documentCoverage(document).label : "—";
 }

@@ -23,50 +23,32 @@
     </template>
 
     <el-table :data="documents" v-loading="loading" empty-text="还没有资料">
-      <el-table-column prop="filename" label="文件" min-width="220" class-name="filename-cell" />
-      <el-table-column label="状态" width="120">
+      <el-table-column prop="filename" label="文件" min-width="180" class-name="filename-cell" />
+      <el-table-column label="状态" min-width="140">
         <template #default="{ row }">
           <el-tag :type="statusType(row.job_status)">{{ statusLabel(row.job_status) }}</el-tag>
+          <p v-if="row.job_status === 'failed'" class="job-failure">{{ jobFailure(row.error_message) }}</p>
         </template>
       </el-table-column>
-      <el-table-column label="失败原因" min-width="240">
-        <template #default="{ row }">
-          {{ row.job_status === "failed" ? jobFailure(row.error_message) : "—" }}
-        </template>
-      </el-table-column>
-      <el-table-column label="参与问答检索" min-width="200">
+      <el-table-column label="参与检索" width="130">
         <template #default="{ row }">
           <el-tag :type="row.retrieval_enabled ? 'success' : 'info'">
-            {{ row.retrieval_enabled ? '已启用' : '已停用 · 仍可预览' }}
+            {{ row.retrieval_enabled ? '启用' : '停用' }}
           </el-tag>
           <el-button v-if="canManage" :disabled="busyIds.has(row.id)" link type="primary" :aria-label="`${row.retrieval_enabled ? '停用检索' : '启用检索'}：${row.filename}`" @click="onToggleRetrieval(row)">
-            {{ row.retrieval_enabled ? '停用检索' : '启用检索' }}
+            {{ row.retrieval_enabled ? '停用' : '启用' }}
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="入库质量" min-width="260">
+      <el-table-column label="质量" width="130">
         <template #default="{ row }">
-          <template v-if="row.job_status === 'succeeded' && row.extracted_char_count != null">
-            <div>
-              {{ documentQualityLabel(row) }}
-            </div>
-            <el-tag
-              v-if="documentCoverage(row).type === 'warning'"
-              :type="documentCoverage(row).type"
-              size="small"
-              class="coverage-tag"
-              style="margin-top: 6px"
-            >
-              {{ documentCoverage(row).label }}
-            </el-tag>
-            <p v-if="documentCoverageHint(row)" class="subtle" style="margin: 6px 0 0; line-height: 1.4">
-              {{ documentCoverageHint(row) }}
-            </p>
-          </template>
+          <el-tag v-if="row.job_status === 'succeeded'" :type="documentCoverage(row).type" :title="documentCoverageHint(row)" size="small">
+            {{ documentCoverage(row).label }}
+          </el-tag>
           <span v-else>—</span>
         </template>
       </el-table-column>
-      <el-table-column label="打开原文" min-width="280">
+      <el-table-column label="打开" width="142">
         <template #default="{ row }">
           <div v-if="row.job_status === 'succeeded'" class="student-open">
             <label v-if="isPdfDocument(row)" :for="`document-page-${row.id}`">页码</label>
@@ -82,14 +64,13 @@
               :aria-label="`打开页码：${row.filename}`"
             />
             <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">
-              {{ isPdfDocument(row) ? '打开 PDF' : '打开资料' }}
+              打开
             </el-link>
-            <small v-if="isPdfDocument(row)" class="subtle">新窗口打开，可调整页码</small>
           </div>
           <span v-else class="subtle">暂不可打开</span>
         </template>
       </el-table-column>
-      <el-table-column v-if="canManage" label="维护" width="140">
+      <el-table-column v-if="canManage" label="维护" width="100">
         <template #default="{ row }">
           <el-button v-if="row.job_status === 'failed'" :disabled="busyIds.has(row.id)" type="primary" link @click="onRetry(row)">
             重试
@@ -109,7 +90,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 import { session } from "../session";
 import { courseAccess } from "../courseAccess";
-import { clampDocumentPage, documentCoverage, documentCoverageHint, documentQualityLabel, documentContentUrl, isPdfDocument } from "../documentDisplay";
+import { clampDocumentPage, documentCoverage, documentCoverageHint, documentContentUrl, isPdfDocument } from "../documentDisplay";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
@@ -365,10 +346,10 @@ async function onRetry(row) {
 .doc-actions .el-button + .el-button { margin-left: 0; }
 
 
-:deep(.filename-cell .cell) { color: #29463d; font-weight: 600; }
-.student-open { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.student-open small { flex-basis: 100%; }
+:deep(.filename-cell .cell) { color: #29463d; font-weight: 600; overflow-wrap: anywhere; }
+.job-failure { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--el-color-danger); }
+.student-open { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .student-open .el-link { font-weight: 600; }
-.page-input { width: 118px; }
+.page-input { width: 48px; }
 .subtle { font-size: 12px; color: var(--text-muted); }
 </style>
