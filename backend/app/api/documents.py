@@ -46,7 +46,7 @@ router = APIRouter(prefix="/courses/{course_id}/documents", tags=["documents"])
 logger = logging.getLogger(__name__)
 
 _ALLOWED_SUFFIX = {".pdf", ".pptx", ".docx", ".md", ".markdown", ".txt"}
-_MAX_UPLOAD_BYTES = 15 * 1024 * 1024
+_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 _UNSUPPORTED_FILE_TYPE = (
     "unsupported file type; accepted: PDF, PPTX, DOCX, Markdown, or plain text"
 )

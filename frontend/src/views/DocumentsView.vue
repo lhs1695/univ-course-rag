@@ -13,9 +13,6 @@
       >
         <el-button type="primary" :loading="uploading">上传资料</el-button>
       </el-upload>
-      <el-text v-if="canManage" type="info" size="small">
-        支持 PDF、PPTX、DOCX、Markdown 和纯文本；不支持旧版 PPT/DOC；单文件不超过 15 MB
-      </el-text>
       <el-button :loading="loading" @click="refreshDocuments">刷新资料列表</el-button>
     </div>
 
