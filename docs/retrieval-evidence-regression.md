@@ -99,3 +99,42 @@ Fake 场景用实际 Fake 检索/融合构造：已知向量点积为 0.44 的�
 - 跨页样本仅 5 题且部分要点在同页/相邻合并块内，不能称真正跨页专项验证已完成。
 
 本地命令、原始输出摘要及环境处理见 [PLAN-07 完成记录](tasks/PLAN-07-retrieval-evidence.md)。任务卡 done 表示本次用户限定交付完成；上述真实质量和独立核验缺口仍须后续补证，不能据此宣告结题整体通过。
+
+## 6. 2026-10-26 有限 Evidence 收口（本批）
+
+更新：2026-10-26（Asia/Shanghai）。本批**不修复 PROB-F02**；**不跑 22 题真实全量复跑**；**不宣称 Hybrid 显著优于 Dense**。
+
+### 6.1 Fake 复跑
+
+仓库根：
+
+```text
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan07_retrieval_evidence.py backend/tests/test_manual_verify_runner.py backend/tests/test_retrieve.py backend/tests/test_fusion.py -q -p no:cacheprovider --basetemp=output/plan07-reverify-2026-10-26
+```
+
+结果：**79 passed, 2 skipped, 1 warning in 13.46s**（exit 0）。两 skip 为既有可选 PostgreSQL / 真实 embedding。夹具已与 M4 默认 `retrieval_enabled=false` 对齐（`enable_retrieval` / retrieve 上传 helper），产品检索合同未削弱。
+
+### 6.2 链到同日 developer 真模型短问（≠ 独立评测）
+
+指针：
+
+- [observation-2026-10-26-developer-m3-m4.md](user-task-scripts/observation-2026-10-26-developer-m3-m4.md)
+- [`evidence-2026-10-26/`](user-task-scripts/evidence-2026-10-26/)（含 `real-ask-response.json`）
+
+口径（必须保留）：
+
+| 项 | 事实 |
+| --- | --- |
+| 核验者 | **developer** 代观察；**不是**独立人工核验 / 独立评测 |
+| 路径 | 学生短问；LLM=`deepseek-flash`；Embedding=硅基流动 `BAAI/bge-m3` |
+| 结果 | 链路 PASS：有答 + 引用；前端可拼 `#page=` |
+| 花费 | API `usage=null`，精确 CNY 未知；单次短问粗估远低于 ¥2；本批未再烧大额真实模型 |
+| 质量 | **不宣称**事实正确率 / 引用支持率达标；不得据此勾选结题 Evidence 通过 |
+| PROB-F02 | **仍未修复**；22 题全量真实复跑本批未做 |
+
+### 6.3 仍未勾选的缺口
+
+- 真实 22 题同题复跑与退化检查
+- 独立人工核验
+- PROB-F02 根因闭环与修复
+- 新引用点击回 PDF 页的独立核验记录（本批未新增）

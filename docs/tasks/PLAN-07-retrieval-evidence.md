@@ -109,3 +109,11 @@
 - PROB-F02 未修复、根因未完全定位；缺新真实配对 retrieval_hits / context / generation_status，本次按用户决定跳过单题复跑。
 - 无新真实前后对照、其他题退化验证、独立核验或 UI 点击验收；Fake 只证明合同，不能提高历史事实正确率。
 - 未新增 span metadata；保留合并末页引用 UX，严格页命中与内容支持的评分差异仍在。报告列出补证方向，不回改金标或历史记录。
+
+### 2026-10-26（Asia/Shanghai）：有限 Evidence 收口
+
+- 状态保持 `done`（限定交付）；**不**把本轮写成独立核验或结题质量通过。
+- Fake 复跑（仓库根，basetemp=`output/plan07-reverify-2026-10-26`）：**79 passed, 2 skipped**；exit 0。
+- 文档：[retrieval-evidence-regression.md](../retrieval-evidence-regression.md) §6 链到 [observation-2026-10-26](../user-task-scripts/observation-2026-10-26-developer-m3-m4.md) / `evidence-2026-10-26/`。
+- 明确：**developer 短问 ≠ 独立评测**；不宣称 Hybrid 优于 Dense；**PROB-F02 未修复**；真实 22 题全量复跑本批不做；本批无新增大额真实模型调用（沿用 10-26 短问记录）。
+- 仍未勾：真实同题回归、独立核验、PROB-F02 修复。
