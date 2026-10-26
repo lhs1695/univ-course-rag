@@ -69,3 +69,11 @@
 - LLM 对照：**未执行**（预算保留/未计费产品 LLM）
 - 提交：本会话；未 push
 
+
+## Agent 集成复核（2026-10-26 · t273u · 只读）
+
+- **可复用 API**：`POST /courses/{id}/insights/groups` + `question_groups.group_course_questions`（须 Embedding；可 `QuestionGroupingDisabled`）。
+- **Agent 复用点**：M2/M3 Fake/Replay **明确不跑**语义分组（报告元数据写 `similar_groups: N/A: semantic grouping is not run in M2`）。外发确认文案仍覆盖「语义分组服务」门禁，供将来非 Fake 路径，**不等于已接真分组进调查主路径**。
+- **过时 UI 假设**：勿假定调查页展示语义聚类结果；分组仍属 insights 实验能力。
+- **质量缺口不变**：正式人工标注仍缺（见 PLAN-06）；本批仅 Fake 复跑，**不宣称新功能或分组质量达标**。
+- 更新：2026-10-26 22:02 Asia/Shanghai。

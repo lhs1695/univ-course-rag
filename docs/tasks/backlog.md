@@ -2,7 +2,7 @@
 
 本表反映当前施工顺序与证据缺口。拍板摘要见 [结题已拍板规格](../结题已拍板规格.md)；产品方向以 [产品合同](../结题产品定义与完工标准.md) 为准；详细路线见 [implementation-plan.md](../implementation-plan.md)。任务卡状态不等于结题验收通过；Fake、开发者观察、人工核验与独立核验分别记录。
 
-> 2026-10-26 夜：t272u Trace 薄切 + PLAN-09 S3/T1 Fake/API PASS + PLAN-06 框架复验。此前 PLAN-08/15TTL/09矩阵与 PLAN-02/07/10。**不宣告结题通过**；默认不 push。
+> 2026-10-26 夜：t273u Trace Vite 代点验 PASS + PLAN-03/04/05 Agent 集成复核 + README/运行卡/workflow 最小刷新。此前 t272u Trace 薄切/PLAN-09 S3·T1/PLAN-06。**不宣告结题通过**；默认不 push。
 
 ## A. 既有任务与未完成证据
 
@@ -11,9 +11,9 @@
 | PLAN-00 | 开源复用审查 | 决策资料已落盘 | 新增依赖时按实际版本复核许可证 |
 | PLAN-01 | 指标与数据边界 | 冻结协议已完成 | 后续沿用冻结口径 |
 | PLAN-02 | 生命周期与权限 | 2026-10-26 M4 后回归：定向 44 passed；矩阵已对齐启用/停用/软关/学生可见性 | 无强制后续；权限变更时再回归 |
-| PLAN-03 | 教师统计与主题总览 | 有过实现；当前 UI 已简化为汇总数字和高频问句 | Agent 集成时复核可复用 API，不假定历史 UI 仍存在 |
-| PLAN-04 | 语义分组与意图候选 | 有实现与 Fake/开发者核验 | 正式人工标注质量未完成 |
-| PLAN-05 | 教师人工处理记录 | 后端与部分页面能力已有 | 不等于 Agent 任务闭环，集成前复核当前代码 |
+| PLAN-03 | 教师统计与主题总览 | 实现保留；**2026-10-26 Agent 集成复核**：可复用 insights 聚合；当前 UI 仅汇总+高频问句（主题/线索表为过时 UI 假设） | 无需新功能；变更时再回归 |
+| PLAN-04 | 语义分组与意图候选 | 实现保留；Agent Fake/Replay **不跑**语义分组；正式人工标注仍缺 | 授权后 PLAN-06 人工核验；不接进调查主路径除非另立项 |
+| PLAN-05 | 教师人工处理记录 | API/表保留；**≠ Agent 任务闭环**；当前 InsightsView 不主路径展示处理面板 | 人工处理与 Agent 报告勿自动合并 |
 | PLAN-06 | 分组质量验证 | 框架完成；**2026-10-26 复验 14p** | 正式人工标注/独立核验/教师试用仍缺；不伪造试用 |
 | PLAN-07 | 检索与 Evidence 回归 | Fake 79p/2s（10-26）；developer 短问已链入笔记；PROB-F02 未修 | 真实 22 题复跑/独立核验/PROB-F02 仍缺口（须授权） |
 | PLAN-08 | SSE 与性能 | 2026-10-26 Fake 复验 12p + 合跑 85p；基线文档已刷新 | 真实模型高并发未做；完整 Vite 流式逐项点验可选 |
@@ -28,13 +28,13 @@
 | ID | 标题 | 依赖 | 优先级 | 状态 | 任务卡 |
 | --- | --- | --- | --- | --- | --- |
 | PLAN-14 | 教师 Agent 合同与 Harness 基线 | PLAN-01、02；参考 PLAN-03～05 | P0 | **已落地**（M1 合同/Fake；代码已提交） | [PLAN-14-agent-harness-contract.md](PLAN-14-agent-harness-contract.md) |
-| PLAN-15 | Agent 运行时可靠性与权限治理 | PLAN-14、02 | P0 | **已落地**（M1–M3 + 最小 TTL + **最小只读 Trace**；待后置：PG 并发/完整 Trace UI） | [PLAN-15-agent-runtime-reliability.md](PLAN-15-agent-runtime-reliability.md) |
-| PLAN-16 | 教师侧课程问题调查 Agent | PLAN-14、15、03～05 | P0 | **已落地**（M2/M3 + 最小只读时间线；developer 观察 PASS；PDF 实落页 SKIP；真模型调查非主验收） | [PLAN-16-teacher-investigation-agent.md](PLAN-16-teacher-investigation-agent.md) |
+| PLAN-15 | Agent 运行时可靠性与权限治理 | PLAN-14、02 | P0 | **已落地**（M1–M3 + 最小 TTL + 最小只读 Trace；**Vite 时间线代点验 PASS**；待后置：PG 并发/完整 Trace UI） | [PLAN-15-agent-runtime-reliability.md](PLAN-15-agent-runtime-reliability.md) |
+| PLAN-16 | 教师侧课程问题调查 Agent | PLAN-14、15、03～05 | P0 | **已落地**（M2/M3 + 最小只读时间线；developer 观察 + **Trace Vite PASS**；PDF 实落页 SKIP；真模型调查非主验收；03～05 已复核可复用点） | [PLAN-16-teacher-investigation-agent.md](PLAN-16-teacher-investigation-agent.md) |
 | PLAN-17 | 课程业务基础完善 | PLAN-02；与 PLAN-15/16 协调 | P1 | **已落地**（M4 五件套；本机 API+部分 UI 观察 PASS；CSV/检索门控已验） | [PLAN-17-course-business-foundation.md](PLAN-17-course-business-foundation.md) |
 
 ### 推荐顺序（2026-10-26 夜更新）
 
-1. ~~M1–M3 / PLAN-14～16~~、~~M4/PLAN-17~~、~~PLAN-02/07/10~~、~~PLAN-08/15TTL/09矩阵~~、~~t272u Trace薄切+PLAN-09 S3/T1+PLAN-06复验~~：已本地完成（不 push）。
+1. ~~M1–M3 / PLAN-14～16~~、~~M4/PLAN-17~~、~~PLAN-02/07/10~~、~~PLAN-08/15TTL/09矩阵~~、~~t272u~~、~~t273u Trace Vite + PLAN-03/04/05 复核 + 运行文档刷新~~：已本地完成（不 push）。
 2. 授权后补 PLAN-06/07 真实/独立核验与 PROB-F02（开发者核验≠独立评测）。
 3. 可选后置：完整 Trace UI、PG 真实并发；Vite S3 故障剧本/演示库 failed；空白机/备份仍暂缓。
 4. **不启动** PLAN-18 GraphRAG；**不得宣告结题通过**；默认不 push。

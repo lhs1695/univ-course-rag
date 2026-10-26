@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "verifier": "developer",
+    "note": "Trace Vite Playwright headless；非独立试用；不得写成结题通过",
+    "at": "2026-10-26T22:00:21.308944+08:00",
+    "course_id": "93a86e31-8e5f-4708-a42f-ad93518ce32c",
+    "timezone": "Asia/Shanghai"
+  },
+  "results": [
+    {
+      "item": "ui_teacher_login",
+      "status": "PASS",
+      "detail": "url=http://127.0.0.1:5173/courses",
+      "at": "2026-10-26T22:00:16.250753+08:00"
+    },
+    {
+      "item": "ui_investigation_route",
+      "status": "PASS",
+      "detail": "url=http://127.0.0.1:5173/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/investigation",
+      "at": "2026-10-26T22:00:18.574579+08:00"
+    },
+    {
+      "item": "ui_create_queued",
+      "status": "PASS",
+      "detail": "run button visible",
+      "at": "2026-10-26T22:00:19.559702+08:00"
+    },
+    {
+      "item": "ui_fake_run",
+      "status": "PASS",
+      "detail": "events summary appeared",
+      "at": "2026-10-26T22:00:19.669748+08:00"
+    },
+    {
+      "item": "ui_events_summary_present",
+      "status": "PASS",
+      "detail": "has=True",
+      "at": "2026-10-26T22:00:19.997687+08:00"
+    },
+    {
+      "item": "ui_events_expand",
+      "status": "PASS",
+      "detail": "open=True",
+      "at": "2026-10-26T22:00:20.461335+08:00"
+    },
+    {
+      "item": "ui_whitelist_fields_visible",
+      "status": "PASS",
+      "detail": "attempt=True bullets=True types=['task_started', 'step_started', 'task_terminal'] len=589",
+      "at": "2026-10-26T22:00:20.870062+08:00"
+    },
+    {
+      "item": "ui_no_secrets_or_raw_query_markers",
+      "status": "PASS",
+      "detail": "hits=[]",
+      "at": "2026-10-26T22:00:20.872639+08:00"
+    },
+    {
+      "item": "api_events_whitelist",
+      "status": "PASS",
+      "detail": "n=8 extra=[] forbidden=[] bad_refs=False",
+      "at": "2026-10-26T22:00:21.085067+08:00"
+    }
+  ]
+}

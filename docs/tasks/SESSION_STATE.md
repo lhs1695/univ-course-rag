@@ -1,17 +1,15 @@
 # SESSION_STATE
 
-> 更新：2026-10-26 21:45（Asia/Shanghai）Trace 薄切 + PLAN-09 S3/T1 + PLAN-06 复验（t272u；未 push）。
+> 更新：2026-10-26 22:03（Asia/Shanghai）Trace Vite 代点验 + PLAN-03/04/05 Agent 复核 + 运行文档刷新（t273u；未 push）。
 
 **结论**：
-- **本批**：Agent 最小只读 Trace 时间线；PLAN-09 S3/T1 Fake/API PASS；PLAN-06 框架复验 14p（正式人工标注仍缺）。
-- **Trace**：events 白名单扩 step_no/tool_name/duration_ms/created_at/安全 evidence_refs；调查页 details 极薄展示；合跑 Agent+plan09+plan06 **69 passed**；investigation Node **5 pass**；完整 Trace UI 仍后置；本批 Vite SKIP。
-- **PLAN-09**：S3 Timeout→NO_EVIDENCE→恢复 cited_answer；T1 failed vs 警告 + 学生不可见 failed；**4 passed**；Vite/演示库诚实 SKIP；不伪造独立试用。
-- **PLAN-06**：框架复验 **14 passed** + ruff；正式人工标注/独立核验/教师试用**未做**。
-- **未做 / 不得宣告**：完整 Trace UI；PG 并发；PLAN-06/07 正式人工核验；Vite S3；演示库 failed；空白机/备份暂缓；**不得宣告结题通过**；未 push。
+- **本批**：① Trace 时间线 Vite/Playwright developer 代点验 **全 PASS**（白名单可见、无秘密标记；证据见 observation-2026-10-26-developer-trace）；② PLAN-03/04/05 **只读集成复核**（可复用 API / 过时 UI 假设 / 不宣称新功能）；③ README、中期演示运行卡、workflow **最小刷新**（Alembic 0015、调查/业务入口、默认不 push、空白机暂缓、不得宣告结题通过）；**未改** `中期答辩材料/` 正文。
+- **验证**：plan03+04+05+insights **19 passed**；ruff OK；investigation Node **5 pass**；Trace UI matrix 0 fail。
+- **未做 / 不得宣告**：完整 Trace UI；PG 并发；PLAN-06/07 正式人工核验；空白机/备份暂缓；**不得宣告结题通过**；未 push。
 
 ## 当前目标
 
-本批 t272u 已本地收口（不 push）。后续可选：完整 Trace UI、PG 并发、授权后正式核验、push。
+本批 t273u 已本地收口（不 push）。后续可选：完整 Trace UI、PG 并发、授权后正式核验、push。
 
 ## M4 本轮交付与证据（2026-10-26）
 

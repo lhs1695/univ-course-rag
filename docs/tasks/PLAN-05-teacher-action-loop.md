@@ -68,3 +68,11 @@
 - 正式库需 `alembic upgrade head`；未对演示库破坏性操作
 - 提交：本会话；未 push
 
+
+## Agent 集成复核（2026-10-26 · t273u · 只读）
+
+- **可复用 API**：`/courses/{id}/insight-reviews` GET/POST/PATCH（`insight_reviews` 表 / Alembic 0013 起）。
+- **与 Agent 关系**：教师调查 Agent **不写入** insight_reviews；处理记录闭环 ≠ Agent 任务状态机。集成时保留两套入口，禁止把 Agent 报告自动当成已确认处理动作。
+- **过时 UI 假设**：完成记录中的「InsightsView 处理面板」在当前简化反馈页中**不再作为主路径展示**；API 仍在。教师人工确认/动作以 API + 既有文档为准。
+- **本批验证**：定向 Fake pytest 通过；**不宣称新功能或教师试用完成**。
+- 更新：2026-10-26 22:02 Asia/Shanghai。

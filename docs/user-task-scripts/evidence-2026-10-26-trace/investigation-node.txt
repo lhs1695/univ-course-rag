@@ -1,0 +1,13 @@
+✔ read preserves safe event metadata from the course-scoped events endpoint (1.4038ms)
+✔ investigation SFC compiles the read-only timeline and formats local event times (68.0651ms)
+✔ unconfirmed creation/resume/retry reject before fetch; external calls remain zero (0.6332ms)
+✔ PDF references keep authorized content_url and exact page fragment (0.1109ms)
+✔ retry and run use explicit endpoints and cookies (0.3436ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 178.0248

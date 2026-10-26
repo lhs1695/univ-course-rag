@@ -66,3 +66,12 @@
 - 验证：pytest plan03+insights 16 passed；ruff OK；npm run build OK
 - 提交：本会话 Conventional Commit（PLAN-03）；未 push
 - 未做 / 风险：真人 Vite 点检留给 PLAN-09；主题仅为 exact_normalize 候选（语义分组 PLAN-04）
+
+
+## Agent 集成复核（2026-10-26 · t273u · 只读）
+
+- **可复用 API**：`GET /courses/{id}/insights`（metrics-v1 聚合）；`aggregate_course_insights` / `normalize_query` 已被 `agent_investigation` Fake/Replay 观察路径直接调用。
+- **过时 UI 假设**：完成记录里的「主题/线索表」已不再是当前 `InsightsView` 主界面——现页为汇总数字 + 高频问句；主题/线索能力以 API/历史实现为准，**不假定历史 UI 仍在**。
+- **与 Agent 关系**：课程调查（`/investigation`）是独立任务闭环；不替代 insights 描述层，也不宣称新增学情分数。
+- **本批验证**：`pytest test_plan03_analytics_overview.py + test_insights.py` 等合跑见 evidence；**不宣称新功能**。
+- 更新：2026-10-26 22:02 Asia/Shanghai。
