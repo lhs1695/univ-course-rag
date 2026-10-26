@@ -110,6 +110,12 @@ Trace 不记录 API Key、Cookie/Session、完整 Prompt、完整模型原始输
 
 禁止将“重复问句”直接写成知识盲区；禁止将 `no_evidence` 直接写成课件缺失；禁止把系统失败归为教学问题。没有来源的推断只能列为未知或候选解释。最终教师结论由教师在现有复核/业务界面记录。
 
+M2 API 实际形态（2026-10-26，Fake/Replay）：POST `/courses/{course_id}/agent-tasks` 继续仅创建 queued；POST `/{task_id}/run` 显式同步执行，终态不自动重跑（409 `investigation_not_queued`）；GET `/{task_id}/report` 单独返回 `task_id/status/error_code/report/sample_count/summary/sources/evidence_sources`。以上后两条路径均接在 `/courses/{course_id}/agent-tasks` 下，统一 `require_course_teacher`；原任务详情白名单仍不含报告。未完成/失败报告为 null，失败含安全错误码。
+
+`summary` 为执行时 metrics-v1 聚合快照，学生分母与最多 30 条最近授权学生尝试的 `sample_count` 分开记录；模型初始观察不含 user_id。当前请求中非 Fake LLM 或非 Fake Embedding 配置且未确认时，创建前 422 `external_processing_confirmation_required`，不落任务/事件；run 也复检当前配置与任务确认。即使确认，本期仍只执行 Fake/Replay，不构建真实 provider 或语义分组。Fake 默认报告只陈述日志观察；Replay 的证据工具为有界、同课、启用资料的 Fake 字面查找/读取，不宣称已接入生产语义检索。
+
+落库前复用 `InvestigationReport`、`validate_report_references` 与 Replay Harness，并再次核对当前 QueryLog/Chunk/Document 授权元数据。报告及 checkpoint 不保存问句原文，Trace 不保存动作/问句/证据正文。报告读取仅投影来源元数据；过期/删除/错课问句、删除/禁用/错课资料或 Chunk 标 `available=false`（unavailable），不选取问句或 Chunk 正文。不再返回依赖失效来源的 findings/候选原因/建议，摘要改为不可核查提示；保留历史聚合快照及样本量并明确限制。原报告快照不在读取时重写，物理 TTL 另期处理。
+
 ## 7. 初始预算与可判定终止规则（2026-10-26 用户确认）
 
 以下是服务端合同初值；模型、客户端、retry/resume 均不得自行调高或清零。Fake/Replay 用确定性时钟/计数证明边界，真实调用须另外验证 provider 超时。
@@ -193,14 +199,14 @@ Harness 必须覆盖：上限/超一、最后合法 `finish`、取消/预算/完
 
 `backend/app/agent/replay_harness.py` 提供纯内存确定性回放：动作输出和三个只读工具由测试注入；runner 对动作 schema、工具调用预算、已观察 Chunk/Document 引用、报告来源、步骤/任务终态、Trace 顺序和安全摘要进行检查。它没有数据库、网络、真实模型适配器或 API 路由，不能代表生产运行时。
 
-当前定向测试覆盖正常证据链、空检索/未知项、未知 action 与提示注入样本、一次格式重试、来源越权、工具异常、报告引用错配、预算耗尽、取消安全边界和 Trace 脱敏。跨进程幂等、崩溃恢复、QueryLog 实际过期、每次调用的服务端课程权限以及真实阻塞 I/O 超时仍未验证；须在 PLAN-15/16 结合数据库和现有权限依赖实现，不能由内存回放替代。
+内存定向测试覆盖正常证据链、空检索/未知项、未知 action 与提示注入样本、一次格式重试、来源越权、工具异常、报告引用错配、预算耗尽、取消安全边界和 Trace 脱敏。M2 另接同步 Fake/Replay 服务与数据库/API 测试：报告独立 HTTP+新 DB Session 读取、课程教师权限、外发工厂边界 spies、空窗、实际 QueryLog 留存失效/删除、资料禁用/错课、来源元数据读取和 E5-A 固定对照。跨进程幂等/崩溃恢复/lease、真实阻塞 provider I/O 超时与模型质量仍未验证；没有真实 provider adapter 被本期执行器调用。
 
 ## 10. 分期退出与 API 责任（已确认，待用户下令实现）
 
 | 阶段 | 责任与 API 最小合同 | 退出条件 |
 | --- | --- | --- |
 | M1 | PLAN-14 合同/Fake/Replay + PLAN-15 最小存储/权限与创建/单任务读取 API。创建输入见 §2；响应含 task_id、course_id、status、attempt；读取含累计预算与安全错误码，不返回原始问句/秘密 | §9 的 M1 必过项；创建提交后可独立读取持久化任务、无权者读不到；内存通过不算全部完成 |
-| M2 | PLAN-16 报告 API + PLAN-15 对应有界执行；报告读取含 task_id、status、结构化报告与可用来源元数据；未完成返回可判定状态、失败返回安全错误原因 | 报告 schema+来源校验+落库，失败有终态；H-external 零调用、H-empty、H12/H-source、E5-A 必过 |
+| M2 | 已实现显式同步 Fake/Replay run + 报告 API；读取含 task_id、status、结构化报告与可用来源元数据；未完成 report=null，失败返回安全错误原因；真实 provider 未接入 | 报告 schema+来源校验+落库，失败有终态；H01/H-external 零调用/H-empty/H12/H-source/E5-A 定向证据见 SESSION_STATE（bot 已复验本地提交） |
 | M3 | PLAN-15 最小 lease/取消/resume/retry + PLAN-16 教师 UI 与确认/报告/来源读取 | H06/H07/H11、来源 unavailable、UI 确认与 Vite PDF 回页；取消生效，一次进程中断后可显式恢复 |
 
 三类 API 均为课程教师权限。稳定错误至少区分权限拒绝（沿现有 403/404 防泄漏约定）、`409 active_investigation_conflict`、`409 idempotency_conflict`、`external_processing_confirmation_required`、来源 unavailable 与 §4 预算/执行错误；创建拒绝不得先入队或发外部调用。路由命名/HTTP 细节在实现小卡按现有 API 风格落地，不另建任务平台。

@@ -4,11 +4,45 @@
 
 ## 当前目标
 
-M1 已按当次授权实施：复用现有 agent 半成品，补合同/Fake Harness、0014 两表迁移、事务创建/读取与课程教师 API；PLAN-17 只完成 Markdown 模型盘点。M2/M3 未实施。bot 已复验定向测试并通过后本地提交；未 push。
+M1 已完成并由 bot 本地提交；M2 本次按明确授权完成报告 API 薄切；bot 复验定向测试后本地提交（未 push）。M3 未实施；PLAN-17 仍只完成 Markdown 模型盘点。未 push。
 
 2026-10-26 PLAN-FE-01 visual punch：学生「问」强化为深蓝证据台、「学」加强纸墨与实心按钮，教管仍浅色；前端 46/46 测试通过；本机 `npm run build` 已通过；未 push。前端视觉已获用户通过（既有测试/build 记录，本轮未复跑）。
 
-## M1 实际交付（2026-10-26）
+## M2 本轮交付与证据（2026-10-26）
+
+- 复用 `contracts.InvestigationReport` / `validate_report_references` / `replay_harness.run_replay`、metrics-v1 聚合、FastAPI/SQLAlchemy 和既有两表；无新模型、依赖、编排框架、第二套 RAG 或 Alembic。新增 `services/agent_investigation.py`；扩展 API/store；新增 API/runner/E5-A 三份测试；同步合同、PLAN-16、本页与当前交接。
+- POST `/courses/{course_id}/agent-tasks` 仍提交 queued，保持 M1 幂等/同课活跃冲突。POST `/{task_id}/run` 显式同步 Fake/Replay：数据库条件更新只领取 queued，running 与启动事件先提交；报告校验后连同用量/安全 Trace/终态同事务写入。终态不可再次 run（409 `investigation_not_queued`），没有静默整任务重试。新鲜会话可读持久化结果；没有 lease/恢复或真实 PostgreSQL 并发证据。
+- GET `/{task_id}/report` 返回结构化报告、状态/安全 error_code、执行时统计快照、sample_count 与来源元数据。创建/详情/run/report 均 `require_course_teacher`；原详情白名单不返回报告。H01 非空报告由独立 HTTP 登录+新 DB Session 读取；学生、他课教师、课程内学生身份教师、无教师身份管理员、匿名、撤权被安全拒绝；错课/不存在/任务过期为安全 404。
+- H-external：非 Fake LLM / 非 Fake Embedding / Embedding+语义分组配置组合在未确认时创建前 422 `external_processing_confirmation_required`，任务/事件行数均 0；spies 观察真实 `llm.build_llm/get_llm`、`embedder.build_embedder/get_embedder`、`question_groups.build_embedder/build_question_embedder/get_question_embedder`，所有调用次数均 0。confirm=true 只开门禁，仍 Fake 执行且 spies 全 0；run 复检配置变化后确认要求。未执行真实模型/问句外发。
+- H-empty：无 QueryLog 时 sample_count / recorded_attempts / student_attempts 均 0，比例为 null，findings/candidate_causes 为空，unknowns 说明无数据，合法 succeeded。初始观察最多 30 条授权窗内学生尝试，聚合分母保留全窗；另验 40 学生尝试时 sample_count=30、分母=40，以及 focus 限制。
+- H12/H-source：QueryLog 删除/过期/错课，Chunk 删除/错课，Document 删除/禁用/错课，均 `available=false`（unavailable）。读取 SQL 只选 QueryLog/Chunk/Document 元数据，不选 `query_logs.query` / `chunks.text`；无正文、无继续解析，相关 findings/候选原因/建议隐去，摘要标不可核查。落库前再验当前来源，工具观察后来源失效会 failed；原问句（含 JSON 转义文本）禁止复制到报告。checkpoint/Trace 不保存问句/证据正文，原报告快照不在 GET 时重写；物理 TTL 未做。
+- 有界执行：沿用 Harness 预算/安全错误码，初始观察耗时计入累计运行预算；合法 finish 边界按合同保留。验证 failed、budget_exceeded、失败无异常原文，后验失败保留已消耗模型/工具次数且只存一个最终 task_terminal。当前只有 attempt=1，终态无自动重跑；跨 attempt 恢复/累计由 M3 实现。
+
+### 本轮实际命令与原始输出
+
+```powershell
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_agent_contracts.py backend/tests/test_agent_replay_harness.py backend/tests/test_agent_task_migration.py backend/tests/test_agent_task_store.py backend/tests/test_agent_task_api.py backend/tests/test_agent_investigation_api.py backend/tests/test_agent_investigation_runner.py backend/tests/test_agent_e5a_fixture.py -q -rP
+backend/.venv/Scripts/python.exe -m ruff check backend/app/agent backend/app/api/agent_tasks.py backend/app/services/agent_task_store.py backend/app/services/agent_investigation.py backend/tests/test_agent_*.py
+git diff --check
+```
+
+- pytest 最终（Codex）：`107 passed, 2 warnings in 9.71s`；bot 复验同八文件：`107 passed, 1 warning in 10.43s`，exit 0；M1 五文件原有 **69** 例仍绿，新 API **14** / runner **23** / E5-A **1**。`-rP` 仅用于显示 E5-A 捕获的实际指标。warning 为既有 Starlette/anyio 弃用提示与 pytest 缓存 ACL 拒绝提示；未跳过测试、未放宽 ACL。
+- Ruff：`All checks passed!`，exit 0；main.py 未改。`git diff --check`：exit 0（Git 提示部分文件 LF→CRLF，无空白错误）。收尾 `backend/.venv/Scripts/python.exe -`（stdin，仅标准库）内容/本地链接/新增文件尾空白自检原始输出：`checked_files=10, markdown_files=4, local_links=41, broken_links=[], whitespace_errors=[], M2_checked=4, M3_pending=3`，exit 0。
+- 首轮新增测试：`12 passed, 3 warnings, 16 errors in 23.09s`，全部 error 为新夹具漏填非空 `Chunk.embedding_model`，已补 `fake-fixture`；修复后 runner+E5-A `17 passed, 2 warnings in 4.52s`。其后补正常非空 HTTP/失败 API、失效前提交复检、30 条上限/focus/耗时预算与原文复制保护，最终以 107 例输出为准。没有改产品约束迁就夹具。
+
+### H-E5-A 原始指标与口径
+
+固定代码夹具 `e5a-m2-v1` 位于 `backend/tests/test_agent_investigation_runner.py`，门禁在 `test_agent_e5a_fixture.py`。课程 ID 固定 `00000000-0000-0000-0000-00000000000a`；UTC 窗口 `[2026-10-24T00:00:00+00:00, 2026-10-25T00:00:00+00:00)`，固定 5 条学生问句 ID、1 Document / 1 Chunk / 第 3 页，另有他课/窗外/教师对照记录。
+
+- A：原有 `aggregate_course_insights` 统计/问句列表；本课窗内 recorded=6、student=5、teacher=1，cited_answer=2 / no_evidence=2 / failure=1；代表列表各 2 条重复尝试。C 与 A 用同一数据库快照并校验聚合完全一致。
+- B：`N/A: Semantic grouping is not run in M2 Fake/Replay`，没有相似组/Embedding 外发。
+- C：预列 5 项事实（窗口/样本计数、重复提问观察、依据不足观察、系统失败观察、当前资料证据页）覆盖 **5/5**，逐项校验 ID 支持和限定措辞。捏造引用 **0/6**（5 个 QueryLog+1 个 Chunk 的去重引用分母）；候选原因确定化 **0/1**；no_evidence 断言资料缺失 **0**；系统失败归教学问题 **0**；终态 `succeeded`。
+- 最终捕获原值：`model_calls=3, tool_calls=3, runtime_seconds=0.0`（本次计时精度内；此前定向运行曾捕获约 0.015 秒，不作为性能结论），attempt=1。成本 `Fake; no real cost estimate`。空夹具的事实覆盖分母为 0/N/A，以 H-empty 单独验。
+- 核验层级：开发者固定语义/来源断言与 Fake/Replay 控制流程；没有真实教师参与、没有真实模型质量或效率通过声明。
+
+未做：M3 教师 UI/确认流、Vite PDF 回页、lease/取消/resume/retry、真实 provider 阻塞 I/O 超时/质量、完整物理 TTL、真实 PostgreSQL 并发。未读 `.env`、未连接 cn_v2/默认 PostgreSQL 做 upgrade、未下载大依赖、未改前端/中期材料、未 commit/stage/push。原有未跟踪中期笔记保留；git status 仍有历史临时目录 ACL 警告，未读/删这些目录。
+
+## M1 实际交付（2026-10-26，历史阶段记录）
 
 - 现有 `backend/app/agent/` 和两份测试直接扩展：状态合同、summary + findings.description 字符预算、finish 计工具调用、全任务仅一次格式纠正、可恢复工具错误有限重试、注入模型/工具超时、取消优先与合法最后 finish。H01–H05/H08–H10/H-timeout 在测试中显式映射。
 - 两表：`agent_tasks` / `agent_task_events`，status VARCHAR；0014 继承 0013，FK/幂等唯一/同课单活跃 partial unique index 与计划索引均落地。SQLite 隔离 upgrade/downgrade + PostgreSQL 离线 DDL compile；没有连接默认 URL 或任何 PostgreSQL 实例。
@@ -91,7 +125,7 @@ git diff --check
 
 ## 下一步
 
-1. M1 已本地提交；下一步仅在授权后开 M2（报告 API / 外发零调用 / E5-A）。
-2. 仅在后续授权后进入 M2：调查报告 schema/来源校验落库、有界生产执行与失败终态；不把 queued 创建解释为已经调查完成。
-3. M2 报告 API 按外发零调用/来源/空窗/E5-A 门禁验收，再开 M3 UI+PDF 回页+最小 lease/取消/显式恢复；PLAN-17 五件套仍必做，可并行盘点。
+1. M2 已本地提交；下一步仅在授权后开 M3（教师 UI + 最小 lease/取消/显式恢复 + Vite 回 PDF）。
+2. 创建 queued 仍不等于已执行调查，须显式 POST .../run。真实模型质量与外发真跑另行授权；PLAN-17 五件套仍可并行盘点。
+3. 后续获得授权再开 M3 UI+PDF 回页+最小 lease/取消/显式恢复；PLAN-17 五件套仍必做，可并行盘点。
 4. 开工前明确当前切片与隔离数据库测试范围；真实模型、问句外发、破坏性迁移仍须当次授权。禁止默认 DATABASE_URL/正式 cn_v2 迁移；不默认 push。

@@ -11,6 +11,12 @@ from app.config import Settings, get_settings
 from app.db import get_db
 from app.models.agent_task import AgentTask
 from app.security.deps import CourseAccess, require_course_teacher
+from app.services.agent_investigation import (
+    InvestigationReportOut,
+    external_processing_required,
+    read_report,
+    run_investigation,
+)
 from app.services.agent_task_store import (
     AgentTaskConflict,
     InvalidInvestigationWindow,
@@ -57,7 +63,8 @@ def create_investigation_task(
     db: Annotated[DbSession, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AgentTaskOut:
-    # M1 only queues persisted state: confirmation=False is valid, with no dispatch.
+    if external_processing_required(settings) and not body.confirm_external_processing:
+        raise HTTPException(status_code=422, detail="external_processing_confirmation_required")
     try:
         row = create_task(db, body, course_id=access.course.id, created_by=access.user.id,
                           retention_days=settings.query_log_retention_days)
@@ -66,6 +73,39 @@ def create_investigation_task(
     except InvalidInvestigationWindow as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
     return _out(row)
+
+
+@router.post("/{task_id}/run", response_model=AgentTaskOut)
+def run_fake_investigation_task(
+    task_id: UUID,
+    access: Annotated[CourseAccess, Depends(require_course_teacher)],
+    db: Annotated[DbSession, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> AgentTaskOut:
+    row = get_task(db, task_id, course_id=access.course.id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if external_processing_required(settings) and not row.confirm_external_processing:
+        raise HTTPException(status_code=422, detail="external_processing_confirmation_required")
+    if row.status != TaskStatus.queued:
+        raise HTTPException(status_code=409, detail="investigation_not_queued")
+    if not run_investigation(db, row, course_title=access.course.title,
+                             retention_days=settings.query_log_retention_days):
+        raise HTTPException(status_code=409, detail="investigation_not_queued")
+    return _out(row)
+
+
+@router.get("/{task_id}/report", response_model=InvestigationReportOut)
+def read_investigation_report(
+    task_id: UUID,
+    access: Annotated[CourseAccess, Depends(require_course_teacher)],
+    db: Annotated[DbSession, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> InvestigationReportOut:
+    row = get_task(db, task_id, course_id=access.course.id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return read_report(db, row, retention_days=settings.query_log_retention_days)
 
 
 @router.get("/{task_id}", response_model=AgentTaskOut)
