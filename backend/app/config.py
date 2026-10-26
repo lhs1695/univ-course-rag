@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-flash"
+    # Teacher Agent (optional isolation). Empty key/model/url fall back to DEEPSEEK_*.
+    agent_deepseek_api_key: str = ""
+    agent_deepseek_base_url: str = ""
+    agent_deepseek_model: str = ""
     retrieval_strategy: Literal["dense", "hybrid"] = "dense"
     rrf_k: int = Field(default=60, ge=1, le=10_000)
     reranker_backend: str = "disabled"
@@ -63,6 +67,16 @@ class Settings(BaseSettings):
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
     reranker_base_url: str = "https://api.siliconflow.cn/v1"
 
+
+
+    def effective_agent_deepseek_api_key(self) -> str:
+        return self.agent_deepseek_api_key.strip() or self.deepseek_api_key
+
+    def effective_agent_deepseek_model(self) -> str:
+        return self.agent_deepseek_model.strip() or self.deepseek_model
+
+    def effective_agent_deepseek_base_url(self) -> str:
+        return self.agent_deepseek_base_url.strip() or self.deepseek_base_url
 
 class ConfigurationUnavailable(Exception):
     """Only a stable category may leave the configuration boundary."""
