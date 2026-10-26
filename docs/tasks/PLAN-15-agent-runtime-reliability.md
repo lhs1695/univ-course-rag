@@ -5,7 +5,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-15 |
-| 状态 | 计划已确认待开工（2026-10-26 用户确认；实现尚未开始） |
+| 状态 | in_progress：M1 15A/15B + 创建/读取 API 已实现；M2/M3 未实现 |
 | 须授权 | 真实模型调用、真实课程问句外发、正式库破坏性迁移均须当次明确授权；优先隔离数据库和 Fake/Replay |
 
 ## 目标
@@ -36,8 +36,20 @@
 - [ ] 服务端强制课程/文档/Chunk 授权；伪造 ID、越权参数和提示注入均不能扩大权限。
 - [ ] 工具采用 allowlist 与结构化 schema；不允许任意 SQL、任意文件访问或隐式外网调用。
 - [ ] PLAN-14 Harness 对正常、证据不足、工具失败、超时、取消、恢复、越权、预算耗尽和重复副作用的定向用例通过。
-- [ ] 运行定向 pytest、ruff；如涉及 UI 或迁移，按实际范围执行构建与隔离库验证并贴原始输出。
-- [ ] Alembic 0014 只新增任务/事件表；SQLite 隔离升级/降级和 PostgreSQL DDL 编译测试通过，未对默认 `DATABASE_URL` 或正式演示库运行迁移。
+- [x] M1 范围运行定向 pytest、ruff、隔离迁移验证并贴原始输出；本轮不涉及 UI，不运行前端构建。后续批次仍须另行验收。
+- [x] Alembic 0014 只新增任务/事件表；SQLite 隔离升级/降级和 PostgreSQL DDL 编译测试通过，未对默认 `DATABASE_URL` 或正式演示库运行迁移。
+
+## M1 实际交付与证据（2026-10-26）
+
+- [x] 15A：`AgentTask` / `AgentTaskEvent`、模型导出、Alembic metadata（含 InsightReview）和 0014（revises 0013）；SQLite 隔离升级/降级、FK/索引/唯一约束与 PostgreSQL 离线升级/降级 DDL 编译。
+- [x] 15B 创建/读取子集：queued/attempt=1、服务端预算与零用量、配置留存到期时间、UTC 规范化、key hash/规范化指纹复用或冲突；task_created 事件和任务原子提交，失败回滚不留半条记录。
+- [x] M1 API：`POST /courses/{course_id}/agent-tasks`、`GET /courses/{course_id}/agent-tasks/{task_id}` 都挂 `require_course_teacher`；独立 HTTP 登录与新 DB Session 可读提交结果。学生/其他课教师/无课程教师身份管理员被拒绝；错课、缺失与过期为安全 404；响应只投影安全字段。
+- [x] 新建同课单活跃：`uq_agent_tasks_active_course` 为 SQLite/PostgreSQL partial unique index，覆盖 queued/running/cancel_requested；409 `active_investigation_conflict`。相同 key/指纹优先复用；不同指纹 409 `idempotency_conflict`。真实 SQLite 约束失败后回滚重查路径有确定性测试。
+- [ ] PostgreSQL 独立并发集成：本轮只有离线 DDL，没有连接 PostgreSQL；不能以 SQLite 顺序/故障注入测试宣称真实 PG 并发已通过。
+- [ ] 15B 后续状态/检查点/执行事件追加与序号分配：M1 只写 sequence=1 的创建事件，未实现通用事件写接口、步骤持久化重建或执行者写入。
+- [ ] M2 报告与有界生产执行/来源门禁，M3 lease/token fencing/取消/恢复/retry API、UI/PDF 回页；完整物理清理仍未做。
+
+M1 创建不分发执行器、不外发数据；`confirm_external_processing=false` 可以排队。真实外发路径创建前拒绝与三类调用=0 spies 属于 M2，不能从本轮无执行器推断已验该门禁。测试命令、原始计数、警告与环境限制统一见 [SESSION_STATE](SESSION_STATE.md)。上方跨期复合验收项保留未勾选，不能把 M1 创建成功等同于生产运行时完成。
 
 ## 约束
 
@@ -50,12 +62,12 @@
 
 ### 已确认的现有基础
 
-- Alembic 当前版本为 `0013_insight_reviews`；目前没有 Agent task/event 表。`IngestJob` 只服务于文档入库，不应复用为 Agent 任务。
+- 开工前 Alembic 为 `0013_insight_reviews`；M1 代码 head 已增加 `0014_agent_task_runtime`，仅隔离验证，未应用到演示库。`IngestJob` 只服务于文档入库，不复用为 Agent 任务。
 - `QueryLog.created_at` 是来源时间字段；`query_log_retention_days` 默认 90 天，`maintain_query_logs` 支持有上限的 dry-run/delete 批次。
 - `require_course_teacher` 从路由 `course_id`、当前 Session 和 `CourseMember` 关系重新验证教师权限；模型动作不应接受 `course_id`，每个工具执行时仍须重新检查 Chunk/Document 的课程归属与 `retrieval_enabled`。
 - 当前模型没有通用任务恢复机制。`BackgroundTasks` 不能单独证明进程重启后的可恢复性。
 
-### 建议的最小数据结构（草案；本节尚未授权/执行迁移）
+### 两表数据结构（M1 已实现；迁移仅隔离验证）
 
 首版确定采用 **两张表**，不引入 Redis/Celery，也不单独创建 `agent_task_steps`。步骤状态由不可变的事件流按 `(task_id, attempt, step_no)` 重建；若后续查询/恢复测试证明事件重建不能满足需求，再另立决策，不在首版重复维护两份步骤状态。
 
@@ -67,6 +79,8 @@
 2. `agent_task_events`：`task_id`、`sequence`、`attempt`、可空 `step_no`、`event_type`、`tool_name`、`status`、`safe_summary`、`evidence_refs_json`、`error_code`、`duration_ms`、`created_at`。主键 `(task_id, sequence)`；`task_id` 外键级联删除。事件只追加，不原地更新；`last_event_sequence` 与新事件必须在同一事务中更新。
 
 建议索引：任务列表 `(course_id, created_at)`、课程/状态列表 `(course_id, status, created_at)`、失效执行者扫描 `(status, lease_expires_at)`、过期清理 `(expires_at)`；事件按 `(task_id, sequence)` 主键顺序读取即可。避免为暂未使用的查询模式堆叠索引。
+
+M1 另增加 `uq_agent_tasks_active_course`：按活跃状态过滤的 course_id 唯一索引，用数据库约束保证新建时同课单活跃。
 
 `idempotency_key_hash` 使用客户端 key 的 SHA-256；`request_fingerprint` 使用规范化请求 JSON 的 SHA-256，规范化字段包含 course/user/task type、focus、UTC 窗口和外部处理确认，但不包含幂等 key 本身。相同 key + 相同指纹返回原任务；相同 key + 不同指纹返回冲突。并发竞态依靠数据库唯一约束，`IntegrityError` 后必须回滚并重新查询精确的幂等记录；若不存在对应记录，则按真正的数据库错误处理，不能把所有完整性错误误报为幂等冲突。
 
@@ -92,9 +106,9 @@
 - 预算初值及跨 attempt 累计、有限超时、下一调用前检查、禁止静默整任务重试、工具有限重试与 finish 竞争例外只在 [任务合同 §7](../teacher-agent-task-contract.md#7-初始预算与可判定终止规则2026-10-26-用户确认) 维护；本卡不复制预算表。
 - M1 退出为合同/Fake Harness+任务创建后持久化可读/无权拒绝；M2 报告 schema/来源校验落库、失败终态；M3 取消生效与一次进程中断后显式恢复。Harness 按 [合同 §9](../teacher-agent-task-contract.md#9-harness-首批场景与分期门禁) 分期，失效来源不可解析不能等物理 TTL 清理。
 
-### 分批实施计划（每批独立验收；本轮仅完善计划）
+### 分批实施计划（M1 子集已实现，其余仍为计划）
 
-批次是工作拆分，不要求按 15A～15E 全部完成后才开始 PLAN-16。M1 取 15A/15B 与最小权限/任务读取，M2 接入报告 API 所需的有界执行、终态与工具权限，M3 再补 15C 最小 lease/取消/恢复和教师 UI；15D 的对应验收随各期执行。完整 TTL 清理与 Trace UI 可后置；各期 API 责任与退出条件已在 [任务合同 §10](../teacher-agent-task-contract.md#10-分期退出与-api-责任已确认待用户下令实现) 冻结；[审阅必须改项已确认](PLAN-review-开工计划-2026-10-26.md)，待用户下令开 M1。
+批次是工作拆分，不要求按 15A～15E 全部完成后才开始 PLAN-16。M1 取 15A/15B 与最小权限/任务读取，M2 接入报告 API 所需的有界执行、终态与工具权限，M3 再补 15C 最小 lease/取消/恢复和教师 UI；15D 的对应验收随各期执行。完整 TTL 清理与 Trace UI 可后置；各期 API 责任与退出条件已在 [任务合同 §10](../teacher-agent-task-contract.md#10-分期退出与-api-责任已确认待用户下令实现) 冻结；M1 已按当次授权实施，见下方证据。
 
 | 批次 | 范围与文件 | 必须证明 | 退出条件 |
 | --- | --- | --- | --- |
@@ -136,7 +150,7 @@ git diff --check
 
 上述分批文件名是计划目标；如果实现前发现仓库布局已有更合适的等价模块，先更新本卡再改代码。每批结束都更新真实文件、测试结果和剩余风险，不把后续批次预先标记通过。
 
-既有记录只声明完成静态盘点和开工计划，尚未新增 SQLAlchemy 模型、Alembic 迁移、存储服务、API 或运行时服务；本次审阅未读代码核验。审阅必须改项已确认，下一实现项待用户下令，从 M1 对应最小子集开始；首个可演示交付仍为 M2 调查报告。迁移仅在隔离库验证，不得应用到正式演示库；实施前重新检查 `git status --short` 并保护现有未提交工作。
+M1 已新增 SQLAlchemy 模型、0014、事务存储和创建/读取 API；没有实现生产执行器。M2 调查报告仍待实施。迁移仅在隔离 SQLite 验证升级/降级及 PostgreSQL 离线 DDL 编译，不应用到默认或演示数据库。
 
 ## 禁止改动的路径
 

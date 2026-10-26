@@ -8,6 +8,8 @@ Settings.model_config["env_file"] = None
 from app.db import Base, get_db, get_session_maker
 from app.main import app
 from app.models import (  # noqa: F401
+    AgentTask,
+    AgentTaskEvent,
     Chunk,
     Course,
     CourseMember,
