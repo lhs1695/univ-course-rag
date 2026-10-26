@@ -5,7 +5,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-15 |
-| 状态 | **已落地**：M1/M2/M3 + **最小物理 TTL（2026-10-26）**；cn_v2 0015；待后置：PG 真实并发 / 完整 Trace UI |
+| 状态 | **已落地**：M1/M2/M3 + **最小物理 TTL / 最小只读时间线（2026-10-26）**；cn_v2 0015；待后置：PG 真实并发 / 完整 Trace UI |
 | 须授权 | 真实模型调用、真实课程问句外发、正式库破坏性迁移均须当次明确授权；优先隔离数据库和 Fake/Replay |
 
 ## 目标
@@ -32,7 +32,8 @@
 - [x] M3 一次进程中断后标 interrupted，仅显式 resume 回 queued 或失败；复检当前课程教师权限、资料/来源、外发确认及剩余额度，旧 token 不得写回。显式 retry 为同任务新 attempt，禁止静默重启终态。
 - [ ] M1 创建/单任务读取、M2 报告读取 API 均挂 require_course_teacher；创建后独立读持久化任务、无权者读不到。
 - [ ] 预算按任务合同 §7 累计跨 attempt，下一调用前检查、每次调用有限超时；合法 finish 例外、取消 > 预算 > 成功与有限工具重试均有边界证据。
-- [ ] Trace 可关联任务、步骤、工具调用、权限判定、证据 ID/页码、耗时、错误和预算字段（可获得时）。
+- [x] 最小只读时间线已落地：events 白名单含 attempt/step、事件/工具名、耗时、时间、安全摘要/错误码及安全证据 ID/页码；现有调查页 details 展示，课程教师可读；完整 Trace UI 仍后置。
+- [ ] 完整 Trace UI：权限判定、预算等进一步关联与交互仍后置，不以最小时间线代替完整观测平台。
 - [ ] 服务端强制课程/文档/Chunk 授权；伪造 ID、越权参数和提示注入均不能扩大权限。
 - [ ] 工具采用 allowlist 与结构化 schema；不允许任意 SQL、任意文件访问或隐式外网调用。
 - [ ] PLAN-14 Harness 对正常、证据不足、工具失败、超时、取消、恢复、越权、预算耗尽和重复副作用的定向用例通过。
@@ -195,3 +196,13 @@ M1 已新增 SQLAlchemy 模型、0014、事务存储和创建/读取 API；没�
 - 验证（bot 复验）：`test_agent_task_retention`+`test_query_log_retention` **20 passed**；+store+api **42 passed**；ruff All checks passed。
 - 说明：**物理 TTL ≠ 失效来源解析门禁**（后者 M2/M3 已有，不后置）。无后台 worker；未对演示库执行破坏性 delete。
 - 未做：定时扫描、PG 真实并发、完整 Trace UI。
+
+## 2026-10-26 最小只读时间线（t272u）
+
+- 复用现有 `AgentTaskEvent` 列、events API 与调查页 details，无新迁移/路由/依赖。新增 `step_no/tool_name/duration_ms/created_at/evidence_refs` 响应字段；证据仅输出 UUID ID 与正整数页码，任意问句/snippet/嵌套原文/未知键剥离，非法 ID 值丢弃。运行时既有 UUID 字符串引用转为 `evidence_id`；本批未改写历史事件或来源权限。
+- 学生、非本课教师、课程内学生身份教师、无本课教师身份管理员均 403；异常终态只返安全错误码，不透传异常原文。响应测试断言无 `run_token`、已知原始问句与 provider 细节。
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests/test_agent_investigation_api.py backend/tests/test_agent_task_api.py backend/tests/test_agent_task_runtime.py -q -p no:cacheprovider --tb=short` → **51 passed, 1 warning in 23.65s**，exit 0；warning 为 Starlette/AnyIO 弃用提示。
+- `backend/.venv/Scripts/python.exe -m ruff check backend/app/api/agent_tasks.py backend/tests/test_agent_investigation_api.py --output-format concise` → `All checks passed!`，exit 0。
+- `node --test --test-isolation=none frontend/tests/investigation.test.mjs` → **5 pass / 0 fail**；含 SFC parse、compileScript、compileTemplate 及本地时间格式/零毫秒展示检查。
+- `frontend` 下 `npm run build` → exit 1，`failed to load config ... Error: spawn EPERM`（esbuild 子进程）；本批 build 未通过。Vite 交互点验 **SKIP**，没有本批可稳定运行的隔离 Fake 页面；不能以编译检查替代真人点验。
+- **最小只读时间线已落地；完整 Trace UI 仍后置**。真实 provider、PG 并发、演示库写入/迁移、独立试用未做；不 stage/commit/push，交 bot 验收后提交。

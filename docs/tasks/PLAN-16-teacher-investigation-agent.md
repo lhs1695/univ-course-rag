@@ -50,7 +50,7 @@
 - [ ] Agent 只使用后端 allowlist 中的只读工具，不能通过参数或提示注入访问其他课程。
 - [ ] 报告明确区分观察事实、支持证据、候选原因、不确定点和建议人工动作；重要结论能回溯到问句/文档/Chunk/PDF 页。
 - [ ] 证据不足时明确说明限制；没有来源支持的原因不得写成事实。
-- [ ] 教师可查看必要的步骤/Trace 摘要、取消任务，并按 PLAN-15 规则恢复或重试。
+- [x] 最小只读时间线已落地：教师在既有 details 查看 attempt/step、事件/工具名、耗时、时间、安全摘要与错误码；沿用既有取消、显式恢复/重试。完整 Trace UI 仍后置；本批 Vite 点验未完成。
 - [ ] 对课程资料、索引、成员或权限的业务写入不由 Agent 静默执行；需要时跳转现有业务界面并要求人工确认。
 - [ ] 与原始统计/问句列表基线进行固定任务对照，记录证据覆盖、无依据推断、任务终态、工具调用量、耗时与成本。
 - [ ] PLAN-14/15 Harness 覆盖该工作流的正常、失败、取消、恢复和越权路径；定向测试、ruff、前端 build 与关键 Vite 路径按实际改动执行。
@@ -86,4 +86,11 @@
 3. 使用 Fake/Replay 执行 Harness；验证正常、证据不足、超时、取消、恢复、越权和预算终止。
 4. 如需真实模型，先获得当次授权并记录模型、样本、预算和输出留存规则。
 5. 运行定向测试、ruff、build 与关键 Vite 路径；保留未完成项，不以演示成功代替异常路径验收。
+
+## 2026-10-26 Trace 薄切（t272u）
+
+- **最小只读时间线已落地；完整 Trace UI 仍后置**。沿用现有 details 与视觉 token，不新增路由/依赖；展示 attempt、可空 step/tool/duration（含 0 ms）、事件类型、安全摘要、错误码与本地短时间。安全证据引用仅在 API 输出 ID/页码；不展示原始问句或异常内容。
+- events 当前课程教师权限保持不变；后端新增引用白名单/恶意文本剥离与非教师 403 断言。Trace 三文件定向 pytest **51 passed, 1 warning in 23.65s**；ruff `All checks passed!`；调查页 Node **5 pass / 0 fail**（含 compiler-sfc parse/script/template）。完整命令见 [PLAN-15 本批记录](PLAN-15-agent-runtime-reliability.md#2026-10-26-最小只读时间线t272u)。
+- `frontend` 下 `npm run build` 实际 exit 1：加载配置时 esbuild `spawn EPERM`；本批 Vite 交互点验 **SKIP**。不覆盖此前 developer 观察，也不把本批 SFC 检查称为 build/浏览器通过；PDF 实落页、完整 Trace UI 与真实模型调查质量仍未完成。
+- 本批无演示库写入/迁移、真实外发、stage/commit/push；由 bot 后续验收提交，不宣告结题通过。
 

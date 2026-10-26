@@ -175,6 +175,7 @@ def test_report_and_run_require_current_course_teacher(
         add_member(db, teacher_scope, outsider, membership)
     login_as(client, outsider.username, "pass")
     for response in [client.get(f"{prefix}/{task_id}/report"),
+                     client.get(f"{prefix}/{task_id}/events"),
                      client.post(f"{prefix}/{task_id}/run")]:
         assert response.status_code == 403
         assert set(response.json()) == {"detail"}
@@ -231,3 +232,70 @@ def test_execution_failure_report_has_safe_terminal_code(client, teacher_scope, 
     assert response.json()["status"] == "failed" and response.json()["report"] is None
     assert response.json()["error_code"] == "investigation_execution_failed"
     assert "PRIVATE-SENTINEL" not in response.text
+    events = client.get(f"{prefix}/{task_id}/events")
+    assert events.status_code == 200
+    assert "PRIVATE-SENTINEL" not in events.text
+    assert events.json()[-1]["error_code"] == "investigation_execution_failed"
+
+
+def test_events_project_trace_metadata_and_strip_untrusted_reference_text(
+    client, db, teacher_scope,
+):
+    prefix, task_id = create_and_run(client, teacher_scope)
+    row = db.get(AgentTask, UUID(task_id))
+    row.run_token = uuid4()
+    token = str(row.run_token)
+    event = db.scalar(select(AgentTaskEvent).where(
+        AgentTaskEvent.task_id == row.id,
+    ).order_by(AgentTaskEvent.sequence))
+    document_id, chunk_id, log_id = str(uuid4()), str(uuid4()), str(uuid4())
+    private_question = "Explain the fixed definition"
+    provider_detail = "provider-private.example raw upstream exception"
+    event.step_no, event.tool_name, event.duration_ms = 2, "read_evidence", 0
+    event.evidence_refs_json = [
+        {"document_id": document_id, "chunk_id": chunk_id, "page": 3,
+         "question": private_question, "snippet": provider_detail, "run_token": token,
+         "nested": {"original": private_question}},
+        log_id,
+        {"query_log_id": log_id, "page_no": 4},
+        {"id": private_question, "page": provider_detail},
+        {"document_id": {"secret": token}, "page": True, "end_page": -1},
+        {"snippet": private_question}, provider_detail, None,
+    ]
+    db.commit()
+    response = client.get(f"{prefix}/{task_id}/events")
+    assert response.status_code == 200
+    events = response.json()
+    assert [e["sequence"] for e in events] == list(range(1, len(events) + 1))
+    assert all(set(e) == {
+        "sequence", "attempt", "step_no", "event_type", "tool_name", "status",
+        "safe_summary", "error_code", "duration_ms", "created_at", "evidence_refs",
+    } for e in events)
+    first = events[0]
+    assert (first["attempt"], first["step_no"], first["tool_name"], first["duration_ms"]) == (
+        1, 2, "read_evidence", 0,
+    )
+    assert datetime.fromisoformat(first["created_at"]).utcoffset() == timedelta(0)
+    assert first["evidence_refs"] == [
+        {"document_id": document_id, "chunk_id": chunk_id, "page": 3},
+        {"evidence_id": log_id}, {"query_log_id": log_id, "page_no": 4},
+    ]
+    for forbidden in ("run_token", token, private_question, provider_detail, "snippet", "nested"):
+        assert forbidden not in response.text
+
+
+@pytest.mark.parametrize("raw", [
+    {"page": 2, "question": "PRIVATE question", "snippet": "PRIVATE provider"},
+    {"references": [{"page": 2, "snippet": "PRIVATE nested"}]},
+    "PRIVATE text", None,
+])
+def test_events_legacy_reference_shapes_fail_closed(client, db, teacher_scope, raw):
+    prefix, task_id = create_and_run(client, teacher_scope)
+    event = db.scalar(select(AgentTaskEvent).where(AgentTaskEvent.task_id == UUID(task_id)))
+    event.evidence_refs_json = raw
+    db.commit()
+    response = client.get(f"{prefix}/{task_id}/events")
+    assert response.status_code == 200
+    assert response.json()[0]["evidence_refs"] == ([{"page": 2}] if isinstance(raw, dict)
+                                                 and "page" in raw else [])
+    assert "PRIVATE" not in response.text

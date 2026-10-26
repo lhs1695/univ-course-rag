@@ -29,7 +29,12 @@
       </div>
       <p v-if="task.status === 'interrupted'" class="hint">执行已中断。系统不会自动恢复；确认授权和来源后才能开始新尝试。</p>
       <p v-if="task.status === 'cancel_requested'" class="hint">已请求取消，当前调用在安全边界停止，不再启动下一调用。</p>
-      <details><summary>步骤与安全事件摘要（{{ task.events.length }}）</summary><ol class="investigation-events"><li v-for="event in task.events" :key="event.sequence"><span>{{ event.sequence }} · 尝试 {{ event.attempt }}</span> {{ event.safe_summary }} <small v-if="event.error_code">{{ errorLabel(event.error_code) }}</small></li></ol></details>
+      <details><summary>步骤与安全事件摘要（{{ task.events.length }}）</summary><ol class="investigation-events"><li v-for="event in task.events" :key="event.sequence">
+        <span>{{ event.sequence }} · 尝试 {{ event.attempt }}<template v-if="event.step_no != null"> · 步骤 {{ event.step_no }}</template> · {{ event.event_type }}</span>
+        <span v-if="event.tool_name"> · {{ event.tool_name }}</span><span v-if="event.duration_ms != null"> · {{ event.duration_ms }} ms</span>
+        <time :datetime="event.created_at"> · {{ eventTime(event.created_at) }}</time>
+        <p>{{ event.safe_summary }} <small v-if="event.error_code" :title="errorLabel(event.error_code)">{{ event.error_code }}</small></p>
+      </li></ol></details>
     </section>
     <article v-if="reportData?.report" class="panel-card investigation-section" aria-labelledby="report-heading">
       <p class="eyebrow">待核查报告 / Fake · Replay</p><h2 id="report-heading">调查报告</h2>
@@ -63,6 +68,10 @@ const task = ref(null), reportData = ref(null), failure = ref(''), busy = ref(''
 let generation = 0, timer, creationKey = '';
 const statusLabel = state => ({ queued: '待运行', running: '运行中', cancel_requested: '等待取消生效', cancelled: '已取消', interrupted: '已中断', succeeded: '已完成', failed: '失败', budget_exceeded: '预算终止' }[state] || state);
 const errorLabel = code => ({ agent_lease_expired: '执行 lease 已过期，旧执行权已撤销。', agent_budget_exhausted: '累计预算耗尽。', investigation_checkpoint_unsafe: '检查点无法安全恢复。', source_unavailable: '来源已不可用，请核对资料与课程授权。' }[code] || `安全错误码：${code}`);
+function eventTime(value) {
+  const date = new Date(value);
+  return !value || Number.isNaN(date.getTime()) ? '时间未知' : date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+}
 const remainingBudget = computed(() => task.value && Object.entries({ steps: 'max_steps', model_calls: 'max_model_calls', tool_calls: 'max_tool_calls', runtime_seconds: 'max_runtime_seconds' }).every(([key, limit]) => task.value.budget_used[key] < task.value.budget_limits[limit]));
 const reportSections = computed(() => {
   const r = reportData.value?.report;
@@ -129,7 +138,8 @@ input:not([type="checkbox"]), select { width: 100%; min-height: 40px; border: 1p
 .investigation-report-part { border-top: 1px solid var(--line); margin-top: var(--space-5); padding-top: var(--space-4); line-height: 1.8; }
 .investigation-evidence { padding: var(--space-3) 0; overflow-wrap: anywhere; }
 .investigation-events { line-height: 1.9; padding-left: var(--space-5); }
-.investigation-events span, .investigation-events small { color: var(--text-muted); }
+.investigation-events span, .investigation-events small, .investigation-events time { color: var(--text-muted); }
+.investigation-events p { margin: 0 0 var(--space-2); }
 details { margin-top: var(--space-4); }
 summary { cursor: pointer; }
 @media (max-width: 760px) { .investigation-fields { grid-template-columns: 1fr; } }
