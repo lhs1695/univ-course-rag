@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-08 |
-| 状态 | implemented（Fake 验证通过；构建 EPERM / Vite 人工待补） |
+| 状态 | implemented（Fake 验证通过；**2026-10-26 Fake 复验通过**；真实模型高并发未做；Vite 流式人工见 PLAN-09/10-26 观察指针） |
 | 须授权 | Fake 本机定向测试无需云授权；真实 Embedding/LLM/reranker 或其他计费调用须当次明确授权并限定模型、课程/题集、并发、请求量及预算，未授权不得调用；大依赖下载另须授权 |
 
 ## 目标
@@ -21,7 +21,7 @@
 - [x] 定向测试覆盖正常、错误、取消、超时及资源清理；结束状态唯一，事件顺序可断言，并发不串内容、课程或错误上下文。（取消为 generator close / 断开标记测试，非浏览器实测）
 - [x] 固定 Fake/临时 SQLite、两用户两课程 50/50、每档 20 次；并发度 1/5/10 成功/失败、吞吐、首事件/端到端 p50/p95、错误率及原始样本已记录。[基线](../stream-performance-baseline.md)
 - [x] 命令 `backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan08_stream_performance.py -q -s` 输出三档汇总，保存[原始输出](../stream-performance-baseline.output.txt)与[环境/样本](../stream-performance-baseline.samples.json)。
-- [ ] Vite 中手动验证开始、取消、超时/故障提示与重试；会话恢复后可完成回答→依据→引用→PDF 页。
+- [~] Vite 流式完整人工（开始/取消/超时/重试）仍无单独 PLAN-08 点验记录；学生问答/引用 #page= 开发者观察见 observation-2026-10-23 与 2026-10-26（**不替代本卡逐项流式点击**）。
 - [ ] 真实模型测试记录模型、提示词/检索配置、时间、用量与失败；无授权时真实部分保持未执行，Fake 报告单列且不可替代真实证据；未达目标报告瓶颈。
 - [x] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan08_stream_performance.py backend/tests/test_ask.py -q` 通过：85 passed, 1 warning in 27.77s；环境适配见报告。
 - [x] 按当次范围对 touched Python 运行 `backend/.venv/Scripts/python.exe -m ruff check backend/app/api/ask.py backend/app/services/llm.py backend/app/services/generate.py backend/tests/test_plan08_stream_performance.py`：All checks passed!
@@ -71,3 +71,11 @@
 - 真实模型：**未执行（未用云额度）**；云费用 ¥0。不读 `.env`，不 push，不重入库。
 - 本地提交：已执行显式文件清单 `git add -- ...` 和 `git commit -m 'feat(PLAN-08): Fake SSE ask stream and concurrency baseline'`，两者均 exit 1，原始输出均为 `fatal: Unable to create 'D:/workspace/univ-course-rag/.git/index.lock': Permission denied`。未提交，全部 diff 保留交 executor；无 push。
 - next：[PLAN-09](PLAN-09-core-user-tasks.md)，承接流式/取消及核心证据闭环人工核验；构建门槛、真实模型和原卡其他人工缺口未获证据前不视为通过。
+
+## 复验记录（2026-10-26 Asia/Shanghai）
+
+- Fake 基线复跑：	est_plan08_stream_performance.py -q -s → **12 passed, 1 warning in 6.42s**；三档 20/20、error_rate=0；样本 JSON/output.txt 已覆盖。
+- 合跑 ask+plan08：**85 passed, 1 warning in 16.07s**；ruff All checks passed；前端 askHistory/askStream **10/10**。
+- 基线表已刷新为复验数字（见 [stream-performance-baseline.md](../stream-performance-baseline.md)）；波动不宣称性能提升。
+- **真实模型高并发：未做**；云费用 ¥0。
+- next：真实模型测量须当次授权；完整 Vite 流式点验可选补证。**不宣告结题通过。**

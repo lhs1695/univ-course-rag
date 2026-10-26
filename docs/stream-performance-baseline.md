@@ -1,6 +1,6 @@
 # PLAN-08：Fake 流式问答与并发基线
 
-执行：2026-10-23 00:12（Asia/Shanghai）；原始时间戳见 [逐请求样本与环境](stream-performance-baseline.samples.json)，[pytest -s 原始输出](stream-performance-baseline.output.txt)。云调用与费用：0 / ¥0。
+执行：首次 2026-10-23 00:12（Asia/Shanghai）；**复验 2026-10-26 夜（Asia/Shanghai）** Fake 再跑。原始时间戳见 [逐请求样本与环境](stream-performance-baseline.samples.json)，[pytest -s 原始输出](stream-performance-baseline.output.txt)。云调用与费用：0 / ¥0。
 
 ## 接口与实现边界
 
@@ -36,11 +36,35 @@
 
 | 并发 | 成功/失败 | 吞吐 | 首事件 p50 | 首事件 p95 | 端到端 p50 | 端到端 p95 | 错误率 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 20/0 | 21.76 | 13.93 | 21.31 | 42.60 | 62.95 | 0% |
-| 5 | 20/0 | 23.66 | 71.66 | 109.79 | 194.75 | 264.65 | 0% |
-| 10 | 20/0 | 25.54 | 131.20 | 184.81 | 341.07 | 468.27 | 0% |
+| 1 | 20/0 | 36.41 | 7.11 | 17.78 | 23.09 | 42.77 | 0% |
+| 5 | 20/0 | 30.87 | 45.57 | 95.09 | 136.22 | 252.54 | 0% |
+| 10 | 20/0 | 24.93 | 68.81 | 266.62 | 307.57 | 485.69 | 0% |
 
 并发上升时延迟增加、吞吐增长有限。此负载包含同步数据库访问、线程池切换和 SSE 小事件发送；未做分阶段 profile，不能断言单一瓶颈。小数据 SQLite/Fake 结果不能代表 PostgreSQL 检索、真实模型延迟、事实正确率或生产容量，20 样本 p95 也不是稳定的容量估计。
+
+## 2026-10-26 Fake 复验（本批 PLAN-08）
+
+命令（仓库根；临时 basetemp 在 output/plan08-rerun-2026-10-26/）：
+
+`powershell
+--basetemp=D:/workspace/univ-course-rag/output/plan08-rerun-2026-10-26/bt2 -p no:cacheprovider='--basetemp=D:/workspace/univ-course-rag/output/plan08-rerun-2026-10-26/bt -p no:cacheprovider'
+D:/workspace/univ-course-rag/docs/stream-performance-baseline.samples.json='D:/workspace/univ-course-rag/docs/stream-performance-baseline.samples.json'
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan08_stream_performance.py -q -s 2>&1 | Tee-Object -FilePath docs/stream-performance-baseline.output.txt
+# 12 passed, 1 warning in 6.42s；三档各 20/20、error_rate=0；样本 JSON 已覆盖写入
+
+--basetemp=D:/workspace/univ-course-rag/output/plan08-rerun-2026-10-26/bt2 -p no:cacheprovider='--basetemp=D:/workspace/univ-course-rag/output/plan08-rerun-2026-10-26/bt2 -p no:cacheprovider'
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan08_stream_performance.py backend/tests/test_ask.py -q
+# 85 passed, 1 warning in 16.07s
+
+backend/.venv/Scripts/python.exe -m ruff check backend/app/api/ask.py backend/app/services/llm.py backend/app/services/generate.py backend/tests/test_plan08_stream_performance.py
+# All checks passed!
+
+node --test --test-isolation=none frontend/tests/askHistory.test.mjs frontend/tests/askStream.test.mjs
+# tests 10 / pass 10 / fail 0
+`
+
+上表为 **2026-10-26 复验**数字（同机 Fake/SQLite；吞吐/延迟相对 10-23 基线有波动，属本机负载差异，**不宣称性能提升或生产容量**）。**真实模型高并发本批未做**。Vite 流式人工点击：开发者观察见 [observation-2026-10-23-developer](user-task-scripts/observation-2026-10-23-developer.md) 与 [observation-2026-10-26-developer-m3-m4](user-task-scripts/observation-2026-10-26-developer-m3-m4.md)（学生 ask / 真短问路径）；**不以 Fake 吞吐替代真实模型证据**。前端
+pm run build 在 2026-10-26 PLAN-10 门禁已绿，本批未因 PLAN-08 改前端故未强制复 build。
 
 ## 实际验证与未完成项
 

@@ -1,6 +1,6 @@
-...........PLAN08_BASELINE {"concurrency": 1, "success": 20, "fail": 0, "wall_s": 0.91924459999791, "throughput_rps": 21.75699481949143, "first_p50_ms": 13.925399998697685, "first_p95_ms": 21.306800001184456, "e2e_p50_ms": 42.60409999915282, "e2e_p95_ms": 62.9521000009845, "error_rate": 0.0}
-PLAN08_BASELINE {"concurrency": 5, "success": 20, "fail": 0, "wall_s": 0.8454149999997753, "throughput_rps": 23.65702051655733, "first_p50_ms": 71.65610000083689, "first_p95_ms": 109.78690000047209, "e2e_p50_ms": 194.7498999979871, "e2e_p95_ms": 264.6539999986999, "error_rate": 0.0}
-PLAN08_BASELINE {"concurrency": 10, "success": 20, "fail": 0, "wall_s": 0.7829849000008835, "throughput_rps": 25.543276760480865, "first_p50_ms": 131.2011000009079, "first_p95_ms": 184.8074000008637, "e2e_p50_ms": 341.06679999968037, "e2e_p95_ms": 468.2672000017192, "error_rate": 0.0}
+...........PLAN08_BASELINE {"concurrency": 1, "success": 20, "fail": 0, "wall_s": 0.5493566000368446, "throughput_rps": 36.4062250251633, "first_p50_ms": 7.113599975127727, "first_p95_ms": 17.777400033082813, "e2e_p50_ms": 23.091199982445687, "e2e_p95_ms": 42.774399975314736, "error_rate": 0.0}
+PLAN08_BASELINE {"concurrency": 5, "success": 20, "fail": 0, "wall_s": 0.6478766000363976, "throughput_rps": 30.87007618252674, "first_p50_ms": 45.57229997590184, "first_p95_ms": 95.08860000642017, "e2e_p50_ms": 136.21590001275763, "e2e_p95_ms": 252.54319998202845, "error_rate": 0.0}
+PLAN08_BASELINE {"concurrency": 10, "success": 20, "fail": 0, "wall_s": 0.802362099988386, "throughput_rps": 24.926401683590857, "first_p50_ms": 68.81480000447482, "first_p95_ms": 266.6173999896273, "e2e_p50_ms": 307.5693999999203, "e2e_p95_ms": 485.6912999530323, "error_rate": 0.0}
 .
 ============================== warnings summary ===============================
 backend\.venv\Lib\site-packages\starlette\testclient.py:53
@@ -8,4 +8,4 @@ backend\.venv\Lib\site-packages\starlette\testclient.py:53
     _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-12 passed, 1 warning in 9.27s
+12 passed, 1 warning in 6.42s
