@@ -1,9 +1,9 @@
 # 前端视觉与验收
 
-本轮范围：[FE-refresh-v1](prompts/FE-refresh-v1.md)。暖纸、墨绿、阅读排版；复用 Vue / Element Plus，无新增依赖。API、权限守卫、流式问答与 PDF 地址逻辑保留。
+本轮范围：[FE-refresh-v1](prompts/FE-refresh-v1.md) + PLAN-FE-01 visual punch。学态浅纸墨绿，问态深蓝证据台；复用 Vue / Element Plus，无新增依赖。API、权限守卫、流式问答与 PDF 地址逻辑保留。
 
 - `src/theme.css`：唯一语义 token 来源，包含表面、文字、强调/状态色、字号、圆角、间距、焦点与 Element Plus 映射。根节点承载变量，弹窗和下拉菜单同样继承。
-- 学生默认「学」；页头可切「问」。`data-theme="study|ask"` 调整同组 token 的取值与阅读密度；不会导航或重建问答页。课程卡主按钮随工作态优先进入资料或提问。
+- 学生默认「学」；页头可切「问」。`data-theme="study|ask"` 调整同组 token 的取值、原生 `color-scheme` 与阅读密度；不会导航或重建问答页。学态主按钮为墨底浅字，问态为冷蓝底深字；顶栏、侧栏、页脚、引用卡与 Element Plus 浮层同源换色。课程卡主按钮随工作态优先进入资料或提问。
 - `src/theme.js`：`univ-course-rag.student-surface` 保存 `study|ask`；浏览器禁用存储时退化为当前页面内存，刷新后恢复默认。
 - 教师「册」与管理员「衡」分别使用 `data-surface="ce|balance"`，仅调整密度；界面不展示这些内部名称，也没有切换器。登录始终使用浅纸面。
 - 占位入口为原生禁用按钮，不绑定路由或请求。「课程调查」「学期 / 班级」尚未实现。
@@ -18,7 +18,7 @@
 3. 教师检查资料、成员、精简反馈；管理员检查账号、课程授权、日志预览与系统状态。两者均不出现工作态切换。
 4. 缩至手机宽度，导航折成顶部区域；宽表格可横向滚动。键盘 Tab 检查焦点和跳过链接；系统开启减少动态效果后检查加载态。
 
-构建：`npm run build`。回归：`node --test tests/*.test.mjs`（不允许子进程的环境可用 `--test-isolation=none`）。主题测试覆盖默认、刷新恢复、非法值和存储异常。自动化样例数据只验证前端链路，不代表真实回答正确率或真实后端端到端验收。
+构建：`npm run build`。回归：`node --test tests/*.test.mjs`（不允许子进程的环境可用 `--test-isolation=none`）。主题测试覆盖默认、刷新恢复、非法值、存储异常，以及学/问明暗差异、正文/次要文字/强调色和主按钮的最低 4.5:1 对比度。自动化样例数据只验证前端链路，不代表真实回答正确率或真实后端端到端验收。
 
 ## 本次校验记录（2026-10-26）
 
@@ -26,3 +26,10 @@
 - Vue 编译器直接检查：`15 files passed`，覆盖 App、所有 views 与 components 的脚本、模板与局部 CSS。
 - `npm run build`：调用方本机复验 **通过**（Vite 7.3.6，约 16.6s）。Codex sandbox 内曾因 `spawn EPERM` 未能构建，属沙箱限制而非源码错误。
 - 浏览器点击与真实后端演示闭环：留给用户本机 `npm run dev` 验收（见上文清单）。本卡未做真实 embedding / LLM 调用。
+
+## Visual punch 校验（2026-10-26）
+
+- `node --test --test-isolation=none tests/*.test.mjs`：`tests 46 / pass 46 / fail 0`，含新增的 2 条颜色合同测试。
+- 用现有 `@vue/compiler-sfc` 编译脚本/模板/局部样式：`15 files passed`；用现有 PostCSS 解析 `theme.css` / `styles.css` / `student.css`：全部通过，`git diff --check` 无空白错误。
+- `npm run build`：本会话沙箱内仍被 `spawn EPERM` 阻断（esbuild 子进程）；`npm run build -- --configLoader native` 也被 Vite Windows 路径探测子进程阻断。上一轮本机构建记录不作为本轮构建通过证据。
+- 本轮浏览器工具需要审批、当前会话禁止审批，未完成实际点击、截图与 PDF 演示闭环验收；未发起真实模型调用。
