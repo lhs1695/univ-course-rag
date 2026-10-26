@@ -38,7 +38,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from tests.conftest import add_user
+from tests.conftest import add_user, enable_retrieval
 from tests.test_retrieve import (
     FIXTURES,
     GOLDEN,
@@ -413,6 +413,7 @@ def test_ask_only_accepts_sources_shown_within_budget(
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
     document_id = upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, document_id)
     embedder = FakeEmbedder()
     chunks = [
         Chunk(
@@ -521,7 +522,7 @@ def test_ask_no_hit_does_not_call_llm(client: TestClient, db: Session) -> None:
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
     llm = FakeLLM()
     app.dependency_overrides[get_llm] = lambda: llm
     response = client.post(f"/courses/{course.id}/ask", json={"query": UNRELATED})
@@ -647,7 +648,7 @@ def test_ask_drops_illegal_citation_ids(client: TestClient, db: Session) -> None
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
 
     class IllegalLLM:
         def __init__(self) -> None:
@@ -683,7 +684,7 @@ def test_ask_rejects_incompatible_index_without_calling_llm(
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
 
     class DifferentBackendEmbedder(FakeEmbedder):
         def __init__(self) -> None:
@@ -712,6 +713,7 @@ def test_ask_rejects_mixed_index_without_calling_llm(
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
     document_id = upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, document_id)
     embedder = FakeEmbedder()
     db.add(
         Chunk(
@@ -743,7 +745,7 @@ def test_ask_with_hits_but_no_legal_citations_is_no_evidence(
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
     llm = FakeLLM(scripted=answer)
     app.dependency_overrides[get_llm] = lambda: llm
 
@@ -769,8 +771,8 @@ def test_ask_golden_citations(client: TestClient, db: Session) -> None:
     add_member(db, course, student, CourseMemberRole.student)
     login_as(client, "t1", "pass")
     by_file = {
-        "sample.md": upload(client, course.id, FIXTURES / "sample.md"),
-        "sample.pdf": upload(client, course.id, FIXTURES / "sample.pdf"),
+        "sample.md": upload(client, course.id, FIXTURES / "sample.md", db),
+        "sample.pdf": upload(client, course.id, FIXTURES / "sample.pdf", db),
     }
     login_as(client, "alice", "pass")
     item = GOLDEN[0]
@@ -800,6 +802,7 @@ def test_ask_after_document_deleted_is_no_evidence(client: TestClient, db: Sessi
     add_member(db, course, student, CourseMemberRole.student)
     login_as(client, "t1", "pass")
     doc_id = upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, doc_id)
     login_as(client, "alice", "pass")
     before = client.post(f"/courses/{course.id}/ask", json={"query": GOLDEN[0]["query"]})
     assert before.status_code == 200
@@ -821,7 +824,7 @@ def test_ask_does_not_cite_other_course(client: TestClient, db: Session) -> None
     add_member(db, course1, teacher, CourseMemberRole.teacher)
     add_member(db, course2, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course1.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course1.id, FIXTURES / "sample.md"))
     closer = (
         "course_id-alpha-9371 course_id-alpha-9371 向量绑定口令 向量绑定口令 "
         "课2独占更相似正文 omega-course-two"
@@ -832,6 +835,7 @@ def test_ask_does_not_cite_other_course(client: TestClient, db: Session) -> None
     )
     assert leaked.status_code == 201
     doc2 = leaked.json()["id"]
+    enable_retrieval(db, doc2)
     detail = client.get(f"/courses/{course2.id}/documents/{doc2}")
     assert detail.json()["job_status"] == "succeeded"
     response = client.post(f"/courses/{course1.id}/ask", json={"query": GOLDEN[0]["query"]})
@@ -857,7 +861,7 @@ def test_ask_info_logs_omit_query_and_courseware(
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
     query = GOLDEN[0]["query"]
     with caplog.at_level(logging.INFO, logger="app.api.ask"):
         response = client.post(f"/courses/{course.id}/ask", json={"query": query})
@@ -879,7 +883,7 @@ def test_ask_upstream_failure_is_safe_503_and_logged_without_content(
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
     secret = "provider-body-should-not-be-logged"
 
     calls = []
@@ -927,7 +931,7 @@ def test_retrieval_upstream_retry_is_bounded(client, db, failures):
     course = add_course(db, "Transient retrieval")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
 
     class TransientEmbedder(FakeEmbedder):
         calls = 0
@@ -1020,7 +1024,7 @@ def test_ask_timeout_is_distinct_and_logged_without_provider_details(client, db)
     course = add_course(db, "Timeout course")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
 
     class TimeoutLLM:
         def generate(self, prompt: str) -> str:
@@ -1145,7 +1149,7 @@ def test_hybrid_index_mismatch_does_not_search_keywords(
     course = add_course(db, "Mismatch hybrid")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    enable_retrieval(db, upload(client, course.id, FIXTURES / "sample.md"))
     _hybrid_settings(monkeypatch)
 
     def forbidden(*_args, **_kwargs):

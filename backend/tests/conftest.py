@@ -1,5 +1,7 @@
 # dotenv must be disabled before app.db constructs its engine during import.
 
+from uuid import UUID
+
 import pytest
 from app.config import Settings
 
@@ -87,3 +89,11 @@ def add_user(db: Session, username: str, password: str, role: UserRole) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+
+def enable_retrieval(db: Session, document_id: UUID | str) -> None:
+    """Opt a synthetic fixture into retrieval without exercising admin APIs."""
+    document = db.get(Document, UUID(str(document_id)))
+    assert document is not None
+    document.retrieval_enabled = True
+    db.commit()

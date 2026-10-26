@@ -100,10 +100,14 @@ def test_insufficient_evidence_and_system_fault_have_distinct_recovery(client, d
     assert insufficient.json()["error_code"] == "NO_EVIDENCE"
     assert insufficient.json()["answer"] is None
     assert insufficient.json()["citations"] == []
-    # A disabled document remains readable; absence of evidence is not a storage fault.
-    assert client.get(f"{document_url}/content").status_code == 200
+    # Disabled sources are hidden from students; teachers can still preview them.
+    assert client.get(f"{document_url}/content").status_code == 404
 
     login_as(client, teacher.username, "pass")
+    assert client.get(f"{document_url}/content").status_code == 200
+    assert client.patch(document_url, json={"retrieval_enabled": True}).status_code == 403
+    admin = add_user(db, "p09-admin", "pass", UserRole.admin)
+    login_as(client, admin.username, "pass")
     assert client.patch(document_url, json={"retrieval_enabled": True}).status_code == 200
     login_as(client, student.username, "pass")
 

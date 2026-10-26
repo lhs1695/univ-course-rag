@@ -1,9 +1,10 @@
 from app.models.course import Course, CourseMember, CourseMemberRole
+from app.models.document import Document
 from app.models.user import User, UserRole
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from tests.conftest import add_user
+from tests.conftest import add_user, enable_retrieval
 
 
 def login_as(client: TestClient, username: str, password: str) -> None:
@@ -121,7 +122,7 @@ def test_unauthenticated_course_is_401(client: TestClient, db: Session) -> None:
     course = add_course(db, "Course 1")
     assert client.get(f"/courses/{course.id}").status_code == 401
     assert client.get("/courses").status_code == 401
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -138,7 +139,7 @@ import pytest
         (UserRole.admin, CourseMemberRole.teacher),
     ],
 )
-def test_course_permissions_follow_membership_not_global_identity(
+def test_course_permissions_with_admin_document_management_exception(
     client: TestClient, db: Session, global_role: UserRole, course_role: CourseMemberRole | None
 ) -> None:
     owner = add_user(db, "owner", "pass", UserRole.teacher)
@@ -158,6 +159,11 @@ def test_course_permissions_follow_membership_not_global_identity(
     prefix = f"/courses/{course.id}"
     member_status = 200 if course_role is not None else 403
     teacher_status = 200 if course_role == CourseMemberRole.teacher else 403
+    can_manage_document = global_role == UserRole.admin or teacher_status == 200
+    document_list_status = 200 if global_role == UserRole.admin else member_status
+    document_read_status = 200 if can_manage_document else (
+        404 if course_role is not None else 403
+    )
 
     assert client.get("/auth/me").json()["role"] == global_role.value
     detail = client.get(prefix)
@@ -174,9 +180,14 @@ def test_course_permissions_follow_membership_not_global_identity(
         assert listed == []
     assert client.get(prefix + "/members").status_code == teacher_status
     assert client.get(prefix + "/insights").status_code == teacher_status
-    assert client.get(prefix + "/documents").status_code == member_status
-    assert client.get(prefix + f"/documents/{document_id}").status_code == member_status
-    assert client.get(prefix + f"/documents/{document_id}/content").status_code == member_status
+    documents = client.get(prefix + "/documents")
+    assert documents.status_code == document_list_status
+    if document_list_status == 200:
+        assert [row["id"] for row in documents.json()] == (
+            [document_id] if can_manage_document else []
+        )
+    assert client.get(prefix + f"/documents/{document_id}").status_code == document_read_status
+    assert client.get(prefix + f"/documents/{document_id}/content").status_code == document_read_status
     assert client.post(prefix + "/search", json={"query": "alpha"}).status_code == member_status
     assert client.post(prefix + "/ask", json={"query": "alpha"}).status_code == member_status
     uploaded = client.post(
@@ -188,9 +199,14 @@ def test_course_permissions_follow_membership_not_global_identity(
     assert client.post(prefix + f"/documents/{uuid4()}/retry").status_code == (
         404 if teacher_status == 200 else 403
     )
+    enable_retrieval(db, document_id)
     assert client.delete(prefix + f"/documents/{document_id}").status_code == (
-        204 if teacher_status == 200 else 403
+        204 if can_manage_document else 403
     )
+    db.expire_all()
+    document = db.get(Document, UUID(document_id))
+    assert document is not None
+    assert document.retrieval_enabled is (not can_manage_document)
 
 
 @pytest.mark.parametrize("role", ["student", "teacher"])

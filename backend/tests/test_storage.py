@@ -1,10 +1,11 @@
 import logging
 from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
 from app.models.course import Course, CourseMember, CourseMemberRole
-from app.models.document import Document
+from app.models.document import Chunk, Document, IngestJob
 from app.models.user import UserRole
 from app.services.storage import (
     StorageBoundaryError,
@@ -14,9 +15,10 @@ from app.services.storage import (
     store_upload,
 )
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from tests.conftest import add_user
+from tests.conftest import add_user, enable_retrieval
 
 
 def login_as(client: TestClient, username: str, password: str) -> None:
@@ -100,7 +102,7 @@ def test_get_document_upload_rejects_other_document_directory(tmp_path: Path) ->
         get_document_upload(tmp_path, course_id, document_id, str(target))
 
 
-def test_course_members_can_read_document_content(client: TestClient, db: Session) -> None:
+def test_document_content_visibility_follows_retrieval_state(client: TestClient, db: Session) -> None:
     teacher = add_user(db, "t1", "pass", UserRole.teacher)
     student = add_user(db, "alice", "pass", UserRole.student)
     course = add_course(db, "Course 1")
@@ -115,6 +117,8 @@ def test_course_members_can_read_document_content(client: TestClient, db: Sessio
 
     teacher_response = client.get(f"/courses/{course.id}/documents/{document_id}/content")
     login_as(client, student.username, "pass")
+    assert client.get(f"/courses/{course.id}/documents/{document_id}/content").status_code == 404
+    enable_retrieval(db, document_id)
     student_response = client.get(f"/courses/{course.id}/documents/{document_id}/content")
 
     for response in (teacher_response, student_response):
@@ -251,7 +255,7 @@ def test_office_document_content_is_attachment(
     assert response.headers["content-disposition"].startswith("attachment;")
 
 
-def test_document_api_deletes_file_and_empty_directories(
+def test_document_api_soft_disables_and_preserves_file_and_records(
     client: TestClient, db: Session
 ) -> None:
     teacher = add_user(db, "t1", "pass", UserRole.teacher)
@@ -263,17 +267,29 @@ def test_document_api_deletes_file_and_empty_directories(
         files={"file": ("note.txt", b"bounded upload", "text/plain")},
     )
     document_id = UUID(uploaded.json()["id"])
+    enable_retrieval(db, document_id)
     db.expire_all()
     document = db.get(Document, document_id)
     assert document is not None
     stored = Path(document.storage_path)
     document_dir = stored.parent
+    chunk_ids = list(db.scalars(select(Chunk.id).where(Chunk.document_id == document_id)))
+    job_ids = list(db.scalars(select(IngestJob.id).where(IngestJob.document_id == document_id)))
+    assert chunk_ids and job_ids
 
     deleted = client.delete(f"/courses/{course.id}/documents/{document_id}")
 
     assert deleted.status_code == 204
-    assert not stored.exists()
-    assert not document_dir.exists()
+    assert client.delete(f"/courses/{course.id}/documents/{document_id}").status_code == 204
+    db.expire_all()
+    document = db.get(Document, document_id)
+    assert document is not None
+    assert document.retrieval_enabled is False
+    assert stored.read_bytes() == b"bounded upload"
+    assert document_dir.exists()
+    assert list(db.scalars(select(Chunk.id).where(Chunk.document_id == document_id))) == chunk_ids
+    assert list(db.scalars(select(IngestJob.id).where(IngestJob.document_id == document_id))) == job_ids
+    assert client.get(f"/courses/{course.id}/documents/{document_id}/content").status_code == 200
 
 
 def test_course_delete_removes_only_its_upload_tree(
@@ -319,7 +335,7 @@ def test_upload_database_failure_removes_just_written_file(
     assert not any(path.is_file() for path in tmp_path.rglob("*"))
 
 
-def test_cleanup_failure_is_logged_and_preserves_document_for_retry(
+def test_soft_disable_does_not_call_storage_cleanup(
     client: TestClient,
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -334,18 +350,22 @@ def test_cleanup_failure_is_logged_and_preserves_document_for_retry(
         files={"file": ("note.txt", b"cleanup failure", "text/plain")},
     )
     document_id = UUID(uploaded.json()["id"])
+    enable_retrieval(db, document_id)
+    document = db.get(Document, document_id)
+    assert document is not None
+    stored = Path(document.storage_path)
 
-    def fail_cleanup(*_args) -> None:
-        raise StorageError("scripted cleanup failure")
-
+    fail_cleanup = Mock(side_effect=StorageError("scripted cleanup failure"))
     monkeypatch.setattr("app.api.documents.delete_document_upload", fail_cleanup)
     caplog.set_level(logging.ERROR, logger="app.api.documents")
 
     response = client.delete(f"/courses/{course.id}/documents/{document_id}")
 
-    assert response.status_code == 503
-    assert response.json()["detail"] == "Document storage cleanup unavailable"
+    assert response.status_code == 204
+    fail_cleanup.assert_not_called()
     db.expire_all()
-    assert db.get(Document, document_id) is not None
-    assert "storage_cleanup_failed scope=document" in caplog.text
-    assert "document_id=" in caplog.text
+    document = db.get(Document, document_id)
+    assert document is not None
+    assert document.retrieval_enabled is False
+    assert stored.read_bytes() == b"cleanup failure"
+    assert "storage_cleanup_failed scope=document" not in caplog.text

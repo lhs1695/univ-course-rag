@@ -65,7 +65,7 @@ def add_member(db: Session, course: Course, user: User, role: CourseMemberRole) 
     db.commit()
 
 
-def upload(client: TestClient, course_id: UUID, path: Path) -> UUID:
+def upload(client: TestClient, course_id: UUID, path: Path, db: Session | None = None) -> UUID:
     suffix = path.suffix.lower()
     if suffix == ".pdf":
         content_type = "application/pdf"
@@ -87,6 +87,11 @@ def upload(client: TestClient, course_id: UUID, path: Path) -> UUID:
     doc_id = UUID(response.json()["id"])
     detail = client.get(f"/courses/{course_id}/documents/{doc_id}")
     assert detail.json()["job_status"] == "succeeded", detail.json()
+    if db is not None:
+        document = db.get(Document, doc_id)
+        assert document is not None
+        document.retrieval_enabled = True
+        db.commit()
     return doc_id
 
 
@@ -98,10 +103,10 @@ def test_golden_hits_md_and_pdf(client: TestClient, db: Session) -> None:
     add_member(db, course, student, CourseMemberRole.student)
     login_as(client, "t1", "pass")
     by_file = {
-        "sample.md": upload(client, course.id, FIXTURES / "sample.md"),
-        "sample.pdf": upload(client, course.id, FIXTURES / "sample.pdf"),
-        "sample.pptx": upload(client, course.id, FIXTURES / "sample.pptx"),
-        "sample.docx": upload(client, course.id, FIXTURES / "sample.docx"),
+        "sample.md": upload(client, course.id, FIXTURES / "sample.md", db),
+        "sample.pdf": upload(client, course.id, FIXTURES / "sample.pdf", db),
+        "sample.pptx": upload(client, course.id, FIXTURES / "sample.pptx", db),
+        "sample.docx": upload(client, course.id, FIXTURES / "sample.docx", db),
     }
     login_as(client, "alice", "pass")
     assert len(GOLDEN) >= 3
@@ -129,7 +134,7 @@ def test_low_score_returns_empty_not_guess(client: TestClient, db: Session) -> N
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    upload(client, course.id, FIXTURES / "sample.md")
+    upload(client, course.id, FIXTURES / "sample.md", db)
     response = client.post(f"/courses/{course.id}/search", json={"query": UNRELATED})
     assert response.status_code == 200
     assert response.json()["hits"] == []
@@ -140,7 +145,7 @@ def test_retrieve_only_uses_matching_index_identity(client: TestClient, db: Sess
     course = add_course(db, "Course 1")
     add_member(db, course, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    document_id = upload(client, course.id, FIXTURES / "sample.md")
+    document_id = upload(client, course.id, FIXTURES / "sample.md", db)
     embedder = FakeEmbedder()
     query = GOLDEN[0]["query"]
     incompatible = Chunk(
@@ -200,6 +205,7 @@ def test_incompatible_check_uses_exists_and_honors_exclusions(db: Session) -> No
     db.add(Document(
         id=excluded_document_id, course_id=course.id, uploaded_by=teacher.id,
         filename="legacy.txt", storage_path="unused-synthetic-path",
+        retrieval_enabled=True,
     ))
     db.add(
         Chunk(
@@ -243,6 +249,7 @@ def test_postgres_executes_pgvector_top_k_and_has_filter_index() -> None:
             uploaded_by=user.id,
             filename="proof.md",
             storage_path="test-only",
+            retrieval_enabled=True,
         )
         db.add(document)
         db.flush()
@@ -292,7 +299,7 @@ def test_search_does_not_leak_other_course(client: TestClient, db: Session) -> N
     add_member(db, course1, teacher, CourseMemberRole.teacher)
     add_member(db, course2, teacher, CourseMemberRole.teacher)
     login_as(client, "t1", "pass")
-    doc1 = upload(client, course1.id, FIXTURES / "sample.md")
+    doc1 = upload(client, course1.id, FIXTURES / "sample.md", db)
     closer = (
         "course_id-alpha-9371 course_id-alpha-9371 向量绑定口令 向量绑定口令 "
         "课2独占更相似正文 omega-course-two"
@@ -348,6 +355,7 @@ def _scaled_chunk(db: Session, course: Course, embedder: FakeEmbedder, query: st
         uploaded_by=uuid4(),
         filename="synthetic.md",
         storage_path="unused",
+        retrieval_enabled=True,
     )
     db.add(document)
     db.flush()

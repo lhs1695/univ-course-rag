@@ -25,6 +25,8 @@ from app.services.llm import FakeLLM
 from app.services.rerank import FakeReranker
 from sqlalchemy.orm import Session
 
+from tests.conftest import enable_retrieval
+
 
 def _cases() -> list[dict]:
     return [
@@ -87,6 +89,8 @@ def test_eval_excludes_documents_before_mismatch_check_and_top_k(
     )
     db.add_all([excluded, included])
     db.flush()
+    enable_retrieval(db, excluded.id)
+    enable_retrieval(db, included.id)
 
     embedder = FakeEmbedder()
     query = "alpha beta gamma"
@@ -343,6 +347,7 @@ def test_eval_does_not_count_candidate_only_support_as_final_evidence(db: Sessio
     db.add(document)
     db.flush()
     query = "事务隔离级别"
+    enable_retrieval(db, document.id)
     embedder = FakeEmbedder()
     db.add(Chunk(
         course_id=course.id, document_id=document.id,

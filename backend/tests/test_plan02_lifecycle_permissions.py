@@ -43,7 +43,14 @@ def library(client, db):
         files={"file": ("same.pdf", make_pdf(TEXT + " Enabled sibling evidence."), "application/pdf")},
     )
     assert sibling.status_code == 201
+    assert sibling.json()["retrieval_enabled"] is False
     second_id = UUID(sibling.json()["id"])
+    assert first.retrieval_enabled is False
+    for document_id in [first_id, second_id]:
+        detail = client.get(f"/courses/{course_id}/documents/{document_id}").json()
+        assert detail["job_status"] == IngestJobStatus.succeeded.value
+        assert chunks_for(db, document_id)
+    add_user(db, "admin", "pass", UserRole.admin)
     student = add_user(db, "student", "pass", UserRole.student)
     course = add_course(db, "Other course")
     add_member(db, db.get(type(course), course_id), student, CourseMemberRole.student)
@@ -53,68 +60,143 @@ def library(client, db):
     )
     db.add(other)
     db.commit()
-    return SimpleNamespace(
+    assert other.retrieval_enabled is False  # ORM default also requires admin enablement.
+    result = SimpleNamespace(
         course_id=course_id, first_id=first_id, second_id=second_id,
         base=f"/courses/{course_id}", student=student,
         other_course_id=course.id, other_id=other.id,
     )
+    for document_id in [first_id, second_id]:
+        enable_as_admin(client, result, document_id)
+    return result
 
 
 def chunks_for(db, document_id):
     return db.scalars(select(Chunk).where(Chunk.document_id == document_id)).all()
 
 
-def toggle(client, library, document_id, enabled):
+def enable_as_admin(client, library, document_id):
+    login_as(client, "admin", "pass")
     response = client.patch(
-        f"{library.base}/documents/{document_id}", json={"retrieval_enabled": enabled},
+        f"{library.base}/documents/{document_id}", json={"retrieval_enabled": True},
     )
     assert response.status_code == 200, response.text
-    assert response.json()["retrieval_enabled"] is enabled
+    assert response.json()["retrieval_enabled"] is True
+    login_as(client, "t1", "pass")
+    return response.json()
+
+
+def disable_as_teacher(client, library, document_id):
+    login_as(client, "t1", "pass")
+    response = client.patch(
+        f"{library.base}/documents/{document_id}", json={"retrieval_enabled": False},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["retrieval_enabled"] is False
     return response.json()
 
 
 @pytest.mark.parametrize("role", [UserRole.student, UserRole.teacher, UserRole.admin])
-def test_global_role_cannot_override_student_membership(client, db, library, role):
+def test_global_role_cannot_override_student_membership_for_upload_or_retry(client, db, library, role):
     library.student.role = role.value
     db.commit()
     login_as(client, "student", "pass")
     url = f"{library.base}/documents/{library.first_id}"
     responses = [
         client.post(f"{library.base}/documents", files={"file": ("denied.txt", b"denied")}),
-        client.delete(url), client.post(f"{url}/retry"),
-        client.patch(url, json={"retrieval_enabled": False}),
+        client.post(f"{url}/retry"),
     ]
-    assert [response.status_code for response in responses] == [403] * 4
-    assert client.get(url).json()["retrieval_enabled"] is True
+    assert [response.status_code for response in responses] == [403, 403]
+    member = db.scalar(select(CourseMember).where(
+        CourseMember.course_id == library.course_id, CourseMember.user_id == library.student.id,
+    ))
+    assert member.role == CourseMemberRole.student.value
+    detail = client.get(url)
+    assert detail.status_code == 200 and detail.json()["retrieval_enabled"] is True
     assert client.get(f"{url}/content").status_code == 200
     assert len(client.get(f"{library.base}/documents").json()) == 2
     assert chunks_for(db, library.first_id)
+    # This user remains a course member even with a global admin role.
+    for action in ["ask", "search"]:
+        response = client.post(f"{library.base}/{action}", json={"query": QUERY})
+        assert response.status_code == 200
+        evidence = response.json()["citations" if action == "ask" else "hits"]
+        enabled_ids = {str(library.first_id), str(library.second_id)}
+        evidence_ids = {item["document_id"] for item in evidence}
+        if action == "ask":
+            assert response.json()["error_code"] is None
+            assert response.json()["answer"]
+            assert evidence_ids and evidence_ids <= enabled_ids
+        else:
+            assert evidence_ids == enabled_ids
 
 
-def test_teacher_toggle_is_idempotent_preserves_metadata_chunks_and_preview(client, db, library):
+@pytest.mark.parametrize("role", [UserRole.student, UserRole.teacher])
+def test_nonadmin_global_role_cannot_delete_or_patch_as_course_student(client, db, library, role):
+    library.student.role = role.value
+    db.commit()
+    login_as(client, "student", "pass")
+    url = f"{library.base}/documents/{library.first_id}"
+    assert client.delete(url).status_code == 403
+    for enabled in [False, True]:
+        assert client.patch(url, json={"retrieval_enabled": enabled}).status_code == 403
+    disable_as_teacher(client, library, library.first_id)
+    login_as(client, "student", "pass")
+    assert client.get(url).status_code == 404
+    assert client.get(f"{url}/content").status_code == 404
+    rows = client.get(f"{library.base}/documents").json()
+    assert [(row["id"], row["retrieval_enabled"]) for row in rows] == [
+        (str(library.second_id), True),
+    ]
+
+
+def test_global_admin_with_student_membership_can_soft_disable_and_enable(client, db, library):
+    library.student.role = UserRole.admin.value
+    db.commit()
+    login_as(client, "student", "pass")
+    url = f"{library.base}/documents/{library.first_id}"
+    assert client.delete(url).status_code == 204
+    assert client.get(url).json()["retrieval_enabled"] is False
+    assert client.get(f"{url}/content").status_code == 200
+    for action in ["ask", "search"]:
+        response = client.post(f"{library.base}/{action}", json={"query": QUERY})
+        assert response.status_code == 200
+        evidence = response.json()["citations" if action == "ask" else "hits"]
+        assert {item["document_id"] for item in evidence} == {str(library.second_id)}
+    enabled = client.patch(url, json={"retrieval_enabled": True})
+    assert enabled.status_code == 200 and enabled.json()["retrieval_enabled"] is True
+
+
+def test_teacher_disable_and_admin_enable_preserve_metadata_chunks_and_preview(client, db, library):
     url = f"{library.base}/documents/{library.first_id}"
     before = client.get(url).json()
     ids = [chunk.id for chunk in chunks_for(db, library.first_id)]
     for enabled in [False, False, True, True]:
-        updated = toggle(client, library, library.first_id, enabled)
+        if enabled:
+            assert client.patch(url, json={"retrieval_enabled": True}).status_code == 403
+            updated = enable_as_admin(client, library, library.first_id)
+        else:
+            updated = disable_as_teacher(client, library, library.first_id)
         assert updated == {**before, "retrieval_enabled": enabled}
         assert client.get(f"{url}/content").status_code == 200
         assert [chunk.id for chunk in chunks_for(db, library.first_id)] == ids
-    toggle(client, library, library.first_id, False)
+    disable_as_teacher(client, library, library.first_id)
     login_as(client, "student", "pass")
     rows = client.get(f"{library.base}/documents").json()
     assert {row["id"]: row["retrieval_enabled"] for row in rows} == {
-        str(library.first_id): False, str(library.second_id): True,
+        str(library.second_id): True,
     }
-    assert client.get(url).json()["retrieval_enabled"] is False
-    assert client.get(f"{url}/content").content.startswith(b"%PDF")
+    assert client.get(url).status_code == 404
+    assert client.get(f"{url}/content").status_code == 404
 
 
 @pytest.mark.parametrize("value", [None, "false", 0, 1, [], {}])
 def test_toggle_requires_json_boolean(client, library, value):
+    disable_as_teacher(client, library, library.first_id)
+    login_as(client, "admin", "pass")
     url = f"{library.base}/documents/{library.first_id}"
     assert client.patch(url, json={"retrieval_enabled": value}).status_code == 422
-    assert client.get(url).json()["retrieval_enabled"] is True
+    assert client.get(url).json()["retrieval_enabled"] is False
 
 
 def test_toggle_missing_or_wrong_course_document_is_404(client, library):
@@ -141,7 +223,7 @@ def test_disabled_document_never_reaches_retrieval_context_or_citations(
     original_hits = retrieve_chunks(db, library.course_id, QUERY, embedder)
     assert {hit.document_id for hit in original_hits} == {library.first_id, library.second_id}
     disabled_chunk_ids = {str(chunk.id) for chunk in chunks_for(db, library.first_id)}
-    toggle(client, library, library.first_id, False)
+    disable_as_teacher(client, library, library.first_id)
     stale = generate_answer_result(db, QUERY, original_hits, llm)
     assert stale.cited_ids
     assert not disabled_chunk_ids.intersection(map(str, stale.cited_ids))
@@ -176,7 +258,7 @@ def test_disabled_document_never_reaches_retrieval_context_or_citations(
     assert citation["page"] == 1
     assert client.get(citation["content_url"].split("#")[0]).content.startswith(b"%PDF")
     login_as(client, "t1", "pass")
-    toggle(client, library, library.second_id, False)
+    disable_as_teacher(client, library, library.second_id)
     calls = len(llm.prompts)
     empty = client.post(f"{library.base}/ask", json={"query": QUERY})
     assert empty.status_code == 200
@@ -185,14 +267,12 @@ def test_disabled_document_never_reaches_retrieval_context_or_citations(
     assert empty.json()["citations"] == []
     assert len(llm.prompts) == calls
     assert client.post(f"{library.base}/search", json={"query": QUERY}).json()["hits"] == []
-    toggle(client, library, library.second_id, True)
+    enable_as_admin(client, library, library.second_id)
     assert client.post(f"{library.base}/ask", json={"query": QUERY}).json()["citations"]
 
 
-@pytest.mark.parametrize("username", ["t1", "student", "admin"])
-def test_course_membership_required_for_all_document_and_evidence_routes(client, db, library, username):
-    if username == "admin":
-        add_user(db, "admin", "pass", UserRole.admin)
+@pytest.mark.parametrize("username", ["t1", "student"])
+def test_course_membership_required_for_nonadmin_document_and_evidence_routes(client, library, username):
     login_as(client, username, "pass")
     base = f"/courses/{library.other_course_id}"
     url = f"{base}/documents/{library.other_id}"
@@ -205,6 +285,30 @@ def test_course_membership_required_for_all_document_and_evidence_routes(client,
         client.post(f"{base}/search", json={"query": QUERY}),
     ]
     assert [response.status_code for response in responses] == [403] * len(responses)
+
+
+def test_admin_document_exception_without_membership_does_not_extend_to_evidence(client, db, library):
+    login_as(client, "admin", "pass")
+    base = f"/courses/{library.other_course_id}"
+    url = f"{base}/documents/{library.other_id}"
+    listing = client.get(f"{base}/documents")
+    assert listing.status_code == 200
+    assert listing.json()[0]["id"] == str(library.other_id)
+    assert client.get(url).status_code == 200
+    content = client.get(f"{url}/content")
+    assert content.status_code == 404  # Synthetic Document has no uploaded file.
+    assert content.json()["detail"] == "Document content unavailable"
+    assert client.post(
+        f"{base}/documents", files={"file": ("denied.txt", b"denied")},
+    ).status_code == 403
+    assert client.post(f"{url}/retry").status_code == 403
+    for enabled in [True, False]:
+        response = client.patch(url, json={"retrieval_enabled": enabled})
+        assert response.status_code == 200 and response.json()["retrieval_enabled"] is enabled
+    assert client.delete(url).status_code == 204
+    assert db.get(Document, library.other_id) is not None
+    for action in ["ask", "search"]:
+        assert client.post(f"{base}/{action}", json={"query": QUERY}).status_code == 403
 
 
 def test_removing_membership_revokes_metadata_content_search_ask_and_toggle(client, db, library):
@@ -224,57 +328,87 @@ def test_removing_membership_revokes_metadata_content_search_ask_and_toggle(clie
     assert client.patch(url, json={"retrieval_enabled": False}).status_code == 403
 
 
-def test_delete_removes_database_chunks_jobs_file_and_old_content_only_for_target(client, db, library):
-    toggle(client, library, library.first_id, False)
+def test_delete_soft_disables_only_target_preserving_records_file_and_sibling_evidence(client, db, library):
     first_path = Path(db.get(Document, library.first_id).storage_path)
+    first_bytes = first_path.read_bytes()
+    first_chunk_ids = [chunk.id for chunk in chunks_for(db, library.first_id)]
+    first_job_ids = db.scalars(
+        select(IngestJob.id).where(IngestJob.document_id == library.first_id),
+    ).all()
+    assert first_chunk_ids and first_job_ids
     second_path = Path(db.get(Document, library.second_id).storage_path)
     sibling_bytes = second_path.read_bytes()
     sibling_chunk_ids = [chunk.id for chunk in chunks_for(db, library.second_id)]
+    other = db.get(Document, library.other_id)
+    other_state = (other.storage_path, other.retrieval_enabled)
     assert first_path != second_path  # Same filename still has isolated storage.
     url = f"{library.base}/documents/{library.first_id}"
     assert client.delete(url).status_code == 204
     db.expire_all()
-    assert db.get(Document, library.first_id) is None
-    assert chunks_for(db, library.first_id) == []
-    assert db.scalars(select(IngestJob).where(IngestJob.document_id == library.first_id)).all() == []
-    assert not first_path.exists()
-    assert client.get(url).status_code == 404
-    assert client.get(f"{url}/content").status_code == 404
-    assert client.delete(url).status_code == 404
-    assert client.post(f"{url}/retry").status_code == 404
+    assert db.get(Document, library.first_id).retrieval_enabled is False
+    assert [chunk.id for chunk in chunks_for(db, library.first_id)] == first_chunk_ids
+    assert db.scalars(
+        select(IngestJob.id).where(IngestJob.document_id == library.first_id),
+    ).all() == first_job_ids
+    assert first_path.read_bytes() == first_bytes
+    assert client.get(url).json()["retrieval_enabled"] is False
+    assert client.get(f"{url}/content").status_code == 200  # Teacher retains preview.
+    assert client.delete(url).status_code == 204  # Soft disable is idempotent.
+    assert client.post(f"{url}/retry").status_code == 409  # Succeeded job remains.
     assert second_path.read_bytes() == sibling_bytes
     assert [chunk.id for chunk in chunks_for(db, library.second_id)] == sibling_chunk_ids
     assert client.get(f"{library.base}/documents/{library.second_id}/content").status_code == 200
-    assert db.get(Document, library.other_id) is not None
+    assert db.get(Document, library.second_id).retrieval_enabled is True
+    other = db.get(Document, library.other_id)
+    assert (other.storage_path, other.retrieval_enabled) == other_state
+    login_as(client, "student", "pass")
+    assert client.get(url).status_code == 404
+    assert client.get(f"{url}/content").status_code == 404
+    assert [row["id"] for row in client.get(f"{library.base}/documents").json()] == [
+        str(library.second_id),
+    ]
+    search = client.post(f"{library.base}/search", json={"query": QUERY})
+    assert search.status_code == 200
+    assert {hit["document_id"] for hit in search.json()["hits"]} == {str(library.second_id)}
     body = client.post(f"{library.base}/ask", json={"query": QUERY}).json()
     assert {citation["document_id"] for citation in body["citations"]} == {str(library.second_id)}
+    enable_as_admin(client, library, library.first_id)
+    login_as(client, "student", "pass")
+    assert client.get(f"{url}/content").status_code == 200
+    assert first_path.read_bytes() == first_bytes
+    assert [chunk.id for chunk in chunks_for(db, library.first_id)] == first_chunk_ids
 
 
-def test_delete_storage_failure_is_visible_and_retryable_without_losing_records(
+def test_soft_delete_never_calls_storage_cleanup_and_preserves_sibling(
     client, db, library, monkeypatch,
 ):
     from app.api import documents
 
-    original = documents.delete_document_upload
     path = Path(db.get(Document, library.first_id).storage_path)
+    original_bytes = path.read_bytes()
     ids = [chunk.id for chunk in chunks_for(db, library.first_id)]
+    sibling_path = Path(db.get(Document, library.second_id).storage_path)
+    sibling_bytes = sibling_path.read_bytes()
+    sibling_ids = [chunk.id for chunk in chunks_for(db, library.second_id)]
+    cleanup_calls = []
 
     def fail_cleanup(*args):
+        cleanup_calls.append(args)
         raise StorageError("synthetic cleanup failure")
 
     monkeypatch.setattr(documents, "delete_document_upload", fail_cleanup)
     url = f"{library.base}/documents/{library.first_id}"
-    failed = client.delete(url)
-    assert failed.status_code == 503
-    assert failed.json()["detail"] == "Document storage cleanup unavailable"
-    assert client.get(url).status_code == 200
-    assert path.exists()
+    assert client.delete(url).status_code == 204
+    assert cleanup_calls == []
+    db.expire_all()
+    assert db.get(Document, library.first_id).retrieval_enabled is False
+    assert client.get(url).json()["retrieval_enabled"] is False
+    assert path.read_bytes() == original_bytes
     assert [chunk.id for chunk in chunks_for(db, library.first_id)] == ids
     assert client.get(f"{library.base}/documents/{library.second_id}/content").status_code == 200
-    monkeypatch.setattr(documents, "delete_document_upload", original)
-    assert client.delete(url).status_code == 204
-    assert not path.exists()
-    assert chunks_for(db, library.first_id) == []
+    assert sibling_path.read_bytes() == sibling_bytes
+    assert [chunk.id for chunk in chunks_for(db, library.second_id)] == sibling_ids
+    assert db.get(Document, library.second_id).retrieval_enabled is True
 
 
 def test_failed_ingest_retries_once_without_enabling_document_or_duplicating_sibling(client, db, library):
@@ -288,11 +422,12 @@ def test_failed_ingest_retries_once_without_enabling_document_or_duplicating_sib
         f"{library.base}/documents", files={"file": ("retry.pdf", make_pdf(TEXT), "application/pdf")},
     )
     assert response.status_code == 201
+    assert response.json()["retrieval_enabled"] is False
     document_id = UUID(response.json()["id"])
     url = f"{library.base}/documents/{document_id}"
     assert client.get(url).json()["job_status"] == IngestJobStatus.failed.value
     assert chunks_for(db, document_id) == []
-    toggle(client, library, document_id, False)
+    disable_as_teacher(client, library, document_id)  # Idempotent while awaiting admin enablement.
     app.dependency_overrides[get_embedder] = FakeEmbedder
     response = client.post(f"{url}/retry")
     assert response.status_code == 202

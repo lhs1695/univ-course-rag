@@ -66,3 +66,22 @@
 - 验证：pytest plan02 21 passed；相关 194 passed / 2 skipped；ruff OK；`npm run build` OK
 - 提交：本会话 Conventional Commit（PLAN-02）；未 push
 - 未做 / 风险：真人 Vite 点检留给 PLAN-09；正式 Postgres 需跑迁移 0012；未对演示库做破坏性操作
+
+### 2026-10-26（Asia/Shanghai）：M4 后回归
+
+- 状态保持 `done`。本轮仅更新 PLAN-02 测试夹具/断言与权限矩阵，不修改业务代码或 `test_course_business.py`，不提交、不 push；下述当前合同取代上轮记录中的硬删除和正式库迁移待办口径。
+- 上传入口与 ORM 默认 `retrieval_enabled=false`；夹具先断言默认停用、ingest 成功且有 chunks，再由管理员启用两份资料。教师只能反复停用；启用由管理员完成；非法 PATCH 用管理员会话验证 422 且状态不变。
+- 拆开全局角色与课内成员角色：课内 student 无论全局 student/teacher/admin 都不能 upload/retry；非 admin 不能停用/删除；全局 admin 可管理资料，即使未以教师入课。学生仅见已启用资料，停用资料 get/content 为 404；撤销成员后 documents/get/content/ask/search/patch 均 403。
+- 管理员无成员身份时可跨课 list/get/patch/delete，合成资料无文件的 content 为 404；upload/retry 与 ask/search 仍 403。管理员资料例外不改变 Agent 课程教师授权；全局 admin 仍有本课 student 成员时可 ask/search，证据仅来自 enabled 资料。
+- DELETE 为软关：保留 Document/chunks/jobs/文件，重复删除为 204；断言不调用存储清理函数，兄弟资料文件/chunks 及问答检索不受影响，他课资料不变，管理员可再启用。旧「清理失败 503」测已改为「软关不触碰存储」。保留 0012 回填/server default 测与失败 ingest retry 测，成功 retry 仍 false、不重复 chunks。
+- [权限矩阵](../lifecycle-permissions-matrix.md) 同步上述合同、名单不自动开户（PLAN-17 / 业务测指针）、正式库 Alembic head `0015`（本轮未连接正式库核验）。仅 FakeEmbedder/FakeLLM、合成 PDF、conftest SQLite；无真人 UI 或事实正确率补证。
+- 实际验证命令（仓库根）：
+
+  ```text
+  backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan02_lifecycle_permissions.py backend/tests/test_course_business.py -q -p no:cacheprovider
+  backend/.venv/Scripts/python.exe -m ruff check backend/tests/test_plan02_lifecycle_permissions.py --output-format concise
+  git diff --check
+  ```
+
+- 原始 pytest 命令首轮因 Windows 临时目录权限得到 `20 passed, 1 warning, 24 errors in 15.05s`，不是业务断言结果；新 basetemp 也受 mode=0700 ACL 影响。使用[矩阵 §3](../lifecycle-permissions-matrix.md#3-回归证据本卡)记录的进程内临时目录兼容入口，运行相同两个测试文件及选项，最终退出 0：`44 passed, 1 warning in 24.95s`（PLAN-02 24 项 + 业务测 20 项）；warning 仅为 Starlette anyio 弃用提示。ruff 退出 0：`All checks passed!`。
+- 文档自检：本地相对链接目标存在；`git diff --check` 退出 0、无错误输出。不运行全量测试、真实模型、正式库迁移或前端构建；本轮无产品/UI 改动。

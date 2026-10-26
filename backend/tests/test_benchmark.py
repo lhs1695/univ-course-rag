@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+from app import benchmark
 from app.benchmark import (
     BENCHMARK_VERSION,
     BenchmarkConfig,
@@ -12,8 +13,11 @@ from app.benchmark import (
     synthetic_markdown,
 )
 from app.db import Base
+from app.models.document import IngestJob
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from tests.conftest import enable_retrieval
 
 
 def test_synthetic_markdown_is_repeatable_and_has_exact_chunks() -> None:
@@ -32,7 +36,7 @@ def test_scale_validation_is_bounded(value: str) -> None:
         parse_scales(value)
 
 
-def test_sqlite_benchmark_reports_only_aggregates(tmp_path: Path) -> None:
+def test_sqlite_benchmark_reports_only_aggregates(tmp_path: Path, monkeypatch) -> None:
     engine = create_engine("sqlite://")
     Base.metadata.create_all(engine)
     factory = sessionmaker(
@@ -41,6 +45,17 @@ def test_sqlite_benchmark_reports_only_aggregates(tmp_path: Path) -> None:
         autocommit=False,
         expire_on_commit=False,
     )
+
+    create_fixture = benchmark._create_fixture
+
+    def create_enabled_fixture(db, source_path, scale):
+        user_id, course_id, job_id = create_fixture(db, source_path, scale)
+        job = db.get(IngestJob, job_id)
+        assert job is not None
+        enable_retrieval(db, job.document_id)
+        return user_id, course_id, job_id
+
+    monkeypatch.setattr(benchmark, "_create_fixture", create_enabled_fixture)
 
     report = run_benchmark(
         factory,

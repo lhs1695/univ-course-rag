@@ -31,7 +31,8 @@ def course_id(db: Session) -> UUID:
 
 def add_chunk(db, course_id, text, *, identity=INDEX, chunk_id=None) -> Chunk:
     document = Document(
-        course_id=course_id, uploaded_by=uuid4(), filename="synthetic.txt", storage_path="unused"
+        course_id=course_id, uploaded_by=uuid4(), filename="synthetic.txt", storage_path="unused",
+        retrieval_enabled=True,
     )
     db.add(document)
     db.flush()

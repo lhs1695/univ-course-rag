@@ -27,7 +27,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from tests.conftest import add_user
+from tests.conftest import add_user, enable_retrieval
 from tests.test_parse import make_pdf
 
 UNIQUE_SENTENCE = "紫石英口令：本课向量必须绑定 course_id-alpha-9371。"
@@ -250,7 +250,7 @@ def test_short_text_succeeds_with_quality_warning(
     assert detail.json() == {
         "id": str(doc_id),
         "filename": "brief.txt",
-        "retrieval_enabled": True,
+        "retrieval_enabled": False,
         "job_status": IngestJobStatus.succeeded.value,
         "error_message": None,
         "source_unit_count": 1,
@@ -559,6 +559,10 @@ def test_student_member_can_read_documents_and_nonmember_is_denied(
     doc_id = uploaded.json()["id"]
 
     login_as(client, "alice", "pass")
+    assert client.get(f"/courses/{course.id}/documents").json() == []
+    assert client.get(f"/courses/{course.id}/documents/{doc_id}").status_code == 404
+    assert client.get(f"/courses/{course.id}/documents/{doc_id}/content").status_code == 404
+    enable_retrieval(db, doc_id)
     listed = client.get(f"/courses/{course.id}/documents")
     assert listed.status_code == 200
     assert [row["id"] for row in listed.json()] == [doc_id]
