@@ -1,0 +1,316 @@
+{
+  "meta": {
+    "date": "2026-10-26T20:19:47.849567+08:00",
+    "timezone": "Asia/Shanghai",
+    "verifier": "developer",
+    "note": "开发者代观察/API验收；非独立用户试用",
+    "base_api": "http://127.0.0.1:8000",
+    "vite": "http://127.0.0.1:5173",
+    "db": "univ_course_rag_cn_v2",
+    "alembic": "0015"
+  },
+  "results": [
+    {
+      "item": "health_ready",
+      "status": "PASS",
+      "detail": "health={'status': 'ok'} ready={'status': 'ok'}",
+      "evidence": {},
+      "at": "2026-10-26T20:19:40.994583+08:00"
+    },
+    {
+      "item": "login_roles",
+      "status": "PASS",
+      "detail": "admin/teacher/student cookie login ok",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.221520+08:00"
+    },
+    {
+      "item": "pick_course",
+      "status": "PASS",
+      "detail": "title=线性代数 id=93a86e31-8e5f-4708-a42f-ad93518ce32c",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.231519+08:00"
+    },
+    {
+      "item": "admin_create_semester",
+      "status": "PASS",
+      "detail": "id=f1089966-ee05-402e-b1f6-66a971985d74 name=验收学期-10262019",
+      "evidence": {
+        "semester": {
+          "name": "验收学期-10262019",
+          "starts_on": "2026-09-01",
+          "ends_on": "2027-01-15",
+          "id": "f1089966-ee05-402e-b1f6-66a971985d74"
+        }
+      },
+      "at": "2026-10-26T20:19:43.244111+08:00"
+    },
+    {
+      "item": "admin_attach_semester",
+      "status": "PASS",
+      "detail": "200 {\"id\":\"93a86e31-8e5f-4708-a42f-ad93518ce32c\",\"title\":\"线性代数\",\"semester_id\":\"f1089966-ee05-402e-b1f6-66a971985d74\",\"membership_role\":null,\"capabilities\":{\"can_manage_documents\":false,\"can_manage_members\":false,\"can_view_insights\":false}}",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.259905+08:00"
+    },
+    {
+      "item": "admin_patch_student_profile",
+      "status": "PASS",
+      "detail": "200 {\"id\":\"404466c3-1972-4bee-bde4-d3cc649349b6\",\"username\":\"student\",\"role\":\"student\",\"full_name\":\"验收学生甲\",\"student_number\":\"A31746741\"}",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.286971+08:00"
+    },
+    {
+      "item": "admin_patch_teacher_name",
+      "status": "PASS",
+      "detail": "200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.299647+08:00"
+    },
+    {
+      "item": "admin_create_extra_student",
+      "status": "PASS",
+      "detail": "201 {\"id\":\"d4d8ae80-60c9-4f97-b43d-7cddb10f2f3e\",\"username\":\"roster_extra_49d542bf\",\"role\":\"student\",\"full_name\":\"已存在学生乙\",\"student_number\":\"Be991b359\"}",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.375486+08:00"
+    },
+    {
+      "item": "class_create",
+      "status": "PASS",
+      "detail": "id=627d1c9e-3c7d-4b99-849a-35fadb769b3b",
+      "evidence": {
+        "class": {
+          "name": "验收一班-a24378",
+          "id": "627d1c9e-3c7d-4b99-849a-35fadb769b3b",
+          "course_id": "93a86e31-8e5f-4708-a42f-ad93518ce32c",
+          "student_count": 0
+        }
+      },
+      "at": "2026-10-26T20:19:43.392863+08:00"
+    },
+    {
+      "item": "class_rename",
+      "status": "PASS",
+      "detail": "200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.410129+08:00"
+    },
+    {
+      "item": "roster_csv_import",
+      "status": "PASS",
+      "detail": "summary={\"total\": 3, \"imported\": 1, \"unchanged\": 0, \"rejected\": 2, \"errors\": [{\"line\": 3, \"code\": \"student_account_missing\"}, {\"line\": 4, \"code\": \"name_mismatch\"}]}",
+      "evidence": {
+        "summary": {
+          "total": 3,
+          "imported": 1,
+          "unchanged": 0,
+          "rejected": 2,
+          "errors": [
+            {
+              "line": 3,
+              "code": "student_account_missing"
+            },
+            {
+              "line": 4,
+              "code": "name_mismatch"
+            }
+          ]
+        },
+        "csv": "D:\\workspace\\univ-course-rag\\docs\\user-task-scripts\\evidence-2026-10-26\\roster-sample-2026-10-26.csv"
+      },
+      "at": "2026-10-26T20:19:43.673554+08:00"
+    },
+    {
+      "item": "profile_no_history",
+      "status": "PASS",
+      "detail": "keys=['classes', 'full_name', 'role', 'student_number'] body={\"full_name\": \"验收学生甲\", \"student_number\": \"A31746741\", \"role\": \"student\", \"classes\": [{\"course_title\": \"线性代数\", \"class_name\": \"验收一班-a24378-改\"}]}",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.683087+08:00"
+    },
+    {
+      "item": "admin_disable_retrieval",
+      "status": "PASS",
+      "detail": "200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.806130+08:00"
+    },
+    {
+      "item": "student_hidden_when_disabled",
+      "status": "PASS",
+      "detail": "visible_count=0",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.820403+08:00"
+    },
+    {
+      "item": "student_content_denied_when_disabled",
+      "status": "PASS",
+      "detail": "status=404",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.832018+08:00"
+    },
+    {
+      "item": "admin_reenable_retrieval",
+      "status": "PASS",
+      "detail": "200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.848019+08:00"
+    },
+    {
+      "item": "student_visible_when_enabled",
+      "status": "PASS",
+      "detail": "visible_count=1",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.863113+08:00"
+    },
+    {
+      "item": "teacher_cannot_enable",
+      "status": "PASS",
+      "detail": "status=403",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.893859+08:00"
+    },
+    {
+      "item": "invest_reject_without_confirm",
+      "status": "PASS",
+      "detail": "status=422 body={\"detail\":\"external_processing_confirmation_required\"}",
+      "evidence": {},
+      "at": "2026-10-26T20:19:43.957650+08:00"
+    },
+    {
+      "item": "invest_cancel_queued",
+      "status": "PASS",
+      "detail": "status_code=200 status=cancelled",
+      "evidence": {},
+      "at": "2026-10-26T20:19:44.007825+08:00"
+    },
+    {
+      "item": "invest_retry_after_cancel",
+      "status": "PASS",
+      "detail": "status_code=200 status=queued body={\"task_id\":\"44c467b6-44e1-4581-9ea6-dc64344e0e6d\",\"course_id\":\"93a86e31-8e5f-4708-a42f-ad93518ce32c\",\"status\":\"queued\",\"attempt\":2,\"budget_limits\":{\"max_steps\":8,\"max_tool_calls\":6,\"max_model_calls\":8",
+      "evidence": {},
+      "at": "2026-10-26T20:19:44.034020+08:00"
+    },
+    {
+      "item": "invest_create",
+      "status": "PASS",
+      "detail": "id=0deb17ae-2308-4b5d-9db2-1180e5584454 status=queued",
+      "evidence": {
+        "task": {
+          "id": null,
+          "status": "queued",
+          "attempt": 1
+        }
+      },
+      "at": "2026-10-26T20:19:44.199854+08:00"
+    },
+    {
+      "item": "invest_fake_run",
+      "status": "PASS",
+      "detail": "status_code=200 status=succeeded body={\"task_id\":\"0deb17ae-2308-4b5d-9db2-1180e5584454\",\"course_id\":\"93a86e31-8e5f-4708-a42f-ad93518ce32c\",\"status\":\"succeeded\",\"attempt\":1,\"budget_limits\":{\"max_steps\":8,\"max_tool_calls\":6,\"max_model_calls\":8,\"max_runtime_seconds\":120,\"max_evidence_refs\":",
+      "evidence": {},
+      "at": "2026-10-26T20:19:44.307535+08:00"
+    },
+    {
+      "item": "invest_report_and_page_url",
+      "status": "PASS",
+      "detail": "page_urls=[] sample_urls=[] keys=['task_id', 'status', 'error_code', 'report', 'sample_count', 'summary', 'sources', 'evidence_sources']",
+      "evidence": {
+        "page_urls": [],
+        "sample_urls": [],
+        "report_keys": [
+          "task_id",
+          "status",
+          "error_code",
+          "report",
+          "sample_count",
+          "summary",
+          "sources",
+          "evidence_sources"
+        ]
+      },
+      "at": "2026-10-26T20:19:44.329538+08:00"
+    },
+    {
+      "item": "invest_replay_run",
+      "status": "PASS",
+      "detail": "status_code=200 status=succeeded",
+      "evidence": {},
+      "at": "2026-10-26T20:19:44.497596+08:00"
+    },
+    {
+      "item": "vite_asset:/",
+      "status": "PASS",
+      "detail": "status=200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:47.842579+08:00"
+    },
+    {
+      "item": "vite_asset:/src/main.js",
+      "status": "PASS",
+      "detail": "status=200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:47.844579+08:00"
+    },
+    {
+      "item": "vite_asset:/src/views/InvestigationView.vue",
+      "status": "PASS",
+      "detail": "status=200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:47.846585+08:00"
+    },
+    {
+      "item": "vite_asset:/src/views/AdminBusinessView.vue",
+      "status": "PASS",
+      "detail": "status=200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:47.848566+08:00"
+    },
+    {
+      "item": "vite_asset:/src/views/ProfileView.vue",
+      "status": "PASS",
+      "detail": "status=200",
+      "evidence": {},
+      "at": "2026-10-26T20:19:47.849567+08:00"
+    },
+    {
+      "item": "invest_resume_interrupted",
+      "status": "PASS",
+      "detail": "resume API reachable; SQL-forced interrupted without safe checkpoint -> failed/investigation_checkpoint_unsafe (designed)",
+      "evidence": {},
+      "at": "2026-10-26T20:20:47.009795+08:00"
+    },
+    {
+      "item": "real_ask_deepseek",
+      "status": "PASS",
+      "detail": "course=线性代数 model=deepseek-flash llm=deepseek embed=siliconflow|BAAI/bge-m3 answer_len=77 citations=1 page_urls=[] usage=None; CNY_cost=unknown_no_bill; expected_small_sample_under_2_CNY constructed_url=/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content#page=10",
+      "evidence": {
+        "course": "线性代数",
+        "course_id": "93a86e31-8e5f-4708-a42f-ad93518ce32c",
+        "query": "用一句话说明线性代数主要研究什么？",
+        "llm_backend": "deepseek",
+        "deepseek_model": "deepseek-flash",
+        "embedder_backend": "siliconflow",
+        "embedding_model": "BAAI/bge-m3",
+        "answer_preview": "线性代数主要研究向量空间以及向量空间之间的线性变换（线性映射）。[Source 753cd1dc-deae-4263-b4f0-7855caf428cb]",
+        "citation_count": 1,
+        "cite_urls": [
+          "/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content"
+        ],
+        "page_urls": [
+          "/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content#page=10"
+        ],
+        "usage": null,
+        "raw_keys": [
+          "error_code",
+          "message",
+          "answer",
+          "citations"
+        ],
+        "error_code": null,
+        "page": 10,
+        "constructed_frontend_url": "/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content#page=10",
+        "note": "API content_url has no hash; frontend citationUrl appends #page= when page present. Chunk page verified=10 from DB."
+      },
+      "at": "2026-10-26T20:23:41.556631+08:00"
+    }
+  ]
+}

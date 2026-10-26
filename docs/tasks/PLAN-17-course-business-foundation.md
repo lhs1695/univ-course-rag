@@ -5,8 +5,8 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-17 |
-| 状态 | implemented / 定向测试+build 已过；Vite 人工点验与演示库迁移仍待本机 |
-| 须授权 | 本轮已授权五件套实现与隔离测试迁移；正式库修改、真实名单导入仍未授权 |
+| 状态 | **已落地**：代码 `59ab09f`；cn_v2→0015；2026-10-26 developer API+部分 UI 观察 PASS（CSV/检索门控/学期班级/profile） |
+| 须授权 | 五件套实现已授权并提交；2026-10-26 另授权 cn_v2 升级、真实 CSV、真实短问（已完成）；默认仍不 push |
 
 ## 目标
 
@@ -33,7 +33,7 @@
 - [x] 教师限本课上传与查看；上传后管理员可见，由管理员启用检索；启用前不得被普通检索或 Agent 工具读作证据。删除/禁用沿用现有软禁用思路，不增加审批层级。
 - [x] 管理员负责启用检索、全站账号与学期；关键接口按上述权限矩阵验证。
 - [x] 迁移在隔离数据库验证，旧行保留；定向测试、ruff 通过。
-- [x] 前端 `npm run build` 本轮通过；关键 Vite 页面人工点验仍待本机。
+- [x] 前端 `npm run build` 已通过；**2026-10-26** developer 已点 `/admin/business`、`/profile`，API 覆盖学期/班级/CSV/检索门控（见 observation-2026-10-26）。
 - [x] 按本卡指定阅读/更新范围，同步拍板规格 §3、数据关系说明、施工计划、当前交接与会话状态，记录未做项和迁移风险。
 
 ## M4 实现与复用（2026-10-26）
@@ -76,6 +76,9 @@ npm run build
 另一次补跑原 `test_auth.py test_courses.py` 和上述 4 份 Agent 测试：`69 passed, 1 warning, 26 errors in 18.69s`，26 项都在公共 tmp_path fixture 因 `C:/Users/16747/AppData/Local/Temp/pytest-of-16747` WinError 5 失败，不能计为账号/课程回归通过。未运行全量 suite。业务专项独立 TestClient、内存 SQLite、FakeEmbedder/FakeLLM；上传测试 mock 文件写入和后台入库，用合成 chunk 验证证据门禁，原文响应使用既有 PDF fixture；没有真实模型或正式库上传。
 
 ## 本机待验与未做项
+
+
+> **2026-10-26 晚更新**：下列清单已由 developer 在 cn_v2 + Vite/API 代观察覆盖（见 `docs/user-task-scripts/observation-2026-10-26-developer-m3-m4.md`）。浏览器 PDF 实落页仍 SKIP；非独立试用。
 
 - [x] 本轮 build 已通过。仍待 Vite：管理员姓名/学号 → 学期增改/课程关联 → 班级/CSV 摘要。
 - [ ] 用隔离、已迁移测试库：教师上传 → 教师不能启用 → 管理员可见并启用 → 学生检索/问答有依据 → 点击引用回原 PDF 页；停用后普通检索与调查来源不可读。教师「课程调查」仍可进入。

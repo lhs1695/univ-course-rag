@@ -2,7 +2,7 @@
 
 本表反映当前施工顺序与证据缺口。拍板摘要见 [结题已拍板规格](../结题已拍板规格.md)；产品方向以 [产品合同](../结题产品定义与完工标准.md) 为准；详细路线见 [implementation-plan.md](../implementation-plan.md)。任务卡状态不等于结题验收通过；Fake、开发者观察、人工核验与独立核验分别记录。
 
-> 2026-10-26：前端视觉已通过；审阅必须改项已确认、文档收口完成，待用户下令开 M1。M1/M2/M3 退出、预算与 Harness/E5-A 以 [拍板规格](../结题已拍板规格.md) 及其所链任务合同为准。
+> 2026-10-26 晚：M1–M3 + M4(PLAN-17) 代码已本地提交；cn_v2→0015；developer Vite/API 代观察已落盘（非独立试用）。真实短问/CSV 已跑。默认不 push。后续以 PLAN-10 收口与授权后的证据补缺为主。
 
 ## A. 既有任务与未完成证据
 
@@ -27,20 +27,18 @@
 
 | ID | 标题 | 依赖 | 优先级 | 状态 | 任务卡 |
 | --- | --- | --- | --- | --- | --- |
-| PLAN-14 | 教师 Agent 合同与 Harness 基线 | PLAN-01、02；参考 PLAN-03～05 | P0 | in_progress | [PLAN-14-agent-harness-contract.md](PLAN-14-agent-harness-contract.md) |
-| PLAN-15 | Agent 运行时可靠性与权限治理 | PLAN-14、02 | P0 | 计划已确认待开工（尚未实现） | [PLAN-15-agent-runtime-reliability.md](PLAN-15-agent-runtime-reliability.md) |
-| PLAN-16 | 教师侧课程问题调查 Agent | PLAN-14、15、03～05 | P0 | draft | [PLAN-16-teacher-investigation-agent.md](PLAN-16-teacher-investigation-agent.md) |
-| PLAN-17 | 课程业务基础完善 | PLAN-02；与 PLAN-15/16 协调 | P1 | draft | [PLAN-17-course-business-foundation.md](PLAN-17-course-business-foundation.md) |
+| PLAN-14 | 教师 Agent 合同与 Harness 基线 | PLAN-01、02；参考 PLAN-03～05 | P0 | **已落地**（M1 合同/Fake；代码已提交） | [PLAN-14-agent-harness-contract.md](PLAN-14-agent-harness-contract.md) |
+| PLAN-15 | Agent 运行时可靠性与权限治理 | PLAN-14、02 | P0 | **已落地**（M1/M2/M3 运行时；cn_v2 已 0014/0015；待人工证据：PG 并发/物理 TTL） | [PLAN-15-agent-runtime-reliability.md](PLAN-15-agent-runtime-reliability.md) |
+| PLAN-16 | 教师侧课程问题调查 Agent | PLAN-14、15、03～05 | P0 | **已落地**（M2 报告+M3 UI；developer 观察 PASS；浏览器 PDF 实落页仍 SKIP；真模型调查未作主验收） | [PLAN-16-teacher-investigation-agent.md](PLAN-16-teacher-investigation-agent.md) |
+| PLAN-17 | 课程业务基础完善 | PLAN-02；与 PLAN-15/16 协调 | P1 | **已落地**（M4 五件套；本机 API+部分 UI 观察 PASS；CSV/检索门控已验） | [PLAN-17-course-business-foundation.md](PLAN-17-course-business-foundation.md) |
 
-### 推荐顺序
+### 推荐顺序（2026-10-26 晚更新）
 
-1. 文档/拍板规格收口完成，审阅必须改项已确认；待用户下令开 M1，中期材料冻结，保留原未跟踪项。
-2. M1：PLAN-14 合同/Fake Harness + PLAN-15 最小存储/课程教师 API 权限，创建后可独立读任务、无权者读不到；历史半成品须另卡复验。
-3. **并行**：PLAN-15（隔离迁移）与 PLAN-17 数据模型盘点（不先破坏性迁移）。
-4. PLAN-16：调查报告 + 教师 UI 最小闭环（验收对齐拍板规格）。
-5. 补齐 PLAN-17 最小业务页面/流程。
-6. 授权后补 PLAN-06/07 等证据缺口；RAG 附线有限校准。
-7. **不启动** PLAN-18 GraphRAG；仅主线全部完成后再议演示锦上添花。
+1. ~~M1–M3 / PLAN-14～16~~、~~M4/PLAN-17~~：代码已本地提交；本机 developer 代观察已落盘。
+2. PLAN-10：本地运行说明、已知限制、验收记录收口（空白机/备份恢复仍暂缓）。
+3. 授权后补 PLAN-06/07 等证据缺口；有限 RAG 校准（开发者核验，不冒充独立评测）。
+4. 可选后置：物理 TTL、完整 Trace UI、PG 真实并发。
+5. **不启动** PLAN-18 GraphRAG；默认不 push。
 
 ## C. 暂缓 / 结题后可选：不自动进入实现
 

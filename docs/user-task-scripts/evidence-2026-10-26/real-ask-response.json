@@ -1,0 +1,28 @@
+{
+  "course": "线性代数",
+  "course_id": "93a86e31-8e5f-4708-a42f-ad93518ce32c",
+  "query": "用一句话说明线性代数主要研究什么？",
+  "llm_backend": "deepseek",
+  "deepseek_model": "deepseek-flash",
+  "embedder_backend": "siliconflow",
+  "embedding_model": "BAAI/bge-m3",
+  "answer_preview": "线性代数主要研究向量空间以及向量空间之间的线性变换（线性映射）。[Source 753cd1dc-deae-4263-b4f0-7855caf428cb]",
+  "citation_count": 1,
+  "cite_urls": [
+    "/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content"
+  ],
+  "page_urls": [
+    "/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content#page=10"
+  ],
+  "usage": null,
+  "raw_keys": [
+    "error_code",
+    "message",
+    "answer",
+    "citations"
+  ],
+  "error_code": null,
+  "page": 10,
+  "constructed_frontend_url": "/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/documents/e13976f0-9ef2-4886-81f0-da346caf2c88/content#page=10",
+  "note": "API content_url has no hash; frontend citationUrl appends #page= when page present. Chunk page verified=10 from DB."
+}

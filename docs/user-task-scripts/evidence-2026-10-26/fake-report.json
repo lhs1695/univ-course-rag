@@ -1,0 +1,210 @@
+{
+  "task_id": "0deb17ae-2308-4b5d-9db2-1180e5584454",
+  "status": "succeeded",
+  "error_code": null,
+  "report": {
+    "summary": "Window 2026-10-19T12:19:44.180844+00:00 to 2026-10-26T12:19:44.180844+00:00; recorded_attempts=20, student_attempts=19, sample_count=19. Fake observation report; causes require verification.",
+    "findings": [
+      {
+        "category": "no_evidence",
+        "description": "Sampled attempts recorded no_evidence; this does not establish missing course material.",
+        "source_query_ids": [
+          "47e64f32-03f0-4e65-9ce7-b8d006e0384b",
+          "93653d54-96d9-4a95-b631-d7e3c2d19c5d",
+          "24baca59-b020-4144-953e-74c0260e9841",
+          "4e028670-bd9c-47cc-89e9-d8adb7d23f48",
+          "f5bb2260-be9f-4a48-858e-370817c687e4"
+        ],
+        "evidence_chunk_ids": []
+      },
+      {
+        "category": "repeated_question",
+        "description": "Normalized question text repeats within the bounded sample; repetition alone does not establish a knowledge gap.",
+        "source_query_ids": [
+          "93653d54-96d9-4a95-b631-d7e3c2d19c5d",
+          "2248f028-eb17-482b-a15d-f8d7ec89efcf",
+          "24baca59-b020-4144-953e-74c0260e9841",
+          "694eff34-36a9-4cb0-803a-520b7172b946",
+          "9a998077-caa9-49d2-9cd1-bf11f188dbf4",
+          "626b40e6-ee70-416d-995c-b2697af4546a",
+          "4e028670-bd9c-47cc-89e9-d8adb7d23f48",
+          "7fcfc35a-46b4-4fd2-8e05-c69d6eb3cdfb",
+          "d348303a-eae5-4b4d-83b6-9822bc15da46",
+          "ba7d076c-d53e-4df2-b213-306ee3e421ee",
+          "f5bb2260-be9f-4a48-858e-370817c687e4",
+          "89aa5655-612d-4ba7-b49d-d8737e3362a5"
+        ],
+        "evidence_chunk_ids": []
+      }
+    ],
+    "candidate_causes": [
+      {
+        "cause_code": "undecidable",
+        "explanation": "Cause remains unknown; material coverage and retrieval require separate verification.",
+        "source_query_ids": [
+          "47e64f32-03f0-4e65-9ce7-b8d006e0384b",
+          "93653d54-96d9-4a95-b631-d7e3c2d19c5d",
+          "24baca59-b020-4144-953e-74c0260e9841",
+          "4e028670-bd9c-47cc-89e9-d8adb7d23f48",
+          "f5bb2260-be9f-4a48-858e-370817c687e4"
+        ],
+        "evidence_chunk_ids": []
+      }
+    ],
+    "unknowns": [
+      "At most 30 recent student attempts are sampled. Logs do not preserve final answers or citation snapshots; teaching quality and material coverage remain unknown."
+    ],
+    "suggested_actions": [
+      {
+        "action_code": "add_regression",
+        "reason": "Review these sampled attempts before deciding on any course changes.",
+        "source_query_ids": [
+          "47e64f32-03f0-4e65-9ce7-b8d006e0384b",
+          "93653d54-96d9-4a95-b631-d7e3c2d19c5d",
+          "24baca59-b020-4144-953e-74c0260e9841",
+          "4e028670-bd9c-47cc-89e9-d8adb7d23f48",
+          "f5bb2260-be9f-4a48-858e-370817c687e4"
+        ],
+        "evidence_chunk_ids": []
+      }
+    ],
+    "source_query_ids": [
+      "623e2d51-ba43-47c8-8f0c-373ebc99d163",
+      "bce86f3d-b074-49d5-b80e-1b36f20e6a5e",
+      "634a1ca0-94cc-40ba-86f3-76e85cf30d6c",
+      "21308d18-8127-4aa1-8cdc-91c0bd129e34",
+      "f6d7a8ae-e7c9-4bee-b071-9493297562d4",
+      "47e64f32-03f0-4e65-9ce7-b8d006e0384b",
+      "e3827238-6c9e-41ca-876f-df4764acc5ea",
+      "93653d54-96d9-4a95-b631-d7e3c2d19c5d",
+      "2248f028-eb17-482b-a15d-f8d7ec89efcf",
+      "24baca59-b020-4144-953e-74c0260e9841",
+      "694eff34-36a9-4cb0-803a-520b7172b946",
+      "9a998077-caa9-49d2-9cd1-bf11f188dbf4",
+      "626b40e6-ee70-416d-995c-b2697af4546a",
+      "4e028670-bd9c-47cc-89e9-d8adb7d23f48",
+      "7fcfc35a-46b4-4fd2-8e05-c69d6eb3cdfb",
+      "d348303a-eae5-4b4d-83b6-9822bc15da46",
+      "ba7d076c-d53e-4df2-b213-306ee3e421ee",
+      "f5bb2260-be9f-4a48-858e-370817c687e4",
+      "89aa5655-612d-4ba7-b49d-d8737e3362a5"
+    ],
+    "evidence_refs": []
+  },
+  "sample_count": 19,
+  "summary": {
+    "recorded_attempts": 20,
+    "student_attempts": 19,
+    "cited_answer": 14,
+    "no_evidence": 5,
+    "failure": 0,
+    "unknown_outcome": 0,
+    "non_student_attempts": 1,
+    "unknown_role_attempts": 0,
+    "knowledge_attempts": 19,
+    "distinct_student_questions": 9,
+    "cited_answer_rate": 0.7368421052631579,
+    "no_evidence_rate": 0.2631578947368421,
+    "failure_rate": 0.0,
+    "rate_denominator": "student_attempts",
+    "sample_limited": true
+  },
+  "sources": [
+    {
+      "query_id": "21308d18-8127-4aa1-8cdc-91c0bd129e34",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "2248f028-eb17-482b-a15d-f8d7ec89efcf",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "24baca59-b020-4144-953e-74c0260e9841",
+      "available": true,
+      "outcome": "no_evidence"
+    },
+    {
+      "query_id": "47e64f32-03f0-4e65-9ce7-b8d006e0384b",
+      "available": true,
+      "outcome": "no_evidence"
+    },
+    {
+      "query_id": "4e028670-bd9c-47cc-89e9-d8adb7d23f48",
+      "available": true,
+      "outcome": "no_evidence"
+    },
+    {
+      "query_id": "623e2d51-ba43-47c8-8f0c-373ebc99d163",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "626b40e6-ee70-416d-995c-b2697af4546a",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "634a1ca0-94cc-40ba-86f3-76e85cf30d6c",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "694eff34-36a9-4cb0-803a-520b7172b946",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "7fcfc35a-46b4-4fd2-8e05-c69d6eb3cdfb",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "89aa5655-612d-4ba7-b49d-d8737e3362a5",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "93653d54-96d9-4a95-b631-d7e3c2d19c5d",
+      "available": true,
+      "outcome": "no_evidence"
+    },
+    {
+      "query_id": "9a998077-caa9-49d2-9cd1-bf11f188dbf4",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "ba7d076c-d53e-4df2-b213-306ee3e421ee",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "bce86f3d-b074-49d5-b80e-1b36f20e6a5e",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "d348303a-eae5-4b4d-83b6-9822bc15da46",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "e3827238-6c9e-41ca-876f-df4764acc5ea",
+      "available": true,
+      "outcome": "cited_answer"
+    },
+    {
+      "query_id": "f5bb2260-be9f-4a48-858e-370817c687e4",
+      "available": true,
+      "outcome": "no_evidence"
+    },
+    {
+      "query_id": "f6d7a8ae-e7c9-4bee-b071-9493297562d4",
+      "available": true,
+      "outcome": "cited_answer"
+    }
+  ],
+  "evidence_sources": []
+}

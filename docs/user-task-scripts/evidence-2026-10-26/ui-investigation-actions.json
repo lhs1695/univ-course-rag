@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-26T20:24:50.587359+08:00",
+  "verifier": "developer",
+  "notes": [
+    {
+      "buttons": [
+        "退出登录",
+        "开始时间",
+        "结束时间",
+        "调查焦点\n综合回看\n重复提问\n依据不足\n系统失败",
+        "我确认本次调查可将本课学生问句与资料证据发送给配置的外部 LLM、Embedding 或语义分组服务；已了解数据处理范围。当前运行仅使用 Fake/Replay。",
+        "创建调查任务"
+      ]
+    },
+    {
+      "checkbox_count": 1
+    },
+    {
+      "clicked_without_confirm": "创建",
+      "toast_or_body_snip": "跳到主要内容\n课\n课程知识库\n以课内资料为据\n教师\nteacher\n退出登录\n教学工作台\n▤\n我的课程\n○\n个人主页\n当前课程\n线性代数\n提问\n↗\n课程资料\n本课学生\n问答反馈\n课程调查\n\n从资料出发，回到原文核对。\n\n教学 / 线性代数\n课程知识库\n\n教学 / 课程调查\n\n从问题回到依据\n\n回看本课提问，区分事实、候选解释与未知。报告供教师核查。\n\n发起调查\n开始时间\n结束时间\n调查焦点\n综合回看\n重复提问\n依据不足\n系统失败\n\n单次最多 30 天，默认最近 7 天。Fake/Replay 仅用于核验流程，不代表真实模型质量。\n\n我确认本次调查可将本课学生问句与资料证据发送给配置的外部 LLM、Embedding 或语义分组服务；已了解数据处理范围。当前运行仅使用 Fake/Replay。\n创建调查任务\n请先勾选本次外发处理确认，再创建或恢复调查。\n课程知识库\n回答供学习参考，请结合原资料核对。"
+    },
+    {
+      "clicked_with_confirm": "创建"
+    },
+    {
+      "clicked_run": "Fake"
+    },
+    {
+      "body_has_报告": true,
+      "body_has_取消": false,
+      "body_has_恢复": false,
+      "body_snip": "跳到主要内容\n课\n课程知识库\n以课内资料为据\n教师\nteacher\n退出登录\n教学工作台\n▤\n我的课程\n○\n个人主页\n当前课程\n线性代数\n提问\n↗\n课程资料\n本课学生\n问答反馈\n课程调查\n\n从资料出发，回到原文核对。\n\n教学 / 线性代数\n课程知识库\n\n教学 / 课程调查\n\n从问题回到依据\n\n回看本课提问，区分事实、候选解释与未知。报告供教师核查。\n\n发起调查\n开始时间\n结束时间\n调查焦点\n综合回看\n重复提问\n依据不足\n系统失败\n\n单次最多 30 天，默认最近 7 天。Fake/Replay 仅用于核验流程，不代表真实模型质量。\n\n我确认本次调查可将本课学生问句与资料证据发送给配置的外部 LLM、Embedding 或语义分组服务；已了解数据处理范围。当前运行仅使用 Fake/Replay。\n创建调查任务\n调查记录\n已完成 · 第 1 次尝试\n\n任务 bc3aafda-ddb1-4938-8848-f01b28d77911\n\n累计：1 / 8 模型动作 · 1 / 6 工具调用 · 0.06 秒\n\n刷新状态\n步骤与安全事件摘要（8）\n\n待核查报告 / Fake · Replay\n\n调查报告\n\n本次样本 21 条；日志与当前资料不能还原历史回答，也不能据此评价教学质量。\n\nWindow 2026-10-19T12:24:00+00:00 to 2026-10-26T12:24:00+00:00; recorded_attempts=22, student_attempts=21, sample_count=21. Fake observation report; causes require verification.\n\n观察事实\nSampled attempts recorded no_evidence; this does not establish missing co"
+    }
+  ]
+}

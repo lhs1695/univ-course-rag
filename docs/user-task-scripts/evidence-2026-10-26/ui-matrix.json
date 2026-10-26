@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "verifier": "developer",
+    "note": "本机 Playwright headless；非独立试用",
+    "at": "2026-10-26T20:24:09.435065+08:00"
+  },
+  "results": [
+    {
+      "item": "ui_home",
+      "status": "PASS",
+      "detail": "title=课程知识库 url=http://127.0.0.1:5173/login?next=/",
+      "at": "2026-10-26T20:23:48.943593+08:00"
+    },
+    {
+      "item": "ui_teacher_login",
+      "status": "PASS",
+      "detail": "url=http://127.0.0.1:5173/courses",
+      "at": "2026-10-26T20:23:51.584803+08:00"
+    },
+    {
+      "item": "ui_investigation_route",
+      "status": "PASS",
+      "detail": "url=http://127.0.0.1:5173/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/investigation len=433908 has_调查=True",
+      "at": "2026-10-26T20:23:53.767115+08:00"
+    },
+    {
+      "item": "ui_admin_business",
+      "status": "PASS",
+      "detail": "url=http://127.0.0.1:5173/admin/business has_学期=True has_班级=True",
+      "at": "2026-10-26T20:24:01.700976+08:00"
+    },
+    {
+      "item": "ui_profile",
+      "status": "PASS",
+      "detail": "url=http://127.0.0.1:5173/profile",
+      "at": "2026-10-26T20:24:03.415316+08:00"
+    },
+    {
+      "item": "ui_student_ask_route",
+      "status": "PASS",
+      "detail": "url=http://127.0.0.1:5173/courses/93a86e31-8e5f-4708-a42f-ad93518ce32c/ask textarea=0",
+      "at": "2026-10-26T20:24:09.279977+08:00"
+    }
+  ]
+}
