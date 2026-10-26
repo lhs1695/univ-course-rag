@@ -2,14 +2,14 @@
 
 > 更新：2026-10-26 18:33（Asia/Shanghai）bot 收尾中断的 M3/M4。
 
-**结论**：M3 已在 `4587421`；M4/PLAN-17 半成品经定向验收后本地提交（未 push）。业务 22 + Agent 69 + 前端 49 + `npm run build` 通过；未动 cn_v2/演示库，未读 .env，未 stage 中期笔记。Vite 人工点验仍建议本机走一遍。
+**结论**：M3 已在 `4587421`；M4/PLAN-17 经定向验收后本地提交 `59ab09f`（未 push）。业务 22 + Agent 69 + 前端 49 + `npm run build` 通过；未动 cn_v2/演示库，未读 .env，未 stage 中期笔记。Vite 人工点验仍建议本机走一遍。
 
 
 更新：2026-10-26（Asia/Shanghai）。此文件用于在长任务中断后恢复上下文；实际状态以代码、测试输出与工作区为准。现行拍板见 [结题已拍板规格.md](../结题已拍板规格.md)。
 
 ## 当前目标
 
-M1–M3 已本地提交；本轮基于 M3 `4587421` 实施 **M4 = PLAN-17 课程业务五件套**。五件套 API、隔离迁移及最小前端入口已写入工作区，**build / Vite 实点 / 本地提交仍被当前环境权限阻断，未完整验收**。暂存区为空，M4 无新 SHA，未 push。原有 `中期答辩材料/笔记/` 未跟踪项未改动、未 stage。
+M1–M3 已本地提交（M3=`4587421`）；**M4 = PLAN-17** 半成品经 bot 收尾验收后本地提交 **`59ab09f`**（未 push）。`main` ahead origin 12。原有 `中期答辩材料/笔记/` 仍未跟踪、未 stage。Vite 人工点验与演示库/`cn_v2` 迁移仍未做。
 
 ## M4 本轮交付与证据（2026-10-26）
 
@@ -21,11 +21,11 @@ M1–M3 已本地提交；本轮基于 M3 `4587421` 实施 **M4 = PLAN-17 课程
 - 关键命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_course_business.py backend/tests/test_course_business_migration.py backend/tests/test_agent_task_api.py backend/tests/test_agent_investigation_runner.py backend/tests/test_agent_investigation_api.py backend/tests/test_agent_task_runtime.py -q -p no:cacheprovider --tb=short` → **91 passed, 1 warning in 25.29s**（M4 API 20 + 迁移 2 + Agent 69）。最终仅 auth 输出和 router 注册位置微调后复验 M4 两文件 → **22 passed, 1 warning in 9.63s**。warning 为 Starlette/anyio 弃用提示。上传专项 mock 写入与后台入库，使用合成 chunks + 既有 PDF fixture；没有实跑模型或人工正确率证据。
 - 对所有本卡 Python 文件定向 `… -m ruff check … --output-format concise` → `All checks passed!`；`node --test --test-isolation=none frontend/tests/*.test.mjs` → **49 pass / 0 fail**；8 个相关 Vue 文件通过 compiler-sfc parse/script/template（非 build 或 UI 验收替代）。完整命令与复现说明见 [PLAN-17](PLAN-17-course-business-foundation.md#迁移边界与实际验证)。
 - 另外尝试原 auth/courses + 4 份 Agent 定向 → `69 passed, 1 warning, 26 errors in 18.69s`。26 例均在公共 tmp_path fixture 被 `C:/Users/16747/AppData/Local/Temp/pytest-of-16747` WinError 5 阻断；未放宽 ACL 或修改全局 fixture，未计为通过。没有跑全量测试。
-- `frontend`：`npm run build` → esbuild `spawn EPERM`。`npm run dev -- --host 127.0.0.1 --configLoader native --port 5177` 能启动；curl 检查 `/` **200**、`/src/main.js` **500**、`/src/views/AdminBusinessView.vue` **500**（Vite Windows realpath 子进程 `spawn EPERM`）；已 Ctrl-C 停止。不能把首页 200 宣称业务页可用。
+- `frontend`（bot 收尾）：`npm run build` → **✓ built in ~7.6s**，exit 0（仅 chunk size warning）。Vite 人工业务路径点验仍待本机；不把 build 绿当作端到端验收。
 - Playwright 技能预检 npx 存在；`npx --no-install --package @playwright/cli playwright-cli --help` 被 npm-cache EPERM 阻断，未下载依赖。DevSpace open_workspace 返回 `MCP tool call requires approval, but approval policy is never`，未通过它修改/执行。项目要求的 `univ-course-rag-dev-loop` 未在已列技能或两个本机 skill 根目录中找到；本轮按用户明确的实现卡直接施工，未调用 coding bot 或子代理。
-- Git：对精确 31 个本卡路径执行 `git add -- …` → `fatal: Unable to create 'D:/workspace/univ-course-rag/.git/index.lock': Permission denied`；`git diff --cached --name-only` 为空；HEAD 仍 **4587421**。未执行空 commit、未 push，中期笔记保留。待正常本机精确 stage 后使用 `feat(business): M4 PLAN-17 semester class roster profile retrieval gate` 提交。
+- Git（bot 收尾）：精确 stage 31 个本卡路径后本地提交 **`59ab09f`** `feat(business): M4 PLAN-17 semester class roster profile retrieval gate`；未 push；未 stage 中期笔记。
 
-本机待验清单与未做项见 [任务卡](PLAN-17-course-business-foundation.md#本机待验与未做项)：先在隔离测试库/Vite 验证管理员学期/班级/账号/名单、教师上传不能启用、管理员启用、学生提问→依据→引用回原 PDF 页、停用后不可作为证据、个人主页无历史、调查入口不回退，再补 build 与受新发布/软删除合同影响的既有定向回归；当前不能宣称 M4 完整退出。未读 `.env`、未用真实模型/名单、未操作正式演示库、未改中期材料。
+本机待验清单与未做项见 [任务卡](PLAN-17-course-business-foundation.md#本机待验与未做项)：先在隔离测试库/Vite 验证管理员学期/班级/账号/名单、教师上传不能启用、管理员启用、学生提问→依据→引用回原 PDF 页、停用后不可作为证据、个人主页无历史、调查入口不回退，再补 build 与受新发布/软删除合同影响的既有定向回归；代码与定向测试/build 已本地提交；Vite 点验与演示库迁移未做，故不宣称 UI/真实库完整退出。未读 `.env`、未用真实模型/名单、未操作正式演示库、未改中期材料。
 
 ## 本轮命名约定（2026-10-26 用户开工）
 
@@ -48,9 +48,12 @@ M1–M3 已本地提交；本轮基于 M3 `4587421` 实施 **M4 = PLAN-17 课程
 
 ### bot 复验提交（同日稍后）
 - 定向：	est_agent_task_runtime + investigation/task API 相关 **69 passed**；全量 ackend/tests **770 passed, 2 skipped**。
-- uff All checks passed；rontend investigation Node tests **3/3**；既有前端 suite 先前 Codex 记 49 pass；本机 **
+-
+uff All checks passed；
+rontend investigation Node tests **3/3**；既有前端 suite 先前 Codex 记 49 pass；本机 **
 pm run build 成功**（约 16s）。
-- 本地 Conventional Commit：eat(agent): M3 teacher investigation UI + lease cancel resume（未 push）。
+- 本地 Conventional Commit：
+eat(agent): M3 teacher investigation UI + lease cancel resume（未 push）。
 - Vite 人工：发起调查→确认→Fake run→报告→依据 #page=→取消/恢复/重试，仍建议本机点验。
 ### M3 实际命令与原始输出摘要
 
