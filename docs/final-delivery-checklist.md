@@ -1,11 +1,11 @@
 # PLAN-10 结题交付核对表与干净环境步骤
 
-冻结日期：2026-10-23（Asia/Shanghai）。**本文件是交付清单与可执行步骤；不以 Fake/排练冒充独立核验、用户试用或空白机全流程 PASS。**
+冻结日期：2026-10-23；**本轮刷新：2026-10-26（Asia/Shanghai）**。**本文件是交付清单与可执行步骤；不以 Fake/排练冒充独立核验、用户试用或空白机全流程 PASS。**不得宣告结题整体验收通过。**
 
 | 项 | 值 |
 | --- | --- |
-| 代码冻结参考（PLAN-09 提交） | `b7f1b3a`；本卡提交见任务卡完成记录 |
-| Alembic head | `0013`（`0011_query_outcomes` → `0012_document_retrieval_enabled` → `0013_insight_reviews`） |
+| 代码锚点（本轮刷新前 HEAD） | `8fc05b3`（含 M3=`4587421` / M4=`59ab09f`）；本批收口提交见任务卡 |
+| Alembic head | **`0015`**（…→`0013`→`0014`→`0015`）；演示库 cn_v2 已 upgrade |
 | Python / Node / npm（本机施工环境） | 3.12.10 / v24.20.0 / 11.19.0 |
 | 后端/前端包版本字段 | `0.0.0`（未做产品发版号 bump） |
 | 默认演示配置口径 | dense、rerank 关；正式库名 `univ_course_rag_cn_v2` |
@@ -23,7 +23,7 @@
 | 可运行源码 | Git 工作区 `main`；不 push | 有 |
 | 依赖锁定 | `backend/pyproject.toml`（`pip install -e ".[dev]"`）；`frontend/package-lock.json` + `npm ci` | 有 |
 | 无密钥配置示例 | `.env.example`（勿提交 `.env`） | 有；本卡未打开 `.env` |
-| 迁移 | `backend/alembic/`，head `0013` | 有 |
+| 迁移 | `backend/alembic/`，head **`0015`** | 有；cn_v2 已升 |
 | 启动 / 工作流 | 根 README「克隆后启动」；[workflow.md](workflow.md)；[中期演示运行卡.md](中期演示运行卡.md) | 有 |
 | 架构 / 权限 / 生命周期 | [架构说明.md](架构说明.md)、[lifecycle-permissions-matrix.md](lifecycle-permissions-matrix.md)、[engineering.md](engineering.md) | 有 |
 | 许可证 | 根 [LICENSE](../LICENSE)（MIT，自有代码/文档）；[NOTICE](../NOTICE)（课件树不在 MIT 内） | 有 |
@@ -171,3 +171,19 @@ cd frontend; npm run build
 - 独立试用：用户指示取消；开发者 Vite 代观察见 `docs/user-task-scripts/observation-2026-10-23-developer.md`。
 - 空白机安装+备份恢复：用户指示暂缓。
 - 真实小样本：`docs/user-task-scripts/evidence-2026-10-23/real-small-sample-2026-10-23-developer.json`（估费 <¥1）。
+
+---
+
+## 2026-10-26 本机门禁刷新（空白机仍暂缓）
+
+时区：Asia/Shanghai。证据文件：[final-delivery-gate-2026-10-26.output.txt](final-delivery-gate-2026-10-26.output.txt)。
+
+| 项 | 本轮口径 |
+| --- | --- |
+| Alembic head | **0015**（cn_v2 已升） |
+| 三角色 + Agent 调查 + 业务五件套 | 见 [observation-2026-10-26](user-task-scripts/observation-2026-10-26-developer-m3-m4.md)（developer，非独立试用） |
+| PLAN-02 矩阵 | [lifecycle-permissions-matrix.md](lifecycle-permissions-matrix.md)（管理员启用 / 教师停用 / 学生仅已启用 / 软关 / 名单不开户） |
+| 空白机全流程 / 备份恢复 | **仍未执行（暂缓）** |
+| 结题宣告 | **不得宣告结题通过** |
+
+门禁命令与计数以输出文件为准（pytest 全量 + `ruff check backend` + `frontend` `npm run build`；Windows 使用 `--basetemp=output/plan10-pytest-2026-10-26-r2`）。

@@ -67,3 +67,12 @@
 - 诚实缺口：空白机干净安装与隔离备份恢复未实跑（**用户指示暂缓**）；独立试用按用户指示取消并改为开发者 Vite；PLAN-06/07 正式人工/独立核验仍缺；不得宣告结题验收通过或发布。
 - 本地提交：`docs(PLAN-10): final delivery checklist and gate evidence`；文档对齐见后续 docs sync 提交；不 push。
 - next：无必须 PLAN；可选补证或用户授权后的 push/发布；空白机待再指示。
+
+### 2026-10-26（Asia/Shanghai）：门禁刷新
+
+- 状态保持 `done`（清单+本机门禁；**空白机/备份恢复仍暂缓**；**不得宣告结题通过**）。
+- Alembic head 文档口径改为 **0015**；代码锚点刷新前 HEAD=`8fc05b3`（M3/M4/观察已入）；本批另含 PLAN-02/07 夹具与文档。
+- 门禁输出：[final-delivery-gate-2026-10-26.output.txt](../final-delivery-gate-2026-10-26.output.txt)（basetemp=`output/plan10-pytest-2026-10-26-r2`）。
+- 计数：**795 passed, 2 skipped**（pytest）；ruff `All checks passed!`；`npm run build` ✓ built in 8.32s；EXIT 均为 0。
+- 三角色 + Agent 调查 + 业务五件套指针：[observation-2026-10-26](../user-task-scripts/observation-2026-10-26-developer-m3-m4.md)。
+- 未做：空白机全流程、隔离备份恢复、独立评测、push。

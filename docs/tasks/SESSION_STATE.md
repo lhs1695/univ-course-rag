@@ -1,21 +1,18 @@
 # SESSION_STATE
 
-> 更新：2026-10-26 20:40（Asia/Shanghai）developer 代做 M3/M4 本机验收 + 文档对齐（t268u 授权；未 push）。
+> 更新：2026-10-26 21:20（Asia/Shanghai）PLAN-02/07/10 本批收口（t269u；未 push）。
 
 **结论**：
-- **代码**：M3=`4587421`；M4/PLAN-17=`59ab09f`；文档补记曾至 `301cc6c`。本轮仅追加验收证据与文档对齐 commit（见 git log）。
-- **演示库** `univ_course_rag_cn_v2`：Alembic **0013 → 0015 (head)** 已升级成功。
-- **服务**：API `http://127.0.0.1:8000`（health/ready ok）；Vite `http://127.0.0.1:5173`。
-- **验收**：开发者 API + 本机 Playwright headless（**非独立试用**）。证据：[`docs/user-task-scripts/observation-2026-10-26-developer-m3-m4.md`](../user-task-scripts/observation-2026-10-26-developer-m3-m4.md) 与 [`evidence-2026-10-26/`](../user-task-scripts/evidence-2026-10-26/)。
-  - M3：未确认拒绝、Fake/Replay、取消/retry、resume 路径可达、UI 确认门禁+Fake 报告 → 主路径 PASS；浏览器 PDF 实落页 SKIP；UI 取消按钮某态 disabled（API 已验）。
-  - M4：学期/挂课/班级/姓名学号、CSV（imported1/rejected2：缺账号+姓名不符）、profile 无历史、检索启停门控 → PASS；演示库已有资料未新上传。
-  - 真模型：学生短问 DeepSeek `deepseek-flash` + 硅基流动 `BAAI/bge-m3` → 有答+1 citation，前端 `#page=10`；usage 空、精确花费未知，粗估 ≪¥2；**不宣称质量达标**。
-- **未做 / 后置**：push；物理 TTL；完整 Trace UI；PG 真实并发；PLAN-06/07 正式人工核验；空白机部署暂缓；中期笔记仍 untracked。
-- **下一步（建议）**：PLAN-10 本地运行说明/已知限制/验收记录收口；授权后再补证据缺口。默认仍不 push。
+- **本批**：PLAN-02 生命周期回归（M4 门控后夹具/矩阵对齐）；PLAN-07 Fake 复跑 + developer 短问证据并入回归笔记（不修 PROB-F02、不跑 22 题全量）；PLAN-10 清单刷新到 Alembic **0015** + 本机门禁复跑。
+- **门禁**：全量 pytest **795 passed, 2 skipped**；`ruff check backend` All checks passed；`frontend` `npm run build` ✓ ~8.3s。证据 [`docs/final-delivery-gate-2026-10-26.output.txt`](../final-delivery-gate-2026-10-26.output.txt)。
+- **PLAN-02**：定向 `test_plan02`+`test_course_business` **44 passed**；全量夹具对齐后相关 ask/keyword/storage/courses 等随门禁绿。矩阵已写管理员启用/教师停用/学生仅已启用/软关/名单不开户。
+- **PLAN-07**：Fake **79 passed, 2 skipped**；链到 [observation-2026-10-26](../user-task-scripts/observation-2026-10-26-developer-m3-m4.md)。**developer ≠ 独立评测**；不宣称 Hybrid 优于 Dense；**PROB-F02 未修复**。
+- **演示库** cn_v2 仍为 **0015**；代码本批提交前 HEAD=`8fc05b3`（ahead 以 git status 为准）。
+- **未做 / 不得宣告**：空白机/备份恢复仍暂缓；**不得宣告结题通过**；未 push；物理 TTL / 完整 Trace UI / PLAN-06 正式人工核验仍后置。
 
 ## 当前目标
 
-M1–M3 + M4(PLAN-17) 代码已本地提交；**本轮已完成本机 Vite/API 代验收、cn_v2→0015、真实 CSV、真实短问**，文档已对齐。`中期答辩材料/笔记/` 仍未跟踪。ahead 数以 `git status` 为准。
+本批 PLAN-02/07/10 文档与回归已收口（本地提交、不 push）。后续仅授权后的证据补缺与可选后置项。
 
 ## M4 本轮交付与证据（2026-10-26）
 
