@@ -199,7 +199,7 @@ Harness 必须覆盖：上限/超一、最后合法 `finish`、取消/预算/完
 
 `backend/app/agent/replay_harness.py` 提供纯内存确定性回放：动作输出和三个只读工具由测试注入；runner 对动作 schema、工具调用预算、已观察 Chunk/Document 引用、报告来源、步骤/任务终态、Trace 顺序和安全摘要进行检查。它没有数据库、网络、真实模型适配器或 API 路由，不能代表生产运行时。
 
-内存定向测试覆盖正常证据链、空检索/未知项、未知 action 与提示注入样本、一次格式重试、来源越权、工具异常、报告引用错配、预算耗尽、取消安全边界和 Trace 脱敏。M2 另接同步 Fake/Replay 服务与数据库/API 测试：报告独立 HTTP+新 DB Session 读取、课程教师权限、外发工厂边界 spies、空窗、实际 QueryLog 留存失效/删除、资料禁用/错课、来源元数据读取和 E5-A 固定对照。跨进程幂等/崩溃恢复/lease、真实阻塞 provider I/O 超时与模型质量仍未验证；没有真实 provider adapter 被本期执行器调用。
+内存定向测试覆盖正常证据链、空检索/未知项、未知 action 与提示注入样本、一次格式重试、来源越权、工具异常、报告引用错配、预算耗尽、取消安全边界和 Trace 脱敏。M2 另接同步 Fake/Replay 服务与数据库/API 测试：报告独立 HTTP+新 DB Session 读取、课程教师权限、外发工厂边界 spies、空窗、实际 QueryLog 留存失效/删除、资料禁用/错课、来源元数据读取和 E5-A 固定对照。M3 已补 SQLite 幂等约束、真实子进程退出后的显式恢复与 lease/token fencing 定向证据；PostgreSQL 真实并发、真实阻塞 provider I/O 超时与模型质量仍未验证。没有真实 provider adapter 被本期执行器调用；前端 build/Vite 实点与本地提交仍受环境权限阻塞，见 SESSION_STATE。
 
 ## 10. 分期退出与 API 责任（已确认，待用户下令实现）
 
@@ -208,6 +208,8 @@ Harness 必须覆盖：上限/超一、最后合法 `finish`、取消/预算/完
 | M1 | PLAN-14 合同/Fake/Replay + PLAN-15 最小存储/权限与创建/单任务读取 API。创建输入见 §2；响应含 task_id、course_id、status、attempt；读取含累计预算与安全错误码，不返回原始问句/秘密 | §9 的 M1 必过项；创建提交后可独立读取持久化任务、无权者读不到；内存通过不算全部完成 |
 | M2 | 已实现显式同步 Fake/Replay run + 报告 API；读取含 task_id、status、结构化报告与可用来源元数据；未完成 report=null，失败返回安全错误原因；真实 provider 未接入 | 报告 schema+来源校验+落库，失败有终态；H01/H-external 零调用/H-empty/H12/H-source/E5-A 定向证据见 SESSION_STATE（bot 已复验本地提交） |
 | M3 | PLAN-15 最小 lease/取消/resume/retry + PLAN-16 教师 UI 与确认/报告/来源读取 | H06/H07/H11、来源 unavailable、UI 确认与 Vite PDF 回页；取消生效，一次进程中断后可显式恢复 |
+
+M3 实际端点（代码已实现、隔离验证通过；Vite/build/commit 待环境解阻）：POST `/{task_id}/cancel`、`/resume`、`/retry`；恢复/重试请求必须显式带 `confirm_external_processing=true`，当前课程教师权限重验，attempt 仅显式成功入队时增加。GET `/{task_id}/events` 为白名单安全摘要；任务详情原白名单保持。任务/报告/事件读取仅标记本任务过期 lease，不自动执行。无预算的 resume 收口 budget_exceeded；无预算 retry 为 409 agent_budget_exhausted。POST run 可选 `{ "mode": "fake" | "replay" }`，均无真实 provider；Replay 仅对抽样问句在当前授权资料作字面核对。报告 `evidence_sources` 新增 `content_url`（unavailable 时 null），UI 追加 `#page=`。M3 UI 创建必须先确认，Fake 后端创建保留 M1 兼容；非 Fake 配置仍须在服务端创建前确认并验证外部工厂零调用。
 
 三类 API 均为课程教师权限。稳定错误至少区分权限拒绝（沿现有 403/404 防泄漏约定）、`409 active_investigation_conflict`、`409 idempotency_conflict`、`external_processing_confirmation_required`、来源 unavailable 与 §4 预算/执行错误；创建拒绝不得先入队或发外部调用。路由命名/HTTP 细节在实现小卡按现有 API 风格落地，不另建任务平台。
 

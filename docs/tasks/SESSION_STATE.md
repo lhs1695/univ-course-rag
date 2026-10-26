@@ -4,9 +4,73 @@
 
 ## 当前目标
 
-M1 已完成并由 bot 本地提交；M2 本次按明确授权完成报告 API 薄切；bot 复验定向测试后本地提交（未 push）。M3 未实施；PLAN-17 仍只完成 Markdown 模型盘点。未 push。
+M1 已完成并由 bot 本地提交；M2 本次按明确授权完成报告 API 薄切；bot 复验定向测试后本地提交（未 push）。M3 已本地提交（见下方 bot 复验）；PLAN-17 仍只完成 Markdown 模型盘点。本卡未做 M4，未 push。
+
+## 本轮命名约定（2026-10-26 用户开工）
+
+用户口中的 **M4** = **PLAN-17 课程业务最小五件套**（学期 / 班级 / CSV 名单 / 极简个人主页无提问历史 / 资料两步启用检索）。结题 Agent 分期仍只有 M1–M3；M4 不是第四个 Agent 退出条件。施工顺序：先完整落地并本地提交 **M3**，再开 **M4**（可另 commit）。
 
 2026-10-26 PLAN-FE-01 visual punch：学生「问」强化为深蓝证据台、「学」加强纸墨与实心按钮，教管仍浅色；前端 46/46 测试通过；本机 `npm run build` 已通过；未 push。前端视觉已获用户通过（既有测试/build 记录，本轮未复跑）。
+
+## M3 本轮交付与证据（2026-10-26）
+
+当前结论：**M3 已由 bot 复验并通过本地提交（未 push）。** Codex 曾因 index.lock/EPERM 未能提交；bot 侧 `npm run build` 成功、定向与全量 pytest 通过后完成 commit。Vite 人工点验仍建议本机走一遍。 以下 M1/M2 段落为各阶段历史记录，其“未做 M3”不代表本轮最新状态。
+
+- 复用现有两表、0014 列、SQLAlchemy CAS、Pydantic 合同、Replay Harness、课程教师依赖、UI token/citationDisplay；新增 `agent_task_runtime.py`、`InvestigationView.vue` 与对应测试，无新迁移/依赖/框架或第二套 RAG。
+- `/cancel`：queued/interrupted→cancelled；running→cancel_requested，安全边界后 cancelled；取消优先于成功/预算，不启动下一调用。`/resume` 只 interrupted、`/retry` 只 failed/cancelled/budget_exceeded；确认与课程教师权限复检，成功回 queued 时 attempt+1，任务 ID/幂等 key 与累计预算保留。同课活跃冲突由 DB partial unique index 兜底。
+- claim 设置 run_token + 15 秒 lease；模型/工具发起前持久化预算预留，进度落库续 lease；任务/报告/事件读取按该任务标记过期 running→interrupted，cancel_requested→cancelled，撤销旧 token；未完成旧步骤追加 failed 事件。旧 token 即使晚返回，也不能写事件/检查点/报告。没有后台自动恢复/整任务重试。
+- resume 用当前授权元数据复检来源、检查点与剩余额度；失效来源 failed/source_unavailable；不安全检查点 failed/investigation_checkpoint_unsafe；无额度 resume→budget_exceeded、retry→409 agent_budget_exhausted，无新调用。resume 后 queued 到实际 run 之间再次失效也在读取正文/模型调用前失败。
+- H07 真进程证据：隔离文件 SQLite，子进程持久化 claim/步骤与模型计数后 `os._exit(17)`，父进程新 Session 检查过期、仅显式 resume，新 attempt 保留计数；另有 SystemExit 注入验证旧步骤收口与跨 attempt 累计。H11 取消/恢复路径直接 UPDATE 触发 SQLite 唯一约束，及同 key 复用/不隐式 retry。**没有真实 PostgreSQL 并发通过证据。**
+- 教师 `/courses/:courseId/investigation`：时间窗/焦点、明示外发确认、创建/选择 Fake 或 Replay/run、状态/累计用量/安全事件摘要、报告分栏、取消/显式恢复/显式重试。UI 未确认时在 fetch 前拒绝，后端非 Fake 配置创建前零外发门禁保持；Fake 创建 API 保留 M1 兼容。Replay 为当前授权资料字面核对，未接真模型/语义检索。
+- 报告来源 `content_url + page`，unavailable 时 URL=null，依赖正文与结论隐藏；详情保持 M1 白名单，新增单独 `/events` 白名单，不含 run_token、原始问句、异常原文或秘密。管理员学期/班级灰项保留，不做业务五件套。
+
+
+### bot 复验提交（同日稍后）
+- 定向：	est_agent_task_runtime + investigation/task API 相关 **69 passed**；全量 ackend/tests **770 passed, 2 skipped**。
+- uff All checks passed；rontend investigation Node tests **3/3**；既有前端 suite 先前 Codex 记 49 pass；本机 **
+pm run build 成功**（约 16s）。
+- 本地 Conventional Commit：eat(agent): M3 teacher investigation UI + lease cancel resume（未 push）。
+- Vite 人工：发起调查→确认→Fake run→报告→依据 #page=→取消/恢复/重试，仍建议本机点验。
+### M3 实际命令与原始输出摘要
+
+```powershell
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_agent_contracts.py backend/tests/test_agent_replay_harness.py backend/tests/test_agent_task_migration.py backend/tests/test_agent_task_store.py backend/tests/test_agent_task_api.py backend/tests/test_agent_investigation_runner.py backend/tests/test_agent_investigation_api.py backend/tests/test_agent_e5a_fixture.py backend/tests/test_agent_task_runtime.py -q -p no:cacheprovider
+# 129 passed, 1 warning in 37.92s
+# warning: Starlette TestClient 的 anyio.abc.BlockingPortal DeprecationWarning。
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_agent_task_runtime.py -q -p no:cacheprovider
+# 22 passed, 1 warning in 10.13s（随后完整 129 例复验覆盖最终代码）。
+backend/.venv/Scripts/python.exe -m ruff check backend/app/agent/replay_harness.py backend/app/api/agent_tasks.py backend/app/services/agent_task_store.py backend/app/services/agent_task_runtime.py backend/app/services/agent_investigation.py backend/tests/test_agent_task_runtime.py --output-format concise
+# All checks passed!
+node --test --test-isolation=none frontend/tests/*.test.mjs
+# tests 49 / pass 49 / fail 0
+# 原 node --test 默认派生进程被 spawn EPERM 阻止；改 Node 官方无隔离执行模式，不改测试断言。
+# frontend 目录：
+npm run build
+# failed to load config ... Error: spawn EPERM（esbuild 派生进程）
+npm run build -- --configLoader native
+# [commonjs--resolver] spawn EPERM，未通过；未改产品构建脚本规避。
+npm run dev -- --host 127.0.0.1 --configLoader native
+# VITE v7.3.6 ready；/ HTTP 200；/src/main.js 与 /src/views/InvestigationView.vue HTTP 500 / spawn EPERM。
+# 进程已 Ctrl-C 停止；不能把首页 200 算可用 UI。
+```
+
+`frontend` 目录使用 stdin Node + `@vue/compiler-sfc` 对调查页执行 parse、compileScript、compileTemplate：`InvestigationView SFC parse/script/template: passed`，exit 0；这不是 build/浏览器验收替代品。Playwright CLI 预检：npx 存在，`npx --no-install --package @playwright/cli playwright-cli --help` 被 npm cache EPERM 阻止，未安装/下载大依赖。可用 DevSpace 工具要求 approval，而本会话 approval policy=never，无法使用该工具完成构建。未绕过限制。
+
+Git：精确列出本卡代码文件的 `git add -- ...` 失败，原始输出 `fatal: Unable to create 'D:/workspace/univ-course-rag/.git/index.lock': Permission denied`。`git diff --cached --name-only` 为空；未 stage、无本轮 commit/SHA、未 push。环境恢复后须精确 stage 本卡代码/测试/四份文档与合同，再用用户指定标题 `feat(agent): M3 teacher investigation UI + lease cancel resume` 本地提交。原 SESSION_STATE 的 M4 命名补充及未跟踪 `中期答辩材料/笔记/` 保留。
+
+收尾 `git diff --check`：exit 0（仅既有 LF→CRLF 提示）。stdin Python 内容/链接自检：`checked_files=9, broken_local_links=[], trailing_whitespace=[]`，exit 0；`git diff --cached --name-only` 为空。
+
+先前失败及修正：M1 UTC 白名单回归修复为独立 `/events` 与 UTC 归一；领取前零工具预算保留稳定错误码；子进程 SQLite 临时目录 ACL 失败改为仓库根独立临时文件（真进程测试已通过）；retry 后尚未观察即中断的空检查点补安全初始边界。最终以 129 例结果为准，不把早期失败计为通过。
+
+### 本机 Vite 验收清单（全部实点待补）
+
+1. 仅启动隔离 SQLite/Fake 后端；通过 Vite 登录课程教师，进入课程→课程调查，核对「册」版式、窄屏、键盘焦点；不使用 cn_v2/default DATABASE_URL。
+2. 不勾外发确认点创建：应显示明确提示，无任务入队、无外部调用；勾选后设置时间窗/焦点→创建→选择 Fake/Replay→显式运行。
+3. 读取状态/安全事件与事实/证据/候选解释/未知/建议；queued 取消，running 安全边界取消；中断后不自动运行，只显示显式恢复；终态仅按条件显示重试，无预算不可重试。
+4. 隔离夹具预期 Document `00000000-0000-0000-0000-000000000014`，Chunk `00000000-0000-0000-0000-00000000001e`，第 **3** 页：报告→依据→点击 `content_url#page=3`→新窗口原 PDF 第 3 页。**当前仅服务层 URL/page 断言通过；未准备可点击的实体 PDF 夹具、未观察浏览器实际落页，不宣称 PDF 闭环通过。**
+5. 禁用/删除来源再刷新：相关正文/链接隐藏；撤销课程教师权限后友好拒绝、不展示报告正文。新控件各点击一次并记录实际 Document、预期页和实际落页。
+
+明确未做：真实 LLM/Embedding/Vision/reranker/学生问句外发、真实 provider 阻塞 I/O 超时质量、演示库/默认 DATABASE_URL 迁移、PG 真实并发、物理 TTL worker、完整 Trace UI、M4/PLAN-17、中期材料改动、push。最终产品出口仍缺 build + Vite 实点 + 本地 commit，不能将 Fake 流程绿测宣称为模型质量/事实准确率或教师效率。
 
 ## M2 本轮交付与证据（2026-10-26）
 

@@ -16,12 +16,14 @@ from app.agent.contracts import (
     CourseQuestionSummary,
     DocumentQualityObservation,
     EvidenceDetailObservation,
+    EvidenceReference,
     FinishAction,
     InitialInvestigationObservation,
     InvalidReportReferences,
     InvestigationFinding,
     InvestigationReport,
     QuestionSourceObservation,
+    SearchCourseEvidenceAction,
     SearchCourseEvidenceResult,
     SearchHitObservation,
     SuggestedAction,
@@ -38,7 +40,14 @@ from app.agent.replay_harness import (
 from app.config import Settings
 from app.models import Chunk, Document, QueryLog
 from app.models.agent_task import AgentTask
-from app.services.agent_task_store import finish_task, start_task
+from app.models.course import CourseMember, CourseMemberRole
+from app.services.agent_task_runtime import (
+    ExecutionRevoked,
+    cancellation_requested,
+    finish_task,
+    progress_task,
+    start_task,
+)
 from app.services.insights import aggregate_course_insights, normalize_query
 
 
@@ -198,24 +207,65 @@ def _query_metadata(db: Session, row: AgentTask, ids: set[UUID], retention_days:
             ))}
 
 
+def checkpoint_is_safe(db: Session, row: AgentTask, *, retention_days: int) -> bool:
+    """Metadata-only resume validation; never restore source text from a snapshot."""
+    snapshot = row.checkpoint_json or {}
+    if snapshot.get("version") != 1 or snapshot.get("safe_boundary") is not True:
+        return False
+    try:
+        queries = {UUID(q) for q in snapshot.get("source_query_ids", [])}
+        evidence = {UUID(k): (UUID(v["document_id"]), v["page"])
+                    for k, v in snapshot.get("evidence_metadata", {}).items()}
+        return (set(_query_metadata(db, row, queries, retention_days)) == queries
+                and _evidence_metadata(db, row, set(evidence)) == evidence)
+    except (ValueError, KeyError, TypeError):
+        return False
+
+
 def run_investigation(
     db: Session, row: AgentTask, *, course_title: str, retention_days: int = 90,
     replay_responses: list[str] | None = None,
+    mode: str = "fake",
+    actor_id: UUID | None = None,
 ) -> bool:
     """Explicit synchronous Fake/Replay only, including when confirmation=True."""
     if not start_task(db, row):
         return False
+    token = row.run_token
+    previous = dict(row.budget_used_json)
+    limits = dict(row.budget_json)
     started = monotonic()
-    snapshot = {}
+    snapshot = dict(row.checkpoint_json)
     result = ReplayResult(
         status=TaskStatus.failed, report=None, trace=(), steps=0, model_calls=0, tool_calls=0,
         error_code="investigation_execution_failed",
     )
     try:
+        def boundary():
+            cancelled = cancellation_requested(db, row, token)
+            if cancelled:
+                return True
+            membership = db.scalar(select(CourseMember.id).where(
+                CourseMember.course_id == row.course_id,
+                CourseMember.user_id == (actor_id or row.created_by),
+                CourseMember.role == CourseMemberRole.teacher,
+            ))
+            if membership is None:
+                raise InvalidReportReferences("source_unavailable")
+            return False
+
+        if boundary():
+            finish_task(db, row, token, replace(result, status=TaskStatus.cancelled), snapshot=snapshot)
+            return True
+        if snapshot.get("restart_operation") == "resume" and not checkpoint_is_safe(
+            db, row, retention_days=retention_days,
+        ):
+            raise InvalidReportReferences("source_unavailable")
         observation = build_initial_observation(
             db, row, course_title=course_title, retention_days=retention_days,
         )
         snapshot = {
+            "version": 1, "safe_boundary": True,
             "summary": observation.summary.model_dump(mode="json"),
             "sample_count": len(observation.question_sources),
             "source_query_ids": [str(s.query_id) for s in observation.question_sources],
@@ -228,11 +278,58 @@ def run_investigation(
         def search(query):
             result = tools.search_course_evidence(query)
             observed_evidence.update({h.chunk_id: (h.document_id, h.page) for h in result.hits})
+            snapshot["evidence_metadata"] = {
+                str(cid): {"document_id": str(did), "page": page}
+                for cid, (did, page) in observed_evidence.items()
+            }
             return result
+
+        def persist(event, counts):
+            if event and event.event_type in {"task_created", "task_started", "task_terminal"}:
+                return
+            usage = {**previous, **{k: previous.get(k, 0) + v for k, v in counts.items()}}
+            progress_task(db, row, token, usage=usage, snapshot=snapshot, event=event)
+
+        # Re-observe only read-only state with the cumulative remaining budget.
+        # model_copy permits a positive fractional remaining runtime internally.
+        remaining = AgentBudget.model_validate(limits).model_copy(update={
+            limit: limits[limit] - previous.get(counter, 0)
+            for counter, limit in {"steps": "max_steps", "tool_calls": "max_tool_calls",
+                                   "model_calls": "max_model_calls",
+                                   "runtime_seconds": "max_runtime_seconds"}.items()
+        })
+        progress_task(db, row, token, usage=previous, snapshot=snapshot)
 
         responses = replay_responses if replay_responses is not None else [
             FinishAction(type="finish", report=fake_report(observation)).model_dump_json(),
         ]
+        source = ReplayActionSource(responses)
+        if mode == "replay" and observation.question_sources and replay_responses is None:
+            class CurrentEvidenceReplay:
+                searched = False
+
+                def next_action(self, *, validation_error=None):
+                    if not self.searched:
+                        self.searched = True
+                        return SearchCourseEvidenceAction(
+                            type="search_course_evidence",
+                            query=observation.question_sources[0].query_text,
+                        ).model_dump_json()
+                    report = fake_report(observation)
+                    if observed_evidence:
+                        cid, (did, page) = next(iter(observed_evidence.items()))
+                        report.evidence_refs = [EvidenceReference(
+                            chunk_id=cid, document_id=did, page=page,
+                            claim_supported="The sampled question text has a literal match in current authorized material; this does not verify a historical answer.",
+                        )]
+                        report.findings.append(InvestigationFinding(
+                            category="normal_review", evidence_chunk_ids=[cid],
+                            source_query_ids=[observation.question_sources[0].query_id],
+                            description="A literal match was found in current material; material completeness and answer correctness remain unverified.",
+                        ))
+                    return FinishAction(type="finish", report=report).model_dump_json()
+
+            source = CurrentEvidenceReplay()
         first_clock_read = True
 
         def execution_clock():
@@ -243,11 +340,14 @@ def run_investigation(
             return monotonic()
 
         result = run_replay(
-            action_source=ReplayActionSource(responses),
+            action_source=source,
             tools=ReplayTools(search, tools.open_evidence, tools.get_document_quality),
-            allowed_query_ids=allowed, budget=AgentBudget.model_validate(row.budget_json),
+            allowed_query_ids=allowed, budget=remaining,
             monotonic_clock=execution_clock,
+            cancel_requested=boundary, progress=persist,
         )
+        if result.report is not None and boundary():
+            result = replace(result, status=TaskStatus.cancelled, report=None)
         if result.report is not None:
             # Recheck live metadata before committing, using only this task's tool observations.
             current = _evidence_metadata(db, row, set(observed_evidence))
@@ -266,6 +366,10 @@ def run_investigation(
                 str(cid): {"document_id": str(did), "page": page}
                 for cid, (did, page) in observed_evidence.items()
             }
+    except ExecutionRevoked:
+        db.rollback()
+        db.refresh(row)
+        return False
     except Exception as exc:  # noqa: BLE001 - persist a safe terminal state at the execution boundary
         # No exception text, raw responses, question text or evidence is persisted.
         db.rollback()
@@ -275,7 +379,7 @@ def run_investigation(
     runtime = monotonic() - started
     # A legal finish may complete at the limit; post-validation/persistence time
     # must not turn that success into a spurious runtime failure (§7).
-    if runtime > row.budget_json["max_runtime_seconds"] and result.status != TaskStatus.succeeded:
+    if runtime + previous["runtime_seconds"] > limits["max_runtime_seconds"] and result.status != TaskStatus.succeeded:
         result = replace(result, status=TaskStatus.budget_exceeded, report=None,
                          error_code="agent_runtime_budget_exceeded",
                          trace=tuple(e for e in result.trace if e.event_type != "task_terminal"))
@@ -286,8 +390,17 @@ def run_investigation(
             sequence=len(result.trace) + 1, event_type="task_terminal", status=result.status,
             error_code=result.error_code, safe_summary="Investigation ended", created_at=datetime.now(UTC),
         )))
-    finish_task(db, row, result, snapshot=snapshot)
-    return True
+    try:
+        # Counts are already durable, including failures interrupted inside a call.
+        usage = dict(row.budget_used_json)
+        usage["runtime_seconds"] = previous["runtime_seconds"] + runtime
+        usage["evidence_refs"] = len(result.report.evidence_refs) if result.report else 0
+        usage["report_chars"] = (len(result.report.summary) + sum(
+            len(f.description) for f in result.report.findings)) if result.report else 0
+        progress_task(db, row, token, usage=usage, snapshot=snapshot)
+        return finish_task(db, row, token, result, snapshot=snapshot)
+    except ExecutionRevoked:
+        return False
 
 
 class QuerySourceOut(BaseModel):
@@ -301,6 +414,7 @@ class EvidenceSourceOut(BaseModel):
     document_id: UUID
     page: int | None
     available: bool
+    content_url: str | None = None
 
 
 class InvestigationReportOut(BaseModel):
@@ -357,5 +471,6 @@ def read_report(db: Session, row: AgentTask, *, retention_days: int) -> Investig
                                 outcome=available_queries.get(qid)) for qid in sorted(query_ids)],
         evidence_sources=[EvidenceSourceOut(
             chunk_id=cid, document_id=did, page=page, available=cid in available_chunks,
+            content_url=f"/courses/{row.course_id}/documents/{did}/content" if cid in available_chunks else None,
         ) for cid, (did, page) in sorted(expected_evidence.items()) if cid in chunk_ids],
     )

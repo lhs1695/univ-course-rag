@@ -5,7 +5,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-15 |
-| 状态 | in_progress：M1 15A/15B + 创建/读取 API 已实现；M2/M3 未实现 |
+| 状态 | in_progress：M1/M2 已实现；M3 15C 最小集隔离验证通过，前端 build / Vite 实点 / 本地提交受当前环境权限阻塞 |
 | 须授权 | 真实模型调用、真实课程问句外发、正式库破坏性迁移均须当次明确授权；优先隔离数据库和 Fake/Replay |
 
 ## 目标
@@ -27,9 +27,9 @@
 - [ ] 任务和步骤状态可持久化，成功、失败、取消、超预算等首版状态可区分；错误不会留下永久运行中的任务。首版“等待确认”仅为外发前 UI/请求确认，不含 waiting_approval 业务审批状态或写工具。
 - [ ] 步骤状态可从持久化事件流重建；每个 `(task_id, sequence)` 唯一，状态/检查点/事件原子提交，回滚后没有半条 Trace。
 - [ ] 同一 `(course_id, created_by, idempotency_key_hash)` 并发创建最多得到一个任务；相同指纹复用，不同指纹冲突。未运行独立 PostgreSQL 并发测试时，必须明确记录该证据缺口。
-- [ ] 同课同时仅 1 个 queued/running/cancel_requested 活跃调查；新建冲突返回确定性错误，resume/retry 同样原子检查。
+- [x] 同课同时仅 1 个 queued/running/cancel_requested 活跃调查；新建冲突返回确定性错误，resume/retry 同样原子检查。
 - [ ] 取消后不启动新的工具步骤；超时和异常均记录原因与终态；主路径及取消/中断合法转移按任务合同 §3。
-- [ ] M3 一次进程中断后标 interrupted，仅显式 resume 回 queued 或失败；复检当前课程教师权限、资料/来源、外发确认及剩余额度，旧 token 不得写回。显式 retry 为同任务新 attempt，禁止静默重启终态。
+- [x] M3 一次进程中断后标 interrupted，仅显式 resume 回 queued 或失败；复检当前课程教师权限、资料/来源、外发确认及剩余额度，旧 token 不得写回。显式 retry 为同任务新 attempt，禁止静默重启终态。
 - [ ] M1 创建/单任务读取、M2 报告读取 API 均挂 require_course_teacher；创建后独立读持久化任务、无权者读不到。
 - [ ] 预算按任务合同 §7 累计跨 attempt，下一调用前检查、每次调用有限超时；合法 finish 例外、取消 > 预算 > 成功与有限工具重试均有边界证据。
 - [ ] Trace 可关联任务、步骤、工具调用、权限判定、证据 ID/页码、耗时、错误和预算字段（可获得时）。
@@ -47,9 +47,20 @@
 - [x] 新建同课单活跃：`uq_agent_tasks_active_course` 为 SQLite/PostgreSQL partial unique index，覆盖 queued/running/cancel_requested；409 `active_investigation_conflict`。相同 key/指纹优先复用；不同指纹 409 `idempotency_conflict`。真实 SQLite 约束失败后回滚重查路径有确定性测试。
 - [ ] PostgreSQL 独立并发集成：本轮只有离线 DDL，没有连接 PostgreSQL；不能以 SQLite 顺序/故障注入测试宣称真实 PG 并发已通过。
 - [ ] 15B 后续状态/检查点/执行事件追加与序号分配：M1 只写 sequence=1 的创建事件，未实现通用事件写接口、步骤持久化重建或执行者写入。
-- [ ] M2 报告与有界生产执行/来源门禁，M3 lease/token fencing/取消/恢复/retry API、UI/PDF 回页；完整物理清理仍未做。
+- [x] M2 报告与有界 Fake/Replay 执行/来源门禁；M3 lease/token fencing/取消/显式 resume/retry API，SQLite H06/H07/H11/H-source。
+- [ ] M3 教师页 build 与 Vite PDF 实点闭环；代码已实现，环境 `spawn EPERM` 阻塞，不能宣称已退出。完整物理清理仍未做。
 
 M1 创建不分发执行器、不外发数据；`confirm_external_processing=false` 可以排队。真实外发路径创建前拒绝与三类调用=0 spies 属于 M2，不能从本轮无执行器推断已验该门禁。测试命令、原始计数、警告与环境限制统一见 [SESSION_STATE](SESSION_STATE.md)。上方跨期复合验收项保留未勾选，不能把 M1 创建成功等同于生产运行时完成。
+
+## M3 15C 实际交付（2026-10-26）
+
+- [x] 复用 0014 既有 `run_token/lease_expires_at`，无新迁移。queued 原子 claim；进度、累计调用预留、检查点与 append-only 安全事件同事务落库，worker 更新带 token + 有效 lease 谓词。
+- [x] queued/interrupted 取消立即 cancelled；running → cancel_requested；安全边界取消优先于预算/成功，不启动下一模型或工具。取消后的失效 lease 收敛 cancelled。
+- [x] 读取任务/报告/事件时按该任务检查过期 lease，撤销旧 token → interrupted，旧 running 步骤追加 failed 收口；不自动 resume。无后台扫描/TTL worker。
+- [x] POST resume/retry 重新执行当前课程教师权限与显式外发确认，resume 只读元数据复检来源及安全检查点；resume 后 run 前再检查来源。显式新 attempt 保留任务级累计预算；无额度 resume 为 budget_exceeded，retry 返回 409 agent_budget_exhausted；来源失效 failed/source_unavailable，检查点不安全 failed/investigation_checkpoint_unsafe。
+- [x] H07 包含真正子进程：隔离文件 SQLite 提交 claim + 调用预留后 `os._exit(17)`；新 Session 判过期后显式恢复，新 attempt 保留计数。H11 以 SQLite partial unique index 直接拒绝冲突 UPDATE，取消/恢复路径保留幂等 key；没有真实 PostgreSQL 并发通过声明。
+- 验证：9 个 `test_agent_*` 文件 **129 passed, 1 warning**；新增 runtime **22** 例；ruff `All checks passed!`。完整命令、环境失败、前端和本地提交限制见 [SESSION_STATE](SESSION_STATE.md#m3-本轮交付与证据2026-10-26)。
+- 未做：真实 provider 调用及阻塞 I/O 超时质量验证、PG 并发、完整物理 TTL、完整 Trace UI、M4/PLAN-17。`git add` 创建 `.git/index.lock` 被拒绝，因此尚无本地 commit；未 push。
 
 ## 约束
 

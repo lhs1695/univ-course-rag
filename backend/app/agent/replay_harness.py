@@ -110,6 +110,7 @@ def run_replay(
     cancel_requested: Callable[[], bool] | None = None,
     now: Callable[[], datetime] | None = None,
     monotonic_clock: Callable[[], float] = monotonic,
+    progress: Callable[[TraceEvent | None, dict], None] | None = None,
 ) -> ReplayResult:
     """Run a bounded, deterministic tool/action replay against contract checks.
 
@@ -134,6 +135,12 @@ def run_replay(
     evidence_by_chunk: dict[UUID, tuple[UUID, int | None]] = {}
     known_documents: set[UUID] = set()
 
+    def persist(event=None):
+        if progress is not None:
+            progress(event, {"steps": steps, "model_calls": model_calls,
+                             "tool_calls": tool_calls,
+                             "runtime_seconds": max(0.0, monotonic_clock() - started_at)})
+
     def event(
         event_type: TraceEventType,
         *,
@@ -157,6 +164,7 @@ def run_replay(
             duration_ms=duration_ms,
             created_at=current_time(),
         ))
+        persist(trace[-1])
 
     def transition_step(target: StepStatus, *, error: str | None = None) -> None:
         nonlocal step_status
@@ -296,6 +304,7 @@ def run_replay(
             if model_calls >= active_budget.max_model_calls or budget_exhausted():
                 return terminate(TaskStatus.budget_exceeded, "agent_model_or_runtime_budget_exceeded")
             model_calls += 1
+            persist()  # Reserve before invoking the action source, including failed calls.
             try:
                 raw_action = action_source.next_action(validation_error=validation_feedback)
             except ReplayExhausted:

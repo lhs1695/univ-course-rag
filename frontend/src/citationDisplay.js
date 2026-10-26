@@ -35,3 +35,6 @@ export function citationOpenLabel(page) {
   if (Number.isInteger(n) && n > 0) return `打开原文 · 第 ${n} 页`;
   return '打开原文';
 }
+export function citationUrl(citation) {
+  return citation.page != null ? `${citation.content_url}#page=${citation.page}` : citation.content_url;
+}

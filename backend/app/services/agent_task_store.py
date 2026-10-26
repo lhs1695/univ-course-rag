@@ -5,13 +5,12 @@ import json
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import set_committed_value
 
 from app.agent.contracts import AgentBudget, InvestigationRequest, TaskStatus
-from app.agent.replay_harness import ReplayResult
 from app.models.agent_task import AgentTask, AgentTaskEvent
 
 ACTIVE_STATUSES = ("queued", "running", "cancel_requested")
@@ -145,54 +144,3 @@ def get_task(
         return None
     row = _normalize(row)
     return row if row.expires_at > _utc(now or datetime.now(UTC)) else None
-
-
-def start_task(db: Session, row: AgentTask) -> bool:
-    """Claim queued once with a database predicate; M2 has no resume/retry."""
-    now = datetime.now(UTC)
-    claimed = db.execute(update(AgentTask).where(
-        AgentTask.id == row.id, AgentTask.status == TaskStatus.queued.value,
-    ).values(status=TaskStatus.running.value, started_at=now, updated_at=now,
-             last_event_sequence=AgentTask.last_event_sequence + 1))
-    if claimed.rowcount != 1:
-        db.rollback()
-        db.refresh(row)
-        return False
-    db.refresh(row)
-    db.add(AgentTaskEvent(
-        task_id=row.id, sequence=row.last_event_sequence, attempt=row.attempt,
-        event_type="task_started", status="running", safe_summary="Fake replay started",
-        evidence_refs_json=[], created_at=now,
-    ))
-    db.commit()
-    return True
-
-
-def finish_task(db: Session, row: AgentTask, result: ReplayResult, *, snapshot: dict) -> None:
-    """Commit the validated report, usage, safe events and terminal state together."""
-    for event in result.trace:
-        if event.event_type in {"task_created", "task_started"}:
-            continue
-        row.last_event_sequence += 1
-        db.add(AgentTaskEvent(
-            task_id=row.id, sequence=row.last_event_sequence, attempt=row.attempt,
-            step_no=event.step_no, event_type=event.event_type.value,
-            tool_name=event.tool_name, status=event.status.value if event.status else "running",
-            safe_summary=event.safe_summary,
-            evidence_refs_json=[str(item) for item in event.evidence_refs],
-            error_code=event.error_code, duration_ms=event.duration_ms, created_at=event.created_at,
-        ))
-    report = result.report if result.status == TaskStatus.succeeded else None
-    row.report_json = report.model_dump(mode="json") if report else None
-    row.checkpoint_json = snapshot
-    row.budget_used_json = {
-        "steps": result.steps, "tool_calls": result.tool_calls, "model_calls": result.model_calls,
-        "runtime_seconds": result.runtime_seconds,
-        "evidence_refs": len(report.evidence_refs) if report else 0,
-        "report_chars": len(report.summary) + sum(len(f.description) for f in report.findings)
-        if report else 0,
-    }
-    row.status, row.error_code = result.status.value, result.error_code
-    row.finished_at = row.updated_at = datetime.now(UTC)
-    db.commit()
-    _normalize(row)

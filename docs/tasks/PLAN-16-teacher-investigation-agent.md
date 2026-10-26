@@ -5,7 +5,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-16 |
-| 状态 | M2 已实现并定向验证，待 bot 验收；M3 未实施 |
+| 状态 | M2 已完成；M3 代码与隔离测试已完成，build / Vite 实点 / 本地提交受环境权限阻塞，尚未退出 |
 | 须授权 | 真实模型调用、真实学生问句外发、正式课程资料/索引写入均须当次明确授权 |
 
 ## 目标
@@ -14,7 +14,7 @@
 - 复用现有问答统计、相似问句候选、课程资料状态、检索、证据和引用能力。
 - 输出可追溯的待核查报告，并提供任务状态、Trace、失败原因、取消及受控恢复入口。
 
-按拍板分期：M2 已按 2026-10-26 当次授权实现调查报告 API，仅依赖 PLAN-14 + PLAN-15 对应的最小存储、权限和有界 Fake/Replay 执行子集，实际命令/计数见 [SESSION_STATE](SESSION_STATE.md)。M3 沿已视觉通过的学/问、册/衡版式补教师 UI、必要事件摘要与最小 lease/取消/恢复，尚未实施。完整 TTL 清理/Trace UI 不作为 M2 前置，不重开前端翻新；定向验证不代表真实模型质量或 M3 通过。
+按拍板分期：M2 已按 2026-10-26 当次授权实现调查报告 API，仅依赖 PLAN-14 + PLAN-15 对应的最小存储、权限和有界 Fake/Replay 执行子集，实际命令/计数见 [SESSION_STATE](SESSION_STATE.md)。M3 已沿册/衡样式补教师调查页、必要事件摘要、PDF 页链接与最小 lease/取消/恢复；当前环境阻止 Node 子进程及 Git 写锁，build、Vite 实点和本地提交尚未闭环。完整 TTL 清理/Trace UI 不作为 M2 前置，不重开前端翻新；定向验证不代表真实模型质量或 M3 通过。
 
 ## 非目标
 
@@ -24,17 +24,25 @@
 - 不创建第二套 RAG 或平行的课程/身份数据模型。
 - 不宣称可以回溯审计历史回答正文：当前 QueryLog 未保存最终回答文本或实际引用快照。
 
-## M2 / M3 分期硬验收（M2 定向已验，待 bot 验收；M3 待实现）
+## M2 / M3 分期硬验收（M2 定向已验，待 bot 验收；M3 待完成环境验收）
 
 - [x] M2：报告 API schema + 来源校验 + 落库；独立 HTTP+新 DB Session 报告读取受课程教师权限，失败有明确终态；原详情不泄露报告。显式 POST `/{task_id}/run` 仅同步 Fake/Replay，创建保持 queued。
 - [x] M2：非 Fake LLM/Embedding 配置（含语义分组构建 Embedding 场景）未 confirm 时创建前拒绝、不入队；真实工厂/getter 与 question_groups.build_embedder spies 均为 0；确认后也仅 Fake 执行，无真实外发。
 - [x] M2：空窗样本/学生分母为 0、无发现/候选原因、unknowns 说明无数据，合法 succeeded；过期/删除/错课 QueryLog 与删除/禁用/错课资料/Chunk 均 unavailable，读取仅查元数据、隐去相关结论，SQL 捕获断言不读取问句/Chunk 正文。
 - [x] M2：版本夹具 `e5a-m2-v1` 固定同课程/时间窗/快照，A 统计列表、B 明确 N/A（未运行语义分组）、C Fake/Replay 报告；必需事实覆盖 5/5、捏造引用 0/6、候选原因确定化 0/1；no_evidence 不断言缺资料、系统失败不归教学；终态 succeeded，3 模型动作/3 工具调用。实际耗时/完整命令见 SESSION_STATE，成本标 Fake，不代表真实模型质量或教师效率。
-- [ ] M3：外发前 UI 明示并请求确认；未确认时创建前拒绝且三类外部调用各为 0。首版“等待确认”仅为 UI/请求确认，不做业务写审批工具。
+- [ ] M3：UI 明示/确认与请求前拒绝代码已完成，49 个前端测试及后端外发 spies 通过；Vite 控件实点待补。外发前 UI 明示并请求确认；未确认时创建前拒绝且三类外部调用各为 0。首版“等待确认”仅为 UI/请求确认，不做业务写审批工具。
 - [ ] M3：Vite 发起调查 → 报告 → 依据 → 点引用 → 原 PDF 页；记录重要结论关联的 Document/预期页与实际落页；来源删除/禁用/越权不展示内容、服务端不解析。
-- [ ] M3：H06 取消生效、H07 一次进程中断后仅显式恢复、H11 DB 幂等、来源 unavailable 通过；最小 lease/token fencing 不允许旧执行者覆盖新结果。
+- [x] M3：H06 取消生效、H07 一次进程中断后仅显式恢复、H11 DB 幂等、来源 unavailable 通过；最小 lease/token fencing 不允许旧执行者覆盖新结果。
 
 完整 Harness 分期/预算与 E5-A 门禁见 [任务合同 §7](../teacher-agent-task-contract.md#7-初始预算与可判定终止规则2026-10-26-用户确认) / [§9](../teacher-agent-task-contract.md#9-harness-首批场景与分期门禁)。H12 物理 TTL 清理可后置，失效来源不可解析须在 M2/M3 验；无真实教师参与不得宣称效率已验证，真实模型质量单列。
+
+## M3 实际实现与待验（2026-10-26）
+
+- 新 `/courses/:courseId/investigation`，沿用课程 capability 与「册」共用 token；教师导航启用课程调查，管理员学期/班级占位保留。时间窗/焦点、必选外发确认、创建、显式 Fake/Replay run、累计预算/事件摘要、取消/恢复/重试与 URL task 恢复读取已实现。
+- 报告分观察事实、支持证据、候选解释、未知、建议人工动作；来源失效不显示关联正文；证据使用服务端授权 `content_url` + `#page=`。Replay 只作当前授权资料的 Fake 字面核对，不接真实语义检索或模型；无匹配时不编 PDF 引用。
+- 后端 129 例通过（含 M1/M2、M3 runtime 22 例），前端现有 Node tests 扩展后 49/49，新增页 Vue SFC parse/script/template 编译通过，ruff 通过。非 vitest 项目，无新增依赖。
+- `npm run build` 失败 `spawn EPERM`；Vite `--configLoader native` 可监听，但 `/src/main.js` 与调查页模块均 HTTP 500 / `spawn EPERM`，不能用首页 HTTP 200 或 SFC 编译替代点击验收。预期夹具 Document `00000000-0000-0000-0000-000000000014` 第 3 页，服务层 URL/page 断言通过，浏览器实际 Document/落页 **未验证**。
+- build、Vite 确认/取消/恢复/重试控件、报告依据点击、新窗口 PDF 实际落页仍待补；本地 stage/commit 因 `.git/index.lock: Permission denied` 未完成。完整命令/原始输出/复验清单见 [SESSION_STATE](SESSION_STATE.md#m3-本轮交付与证据2026-10-26)。未 push；未触及 M4。
 
 ## 通用验收标准
 
