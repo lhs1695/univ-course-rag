@@ -1,10 +1,31 @@
 # SESSION_STATE
 
+> 更新：2026-10-26 18:33（Asia/Shanghai）bot 收尾中断的 M3/M4。
+
+**结论**：M3 已在 `4587421`；M4/PLAN-17 半成品经定向验收后本地提交（未 push）。业务 22 + Agent 69 + 前端 49 + `npm run build` 通过；未动 cn_v2/演示库，未读 .env，未 stage 中期笔记。Vite 人工点验仍建议本机走一遍。
+
+
 更新：2026-10-26（Asia/Shanghai）。此文件用于在长任务中断后恢复上下文；实际状态以代码、测试输出与工作区为准。现行拍板见 [结题已拍板规格.md](../结题已拍板规格.md)。
 
 ## 当前目标
 
-M1 已完成并由 bot 本地提交；M2 本次按明确授权完成报告 API 薄切；bot 复验定向测试后本地提交（未 push）。M3 已本地提交（见下方 bot 复验）；PLAN-17 仍只完成 Markdown 模型盘点。本卡未做 M4，未 push。
+M1–M3 已本地提交；本轮基于 M3 `4587421` 实施 **M4 = PLAN-17 课程业务五件套**。五件套 API、隔离迁移及最小前端入口已写入工作区，**build / Vite 实点 / 本地提交仍被当前环境权限阻断，未完整验收**。暂存区为空，M4 无新 SHA，未 push。原有 `中期答辩材料/笔记/` 未跟踪项未改动、未 stage。
+
+## M4 本轮交付与证据（2026-10-26）
+
+- 范围只含学期、课内行政班、CSV 名单、无提问历史的极简个人主页、资料两步启用检索；Agent 分期仍止于 M3。复用既有身份/课程/成员、Session、FastAPI/SQLAlchemy/Alembic、Element Plus 与视觉 token，无新依赖或第二套 RAG，无 Agent 合同/主路径变更。
+- `0015` 父 `0014`：`semesters`、`course_classes`；users 姓名/唯一可空学号、courses 可空 semester_id、course_members 可空 class_id + 同课复合外键/学生约束；新 documents 默认 false，旧启用状态不变。仅 `sqlite://` 显式内存连接验证 upgrade/downgrade、保留旧行、约束及 FK check；PostgreSQL 仅离线 DDL 编译，不连接默认 URL/演示库/cn_v2。
+- 管理员学期 CRUD、课程关联学期、账号姓名/学号维护；本课教师/管理员班级 CRUD 与 UTF-8/BOM CSV 导入。CSV 固定学号/姓名/班级，1 MiB / 5000 行，空行/错误/重复/缺账号/姓名不符/非学生/班级冲突逐行摘要；同班重导跳过，有效行一起提交，约束冲突整批回滚 409。**账号须由管理员预先创建或补齐学号/姓名；名单不自动开户、不发默认密码、不暗中换班。**
+- `/auth/profile` 只读本人姓名、学号、角色、课程班级，无问题历史；移出成员后班级归属消失。管理员资料跨课可见无需入课，且只有管理员可启用；本课教师可停用/软移出。DELETE 保留原文、任务和 chunks，学生不再可见；Dense/Hybrid 与 Agent 搜索/open/quality 及既有来源复检均受开关约束。资料管理员例外不扩散到 ask/search/Agent 课程教师授权。
+- 页面：`/admin/business` 学期/班级/名单及课程学期关联、`/admin/documents` 启用资料、`/profile`；教师成员页复用名单/班级组件、账号页维护姓名学号；M3 课程调查入口保留。
+- 关键命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_course_business.py backend/tests/test_course_business_migration.py backend/tests/test_agent_task_api.py backend/tests/test_agent_investigation_runner.py backend/tests/test_agent_investigation_api.py backend/tests/test_agent_task_runtime.py -q -p no:cacheprovider --tb=short` → **91 passed, 1 warning in 25.29s**（M4 API 20 + 迁移 2 + Agent 69）。最终仅 auth 输出和 router 注册位置微调后复验 M4 两文件 → **22 passed, 1 warning in 9.63s**。warning 为 Starlette/anyio 弃用提示。上传专项 mock 写入与后台入库，使用合成 chunks + 既有 PDF fixture；没有实跑模型或人工正确率证据。
+- 对所有本卡 Python 文件定向 `… -m ruff check … --output-format concise` → `All checks passed!`；`node --test --test-isolation=none frontend/tests/*.test.mjs` → **49 pass / 0 fail**；8 个相关 Vue 文件通过 compiler-sfc parse/script/template（非 build 或 UI 验收替代）。完整命令与复现说明见 [PLAN-17](PLAN-17-course-business-foundation.md#迁移边界与实际验证)。
+- 另外尝试原 auth/courses + 4 份 Agent 定向 → `69 passed, 1 warning, 26 errors in 18.69s`。26 例均在公共 tmp_path fixture 被 `C:/Users/16747/AppData/Local/Temp/pytest-of-16747` WinError 5 阻断；未放宽 ACL 或修改全局 fixture，未计为通过。没有跑全量测试。
+- `frontend`：`npm run build` → esbuild `spawn EPERM`。`npm run dev -- --host 127.0.0.1 --configLoader native --port 5177` 能启动；curl 检查 `/` **200**、`/src/main.js` **500**、`/src/views/AdminBusinessView.vue` **500**（Vite Windows realpath 子进程 `spawn EPERM`）；已 Ctrl-C 停止。不能把首页 200 宣称业务页可用。
+- Playwright 技能预检 npx 存在；`npx --no-install --package @playwright/cli playwright-cli --help` 被 npm-cache EPERM 阻断，未下载依赖。DevSpace open_workspace 返回 `MCP tool call requires approval, but approval policy is never`，未通过它修改/执行。项目要求的 `univ-course-rag-dev-loop` 未在已列技能或两个本机 skill 根目录中找到；本轮按用户明确的实现卡直接施工，未调用 coding bot 或子代理。
+- Git：对精确 31 个本卡路径执行 `git add -- …` → `fatal: Unable to create 'D:/workspace/univ-course-rag/.git/index.lock': Permission denied`；`git diff --cached --name-only` 为空；HEAD 仍 **4587421**。未执行空 commit、未 push，中期笔记保留。待正常本机精确 stage 后使用 `feat(business): M4 PLAN-17 semester class roster profile retrieval gate` 提交。
+
+本机待验清单与未做项见 [任务卡](PLAN-17-course-business-foundation.md#本机待验与未做项)：先在隔离测试库/Vite 验证管理员学期/班级/账号/名单、教师上传不能启用、管理员启用、学生提问→依据→引用回原 PDF 页、停用后不可作为证据、个人主页无历史、调查入口不回退，再补 build 与受新发布/软删除合同影响的既有定向回归；当前不能宣称 M4 完整退出。未读 `.env`、未用真实模型/名单、未操作正式演示库、未改中期材料。
 
 ## 本轮命名约定（2026-10-26 用户开工）
 
@@ -189,7 +210,6 @@ git diff --check
 
 ## 下一步
 
-1. M2 已本地提交；下一步仅在授权后开 M3（教师 UI + 最小 lease/取消/显式恢复 + Vite 回 PDF）。
-2. 创建 queued 仍不等于已执行调查，须显式 POST .../run。真实模型质量与外发真跑另行授权；PLAN-17 五件套仍可并行盘点。
-3. 后续获得授权再开 M3 UI+PDF 回页+最小 lease/取消/显式恢复；PLAN-17 五件套仍必做，可并行盘点。
-4. 开工前明确当前切片与隔离数据库测试范围；真实模型、问句外发、破坏性迁移仍须当次授权。禁止默认 DATABASE_URL/正式 cn_v2 迁移；不默认 push。
+1. M3 已提交 `4587421`；当前只收口 M4 本机 build / Vite / 既有受影响定向回归与本地 commit，不另开实现项。
+2. 必须继续使用隔离测试库，禁止默认 DATABASE_URL/正式 cn_v2 upgrade；真实名单、模型与正式库操作仍须当次明确授权。
+3. 补齐任务卡的本机验收清单后，精确 stage 31 个 M4 文件，本地提交指定标题；不默认 push，不 stage 中期笔记。此前 M1–M3 各段是历史过程，顶部 M4 状态为当前状态。

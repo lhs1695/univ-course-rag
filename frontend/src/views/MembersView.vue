@@ -2,6 +2,7 @@
   <div class="page">
     <header class="page-heading"><p class="eyebrow">教学 / 课程成员</p><h1>本课学生</h1><p v-if="courseTitle" class="page-description">{{ courseTitle }}</p></header>
 
+    <CourseRosterPanel :course-id="courseId" @imported="loadMembers" />
     <el-form class="add-form" :inline="true" @submit.prevent="onAdd">
       <el-form-item label="学生账号">
         <el-input v-model="username" :disabled="adding" placeholder="已有学生用户名" />
@@ -13,6 +14,9 @@
 
     <el-table :data="students" v-loading="loading" empty-text="本课还没有学生，可在上方加入已有学生账号">
       <el-table-column prop="username" label="用户名" />
+      <el-table-column prop="full_name" label="姓名" />
+      <el-table-column prop="student_number" label="学号" />
+      <el-table-column prop="class_name" label="班级" />
       <el-table-column label="操作" width="120">
         <template #default="{ row }">
           <el-button type="danger" link @click="onRemove(row)">移出</el-button>
@@ -27,6 +31,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
+import CourseRosterPanel from "../components/CourseRosterPanel.vue";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));

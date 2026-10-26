@@ -10,6 +10,8 @@
       <el-form-item label="密码">
         <el-input v-model="form.password" type="password" show-password />
       </el-form-item>
+      <el-form-item label="姓名"><el-input v-model="form.full_name" maxlength="100" /></el-form-item>
+      <el-form-item label="学号"><el-input v-model="form.student_number" maxlength="64" placeholder="学生名单匹配用" /></el-form-item>
       <el-form-item label="角色">
         <el-select v-model="form.role" style="width: 120px">
           <el-option label="学生" value="student" />
@@ -29,9 +31,19 @@
     <el-input v-model="userFilter" clearable placeholder="按用户名筛选" style="max-width: 280px; margin-bottom: 12px" aria-label="按用户名筛选账号" />
     <el-table :data="filteredUsers" v-loading="loading" empty-text="还没有账号，可在上方创建教师或学生账号">
       <el-table-column prop="username" label="用户名" />
+      <el-table-column prop="full_name" label="姓名" />
+      <el-table-column prop="student_number" label="学号" />
       <el-table-column label="系统角色" width="120"><template #default="{ row }">{{ { student: '学生', teacher: '教师', admin: '管理员' }[row.role] || row.role }}</template></el-table-column>
+      <el-table-column label="资料"><template #default="{row}"><el-button link @click="editing = {...row}">编辑姓名 / 学号</el-button></template></el-table-column>
     </el-table>
     </section>
+    <el-dialog :model-value="Boolean(editing)" title="维护个人资料" @close="editing = null">
+      <el-form v-if="editing" @submit.prevent="saveProfile">
+        <el-form-item label="姓名"><el-input v-model="editing.full_name" maxlength="100" /></el-form-item>
+        <el-form-item label="学号"><el-input v-model="editing.student_number" maxlength="64" /></el-form-item>
+        <el-button type="primary" native-type="submit" :loading="saving">保存资料</el-button>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 
@@ -40,9 +52,17 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 
-// Known API contract: GET/POST only; do not probe unsupported write endpoints.
 const roleNames = { student: "学生", teacher: "教师", admin: "管理员" };
-function clearForm() { Object.assign(form, { username: "", password: "", role: "student" }); }
+function clearForm() { Object.assign(form, { username: "", password: "", role: "student", full_name: "", student_number: "" }); }
+const editing = ref(null), saving = ref(false);
+async function saveProfile() {
+  if (saving.value || !editing.value) return;
+  saving.value = true;
+  try {
+    await api(`/admin/users/${editing.value.id}`, { method: "PATCH", json: { full_name: editing.value.full_name?.trim() || null, student_number: editing.value.student_number?.trim() || null } });
+    editing.value = null; await loadUsers(); ElMessage.success("资料已保存");
+  } catch (error) { ElMessage.error(error.message); } finally { saving.value = false; }
+}
 const users = ref([]);
 const userFilter = ref("");
 const filteredUsers = computed(() => {
@@ -52,7 +72,7 @@ const filteredUsers = computed(() => {
 });
 const loading = ref(true);
 const creating = ref(false);
-const form = reactive({ username: "", password: "", role: "student" });
+const form = reactive({ username: "", password: "", role: "student", full_name: "", student_number: "" });
 
 async function loadUsers() {
   users.value = await api("/admin/users");
@@ -76,7 +96,7 @@ async function onCreate() {
     return;
   }
   creating.value = true;
-  const payload = { username, password: form.password, role: form.role };
+  const payload = { username, password: form.password, role: form.role, full_name: form.full_name.trim() || null, student_number: form.student_number.trim() || null };
   try {
     try {
       await ElMessageBox.confirm(`为「${username}」创建系统角色为「${roleNames[payload.role]}」的账号？课程授权需另行设置。`, "确认账号角色", { confirmButtonText: "确认创建", cancelButtonText: "取消", type: "warning" });

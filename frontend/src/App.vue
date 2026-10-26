@@ -19,8 +19,11 @@
             <router-link to="/admin/courses"><span aria-hidden="true">02</span>课程与授权</router-link>
             <router-link to="/admin/maintenance"><span aria-hidden="true">03</span>提问日志</router-link>
             <router-link to="/admin/system"><span aria-hidden="true">04</span>系统状态</router-link>
+            <router-link to="/admin/business"><span aria-hidden="true">05</span>学期 / 班级</router-link>
+            <router-link to="/admin/documents"><span aria-hidden="true">06</span>资料启用</router-link>
           </template>
           <router-link v-else to="/courses"><span aria-hidden="true">▤</span>我的课程</router-link>
+          <router-link to="/profile"><span aria-hidden="true">○</span>个人主页</router-link>
         </nav>
         <nav v-if="pageAllowed && currentCourse" class="course-navigation" aria-label="当前课程导航">
           <div class="rail-heading">当前课程</div><strong class="course-context-title">{{ currentCourse.title }}</strong>
@@ -30,7 +33,6 @@
           <router-link v-if="currentCourse.capabilities.can_view_insights" :to="'/courses/' + currentCourse.id + '/insights'" exact-active-class="is-current">问答反馈</router-link>
           <router-link v-if="currentCourse.capabilities.can_view_insights" :to="'/courses/' + currentCourse.id + '/investigation'" exact-active-class="is-current">课程调查</router-link>
         </nav>
-        <div v-if="isAdmin" class="planned-navigation"><div class="rail-heading">后续功能</div><button disabled>学期 / 班级<small>即将推出</small></button></div>
         <div class="rail-footnote"><span class="rail-rule" aria-hidden="true"></span><p>{{ isAdmin ? '账号与课内授权分别管理。' : '从资料出发，回到原文核对。' }}</p></div>
       </aside>
       <main id="main-content" tabindex="-1" class="workspace-main">

@@ -14,17 +14,21 @@ from fastapi import (
     status,
 )
 from fastapi.responses import FileResponse
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 from sqlalchemy.orm import sessionmaker as SessionMaker
 
 from app.api.schemas import DocumentOut, DocumentUpdateRequest
 from app.config import Settings, get_settings
 from app.db import get_db, get_session_maker
-from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
+from app.models.course import CourseMember
+from app.models.document import Document, IngestJob, IngestJobStatus
+from app.models.user import User
 from app.security.deps import (
     CourseAccess,
-    require_course_member,
+    get_course_or_404,
+    get_current_user,
+    get_membership,
     require_course_teacher,
 )
 from app.services.embedder import Embedder, get_embedder
@@ -58,6 +62,29 @@ _CONTENT_TYPES = {
     ".markdown": "text/markdown; charset=utf-8",
     ".txt": "text/plain; charset=utf-8",
 }
+
+
+def require_document_access(
+    course_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[DbSession, Depends(get_db)],
+) -> CourseAccess:
+    """Admin visibility is limited to resource operations; Agent permissions stay unchanged."""
+    course = get_course_or_404(db, course_id)
+    member = get_membership(db, course_id, user.id)
+    if user.role == "admin":
+        member = CourseMember(course_id=course_id, user_id=user.id, role="teacher")
+    if member is None:
+        raise HTTPException(403, "Not a course member")
+    return CourseAccess(course=course, member=member, user=user)
+
+
+def visible_document(db: DbSession, document_id: UUID, access: CourseAccess) -> Document:
+    document = db.get(Document, document_id)
+    if (document is None or document.course_id != access.course.id
+            or (not access.is_teacher and not document.retrieval_enabled)):
+        raise HTTPException(404, "Document not found")
+    return document
 
 
 def _document_out(document: Document, job: IngestJob | None) -> DocumentOut:
@@ -142,6 +169,7 @@ def upload_document(
         uploaded_by=access.user.id,
         filename=original,
         storage_path=str(dest),
+        retrieval_enabled=False,
     )
     job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
     db.add(document)
@@ -217,12 +245,13 @@ def retry_document_ingest(
 
 @router.get("", response_model=list[DocumentOut])
 def list_documents(
-    access: Annotated[CourseAccess, Depends(require_course_member)],
+    access: Annotated[CourseAccess, Depends(require_document_access)],
     db: Annotated[DbSession, Depends(get_db)],
 ) -> list[DocumentOut]:
     documents = db.execute(
         select(Document)
-        .where(Document.course_id == access.course.id)
+        .where(Document.course_id == access.course.id,
+               True if access.is_teacher else Document.retrieval_enabled.is_(True))
         .order_by(Document.created_at)
     ).scalars().all()
     return [_document_out(doc, latest_job(db, doc.id)) for doc in documents]
@@ -231,12 +260,10 @@ def list_documents(
 @router.get("/{document_id}", response_model=DocumentOut)
 def get_document(
     document_id: UUID,
-    access: Annotated[CourseAccess, Depends(require_course_member)],
+    access: Annotated[CourseAccess, Depends(require_document_access)],
     db: Annotated[DbSession, Depends(get_db)],
 ) -> DocumentOut:
-    document = db.get(Document, document_id)
-    if document is None or document.course_id != access.course.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    document = visible_document(db, document_id, access)
     return _document_out(document, latest_job(db, document.id))
 
 
@@ -244,12 +271,14 @@ def get_document(
 def update_document(
     document_id: UUID,
     body: DocumentUpdateRequest,
-    access: Annotated[CourseAccess, Depends(require_course_teacher)],
+    access: Annotated[CourseAccess, Depends(require_document_access)],
     db: Annotated[DbSession, Depends(get_db)],
 ) -> DocumentOut:
-    document = db.get(Document, document_id)
-    if document is None or document.course_id != access.course.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    if not access.is_teacher:
+        raise HTTPException(403, "Course teacher or admin only")
+    if body.retrieval_enabled and access.user.role != "admin":
+        raise HTTPException(403, "Admin only")
+    document = visible_document(db, document_id, access)
     document.retrieval_enabled = body.retrieval_enabled
     db.commit()
     db.refresh(document)
@@ -259,13 +288,11 @@ def update_document(
 @router.get("/{document_id}/content", response_class=FileResponse)
 def get_document_content(
     document_id: UUID,
-    access: Annotated[CourseAccess, Depends(require_course_member)],
+    access: Annotated[CourseAccess, Depends(require_document_access)],
     db: Annotated[DbSession, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> FileResponse:
-    document = db.get(Document, document_id)
-    if document is None or document.course_id != access.course.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    document = visible_document(db, document_id, access)
     try:
         source = get_document_upload(
             settings.upload_dir,
@@ -292,35 +319,13 @@ def get_document_content(
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(
     document_id: UUID,
-    access: Annotated[CourseAccess, Depends(require_course_teacher)],
+    access: Annotated[CourseAccess, Depends(require_document_access)],
     db: Annotated[DbSession, Depends(get_db)],
-    settings: Annotated[Settings, Depends(get_settings)],
 ) -> None:
-    document = db.get(Document, document_id)
-    if document is None or document.course_id != access.course.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-    storage_path = document.storage_path
-    # Keep the metadata/job until file cleanup succeeds so a failed DELETE can
-    # be explicitly retried. Missing files are already idempotent in storage.
-    try:
-        delete_document_upload(
-            settings.upload_dir,
-            access.course.id,
-            document_id,
-            storage_path,
-        )
-    except StorageError as exc:
-        logger.error(
-            "storage_cleanup_failed scope=document course_id=%s document_id=%s error_type=%s",
-            access.course.id,
-            document_id,
-            type(exc).__name__,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Document storage cleanup unavailable",
-        ) from None
-    db.execute(delete(Chunk).where(Chunk.document_id == document.id))
-    db.execute(delete(IngestJob).where(IngestJob.document_id == document.id))
-    db.delete(document)
+    if not access.is_teacher:
+        raise HTTPException(403, "Course teacher or admin only")
+    document = visible_document(db, document_id, access)
+    # Soft removal keeps the source and ingestion records. All evidence readers
+    # already enforce this flag; only an administrator may enable it again.
+    document.retrieval_enabled = False
     db.commit()

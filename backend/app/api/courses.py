@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.api.schemas import CourseMemberOut, CourseOut, TeacherAddStudentRequest
 from app.db import get_db
-from app.models.course import Course, CourseMember, CourseMemberRole
+from app.models.course import Course, CourseClass, CourseMember, CourseMemberRole
 from app.models.user import User, UserRole
 from app.security.deps import (
     CourseAccess,
@@ -58,6 +58,7 @@ def _course_out(access: CourseAccess) -> CourseOut:
     return CourseOut(
         id=str(access.course.id),
         title=access.course.title,
+        semester_id=access.course.semester_id,
         membership_role=access.member.role,
         capabilities=access.capabilities,
     )
@@ -79,7 +80,10 @@ def list_members(
         .where(CourseMember.course_id == access.course.id)
     ).all()
     return [
-        CourseMemberOut(user_id=str(user.id), username=user.username, role=member.role)
+        CourseMemberOut(user_id=str(user.id), username=user.username, role=member.role,
+                        full_name=user.full_name, student_number=user.student_number,
+                        class_id=member.class_id,
+                        class_name=db.get(CourseClass, member.class_id).name if member.class_id else None)
         for member, user in members
     ]
 

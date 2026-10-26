@@ -35,7 +35,7 @@
           <el-tag :type="row.retrieval_enabled ? 'success' : 'info'">
             {{ row.retrieval_enabled ? '启用' : '停用' }}
           </el-tag>
-          <el-button v-if="canManage" :disabled="busyIds.has(row.id)" link type="primary" :aria-label="`${row.retrieval_enabled ? '停用检索' : '启用检索'}：${row.filename}`" @click="onToggleRetrieval(row)">
+          <el-button v-if="canManage && (row.retrieval_enabled || session.user?.role === 'admin')" :disabled="busyIds.has(row.id)" link type="primary" :aria-label="`${row.retrieval_enabled ? '停用检索' : '启用检索'}：${row.filename}`" @click="onToggleRetrieval(row)">
             {{ row.retrieval_enabled ? '停用' : '启用' }}
           </el-button>
         </template>
@@ -67,7 +67,7 @@
           <el-button v-if="row.job_status === 'failed'" :disabled="busyIds.has(row.id)" type="primary" link @click="onRetry(row)">
             重试
           </el-button>
-          <el-button :disabled="busyIds.has(row.id)" type="danger" link @click="onDelete(row)">删除</el-button>
+          <el-button :disabled="busyIds.has(row.id) || !row.retrieval_enabled" type="danger" link @click="onDelete(row)">移出检索</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -237,7 +237,7 @@ async function onUpload({ file }) {
     failedUpload.value = null;
     uploadUncertain.value = false;
     failure.value = "";
-    ElMessage.success("已提交入库");
+    ElMessage.success("已提交入库，待管理员启用检索");
   } catch (error) {
     failedUpload.value = file;
     uploadUncertain.value = error.status === 0;
@@ -264,11 +264,11 @@ async function onDelete(row) {
   busyIds.value.add(row.id);
   try {
     await ElMessageBox.confirm(
-      `删除资料「${row.filename}」后不可恢复，本课问答将失去该依据。`,
-      "确认删除",
+      `将「${row.filename}」移出检索？原文与入库记录保留，本课问答和调查将不再引用；管理员可以重新启用。`,
+      "移出检索",
       {
         type: "warning",
-        confirmButtonText: "删除",
+        confirmButtonText: "移出检索",
         cancelButtonText: "取消",
       },
     );
@@ -278,7 +278,7 @@ async function onDelete(row) {
   }
   try {
     await api(`/courses/${courseId.value}/documents/${row.id}`, { method: "DELETE" });
-    ElMessage.success("已删除");
+    ElMessage.success("已移出检索，保留原文与入库记录");
     await loadDocuments();
   } catch (error) {
     failure.value = error.message;

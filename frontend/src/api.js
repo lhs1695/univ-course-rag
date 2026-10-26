@@ -18,6 +18,13 @@ const serviceMessages = {
   QUESTION_GROUPING_LIMIT: "本次窗口内的问句数量或文本超出分组上限，请缩小时间范围后重试。",
 };
 const knownDetails = {
+  "Semester is assigned to courses": "请先在课程归属中解除学期关联，再删除学期。",
+  "Class still has students": "班级还有学生，请先核对名单并移出课程。",
+  "Name or membership conflict; refresh and retry": "名称或成员关联冲突，请刷新核对后再试。",
+  "Username or student number taken": "用户名或学号已存在，请核对账号。",
+  "CSV header must be 学号,姓名,班级 (UTF-8)": "请使用 UTF-8 CSV，第一行为：学号,姓名,班级。",
+  "Invalid UTF-8 CSV": "CSV 格式或编码错误，请另存为 UTF-8 CSV。",
+  "CSV has no data rows": "名单只有表头，请补充学生行。",
   external_processing_confirmation_required: "请先勾选本次外发处理确认，再创建或恢复调查。",
   active_investigation_conflict: "本课已有活跃调查，请先完成或取消该任务。",
   idempotency_conflict: "创建请求已变化，请发起新的调查。",

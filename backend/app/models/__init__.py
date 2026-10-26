@@ -1,6 +1,12 @@
 
 from app.models.agent_task import AgentTask, AgentTaskEvent
-from app.models.course import Course, CourseMember, CourseMemberRole
+from app.models.course import (
+    Course,
+    CourseClass,
+    CourseMember,
+    CourseMemberRole,
+    Semester,
+)
 from app.models.document import Chunk, Document, IngestJob, IngestJobStatus
 from app.models.insight_review import InsightReview
 from app.models.query_log import QueryLog
@@ -12,6 +18,7 @@ __all__ = [
     "AgentTaskEvent",
     "Chunk",
     "Course",
+    "CourseClass",
     "CourseMember",
     "CourseMemberRole",
     "Document",
@@ -19,6 +26,7 @@ __all__ = [
     "IngestJobStatus",
     "InsightReview",
     "QueryLog",
+    "Semester",
     "Session",
     "User",
     "UserRole",

@@ -1,7 +1,15 @@
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, Field, StrictBool, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    Field,
+    StrictBool,
+    field_validator,
+    model_validator,
+)
 
 from app.models.course import CourseMemberRole
 from app.models.user import UserRole
@@ -16,20 +24,37 @@ class UserOut(BaseModel):
     id: str
     username: str
     role: str
+    full_name: str | None = None
+    student_number: str | None = None
 
 
 class CreateUserRequest(BaseModel):
     username: str = Field(min_length=1, max_length=64)
     password: str = Field(min_length=1, max_length=256)
     role: UserRole
+    full_name: str | None = Field(default=None, min_length=1, max_length=100)
+    student_number: str | None = Field(default=None, min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+
+    @field_validator("full_name", "student_number", mode="before")
+    @classmethod
+    def strip_profile_fields(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class CourseCreateRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
+    semester_id: UUID | None = None
 
 
 class CourseUpdateRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    semester_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def reject_null_title(self):
+        if "title" in self.model_fields_set and self.title is None:
+            raise ValueError("title cannot be null")
+        return self
 
 
 class CourseCapabilities(BaseModel):
@@ -41,6 +66,7 @@ class CourseCapabilities(BaseModel):
 class CourseOut(BaseModel):
     id: str
     title: str
+    semester_id: UUID | None = None
     membership_role: CourseMemberRole | None = None
     capabilities: CourseCapabilities = Field(default_factory=CourseCapabilities)
 
@@ -67,6 +93,10 @@ class CourseMemberOut(BaseModel):
     user_id: str
     username: str
     role: str
+    full_name: str | None = None
+    student_number: str | None = None
+    class_id: UUID | None = None
+    class_name: str | None = None
 
 
 class DocumentUpdateRequest(BaseModel):

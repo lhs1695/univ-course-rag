@@ -12,8 +12,8 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    false,
     func,
-    true,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -38,7 +38,7 @@ class Document(Base):
     uploaded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     filename: Mapped[str] = mapped_column(String(255))
     storage_path: Mapped[str] = mapped_column(String(1024))
-    retrieval_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())
+    retrieval_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     source_unit_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     extracted_char_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     chunk_count: Mapped[int | None] = mapped_column(Integer, nullable=True)

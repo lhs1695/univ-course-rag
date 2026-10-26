@@ -16,7 +16,7 @@ from app.api.schemas import (
 )
 from app.config import Settings, get_settings
 from app.db import get_db
-from app.models.course import Course, CourseMember, CourseMemberRole
+from app.models.course import Course, CourseMember, CourseMemberRole, Semester
 from app.models.user import User, UserRole
 from app.security.deps import get_course_or_404, get_membership, require_admin
 from app.services.storage import StorageError, delete_course_uploads
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 def _course_out(course: Course) -> CourseOut:
-    return CourseOut(id=str(course.id), title=course.title)
+    return CourseOut(id=str(course.id), title=course.title, semester_id=course.semester_id)
 
 
 @router.post("", response_model=CourseOut, status_code=status.HTTP_201_CREATED)
@@ -35,7 +35,9 @@ def create_course(
     db: Annotated[DbSession, Depends(get_db)],
     _admin: Annotated[User, Depends(require_admin)],
 ) -> CourseOut:
-    course = Course(title=body.title)
+    if body.semester_id is not None and db.get(Semester, body.semester_id) is None:
+        raise HTTPException(status_code=404, detail="Semester not found")
+    course = Course(title=body.title, semester_id=body.semester_id)
     db.add(course)
     db.commit()
     db.refresh(course)
@@ -77,7 +79,12 @@ def update_course(
     _admin: Annotated[User, Depends(require_admin)],
 ) -> CourseOut:
     course = get_course_or_404(db, course_id)
-    course.title = body.title
+    if body.title is not None:
+        course.title = body.title
+    if "semester_id" in body.model_fields_set:
+        if body.semester_id is not None and db.get(Semester, body.semester_id) is None:
+            raise HTTPException(status_code=404, detail="Semester not found")
+        course.semester_id = body.semester_id
     db.commit()
     db.refresh(course)
     return _course_out(course)
