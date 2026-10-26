@@ -1,43 +1,62 @@
 # 结题任务 backlog
 
-阶段 2 产出：将既有路线图拆为可勾选的待执行任务卡。**卡为待执行，不代表已实现、已授权或已验收。** PLAN 编号与范围以 [implementation-plan](../implementation-plan.md) 为准；本表仅补充建议依赖及开工顺序，不修改产品/验收合同。
+本表反映当前施工顺序与证据缺口。拍板摘要见 [结题已拍板规格](../结题已拍板规格.md)；产品方向以 [产品合同](../结题产品定义与完工标准.md) 为准；详细路线见 [implementation-plan.md](../implementation-plan.md)。任务卡状态不等于结题验收通过；Fake、开发者观察、人工核验与独立核验分别记录。
 
-## 必须项：建议开工顺序
+## A. 既有任务与未完成证据
 
-`ready` 表示卡已准备，实际开工须先核对依赖与授权；依赖尚未完成时不可直接执行依赖部分。P0 表示优先基础门，P1 表示后续必须项，二者都必须交付，并非可选。每次会话只选一张实现卡。
-
-先完成复用决策和指标边界，再收口生命周期；随后优先检索证据回归（PLAN-07），再推进教师分析与闭环。性能工程在生命周期/检索稳定后开展，独立体验及干净交付收尾。
-
-| ID | 标题 | 依赖 | 建议优先级 | 对应任务卡文件名 | 状态 |
-| --- | --- | --- | --- | --- | --- |
-| PLAN-00 | 开源设计与代码复用审查 | 无；建议首张开工 | P0 | [PLAN-00-opensource-reuse.md](PLAN-00-opensource-reuse.md) | done |
-| PLAN-01 | 冻结结题指标与数据边界 | PLAN-00 | P0 | [PLAN-01-metrics-data-boundary.md](PLAN-01-metrics-data-boundary.md) | done |
-| PLAN-02 | 资料生命周期与课程权限收口 | PLAN-00、PLAN-01 | P0 | [PLAN-02-lifecycle-permissions.md](PLAN-02-lifecycle-permissions.md) | done |
-| PLAN-07 | 检索与证据质量回归 | PLAN-01、PLAN-02 | P0 | [PLAN-07-retrieval-evidence.md](PLAN-07-retrieval-evidence.md) | done（既有证据 + Fake；真实复跑/独立核验未完成） |
-| PLAN-03 | 教师学情分析 V1 描述层与主题总览 | PLAN-01、PLAN-02 | P1 | [PLAN-03-analytics-overview.md](PLAN-03-analytics-overview.md) | done |
-| PLAN-04 | 教师学情分析 V1 语义分组与意图候选 | PLAN-00、PLAN-01、PLAN-03 | P1 | [PLAN-04-semantic-candidates.md](PLAN-04-semantic-candidates.md) | done |
-| PLAN-05 | 教师学情分析 V1 知识点与人工处理闭环 | PLAN-02、PLAN-03、PLAN-04 | P1 | [PLAN-05-teacher-action-loop.md](PLAN-05-teacher-action-loop.md) | done |
-| PLAN-06 | 学情分析质量与使用验证 | PLAN-01、PLAN-04、PLAN-05 | P1 | [PLAN-06-analytics-validation.md](PLAN-06-analytics-validation.md) | framework done（正式人工核验 / 独立教师试用未完成） |
-| PLAN-08 | 流式交互与性能工程 | PLAN-02、PLAN-07 | P1 | [PLAN-08-stream-performance.md](PLAN-08-stream-performance.md) | done（Fake+build；开发者 Vite S4 已观察；真实并发未测） |
-| PLAN-09 | 学生与教师核心流程体验测试 | PLAN-03、PLAN-05、PLAN-06、PLAN-07、PLAN-08 | P1 | [PLAN-09-core-user-tasks.md](PLAN-09-core-user-tasks.md) | done（脚本+Fake；独立试用取消→开发者 Vite 代观察；S3/T1 部分缺口） |
-| PLAN-10 | 干净环境与结题交付验收 | PLAN-00～PLAN-09（均有证据；未达门槛不得宣告结题通过） | P1 | [PLAN-10-final-delivery.md](PLAN-10-final-delivery.md) | done（清单+本机门禁；空白机暂缓；不得宣告结题通过） |
-
-## 条件项：暂缓
-
-以下不建详细卡，也不自动进入结题承诺；先提交样本痛点、基线/收益与成本证据，确认范围及授权后再立项。
-
-| ID | 标题 | 暂缓原因 / 重启条件 | 状态 |
+| ID | 任务 | 当前证据/状态 | 后续处理 |
 | --- | --- | --- | --- |
-| PLAN-11 | 复杂资料专项增强 | 仅代表页确因扫描/图表/公式等覆盖影响问答，且小样本对照有稳定收益时重启；真实 Vision/全量处理须另行授权。 | 暂缓 |
-| PLAN-12 | Rerank、外部 LLM 标签或其他增强 | 先有基线和失败分析，再确认质量收益、延迟、成本、隐私与维护负担；不与 PLAN-04 的簇摘要对照方案混为默认上线授权。 | 暂缓 |
-| PLAN-13 | 额外数据源或个体化学习分析 | 当前日志不足以支持；须有合法授权的有效学习结果数据、明确教育用途及治理/公平性/人工监督方案后重新立项。 | 暂缓 |
+| PLAN-00 | 开源复用审查 | 决策资料已落盘 | 新增依赖时按实际版本复核许可证 |
+| PLAN-01 | 指标与数据边界 | 冻结协议已完成 | 后续沿用冻结口径 |
+| PLAN-02 | 生命周期与权限 | 已有实现/矩阵/测试 | 结题前按最终代码回归 |
+| PLAN-03 | 教师统计与主题总览 | 有过实现；当前 UI 已简化为汇总数字和高频问句 | Agent 集成时复核可复用 API，不假定历史 UI 仍存在 |
+| PLAN-04 | 语义分组与意图候选 | 有实现与 Fake/开发者核验 | 正式人工标注质量未完成 |
+| PLAN-05 | 教师人工处理记录 | 后端与部分页面能力已有 | 不等于 Agent 任务闭环，集成前复核当前代码 |
+| PLAN-06 | 分组质量验证 | 框架完成 | 正式人工标注/独立核验缺口保留；不伪造教师试用 |
+| PLAN-07 | 检索与 Evidence 回归 | 22 题真实开发者核验 + Fake | 补根因 Trace、必要复跑与人工核验 |
+| PLAN-08 | SSE 与性能 | Fake 并发基线完成 | 前端 build/Vite 关键路径仍有缺口；真实模型测量未做 |
+| PLAN-09 | 核心任务体验 | 脚本/Fake/开发者 Vite 观察部分完成 | 独立用户试用已取消；记录 S3 故障与 T1 失败资料缺口 |
+| PLAN-10 | 结题交付 | 清单与本机门禁资料已有 | 空白机部署与备份恢复暂缓；不得宣告整体验收通过 |
+| PLAN-11 | 复杂 PDF 专项 | 条件性暂缓 | 仅在代表页面证明现有解析造成实际问答失败时启动 |
+| PLAN-12 | Rerank / 外部 LLM 标签 | 条件性暂缓 | 先有根因、对照收益、预算与数据授权 |
+| PLAN-13 | 额外数据源/个体化分析 | 暂缓 | 需合法学习结果数据与独立治理方案 |
 
-## 执行与证据约定
+## B. 新的确定性施工任务
 
-- 各卡严格沿用 [模板](_template.md) 字段；完成前填写实际产物路径、真实验证命令、原始输出与限制。本文未新增测试脚本，卡中拟新增测试路径不代表已存在。
-- PLAN-04/08 可保持 ready，但真实模型及问句外发须当次明确授权；无授权只执行独立的 Fake/文档部分，真实证据缺口不得勾选。其他卡涉及高成本动作同样受授权门约束。
-- PLAN-01 先冻结口径、样本与目标阈值；后续评价不得事后改标准。Fake/弱规则通过不等于事实正确率，开发者核验不等于独立核验，排练不等于真实用户试用。
-- PLAN-06/07/09 缺少人工参与或真实证据时如实登记未完成，PLAN-10 不得以限制说明替代未达成的必需验收门槛。
-- 禁止顺手上 GraphRAG、换向量库、全量 Vision 或重入库；不创建 OpenSpec/Spec Kit 脚手架。
-- PLAN-00～10 本地切片已提交；**不得宣告结题验收通过**。交付核对表见 [final-delivery-checklist.md](../final-delivery-checklist.md)。用户已定：独立试用取消（开发者 Vite 代观察）；空白机+备份恢复暂缓。仍缺：PLAN-06/07 正式人工/独立核验、S3 故障场景与 T1 失败资料对照、空白机（暂缓）、更大范围真实测量。详见 [SESSION_STATE](SESSION_STATE.md)。
+| ID | 标题 | 依赖 | 优先级 | 状态 | 任务卡 |
+| --- | --- | --- | --- | --- | --- |
+| PLAN-14 | 教师 Agent 合同与 Harness 基线 | PLAN-01、02；参考 PLAN-03～05 | P0 | in_progress | [PLAN-14-agent-harness-contract.md](PLAN-14-agent-harness-contract.md) |
+| PLAN-15 | Agent 运行时可靠性与权限治理 | PLAN-14、02 | P0 | ready（计划就绪，尚未实现） | [PLAN-15-agent-runtime-reliability.md](PLAN-15-agent-runtime-reliability.md) |
+| PLAN-16 | 教师侧课程问题调查 Agent | PLAN-14、15、03～05 | P0 | draft | [PLAN-16-teacher-investigation-agent.md](PLAN-16-teacher-investigation-agent.md) |
+| PLAN-17 | 课程业务基础完善 | PLAN-02；与 PLAN-15/16 协调 | P1 | draft | [PLAN-17-course-business-foundation.md](PLAN-17-course-business-foundation.md) |
+
+### 推荐顺序
+
+1. 文档/拍板规格与工作区收口；中期材料冻结。
+2. PLAN-14 合同与 Harness（含 12 类行为断言口径）整理可提交后，再开运行时。
+3. **并行**：PLAN-15（隔离迁移）与 PLAN-17 数据模型盘点（不先破坏性迁移）。
+4. PLAN-16：调查报告 + 教师 UI 最小闭环（验收对齐拍板规格）。
+5. 补齐 PLAN-17 最小业务页面/流程。
+6. 授权后补 PLAN-06/07 等证据缺口；RAG 附线有限校准。
+7. **不启动** PLAN-18 GraphRAG；仅主线全部完成后再议演示锦上添花。
+
+## C. 暂缓 / 结题后可选：不自动进入实现
+
+| ID | 方向 | 启动条件 | 决策规则 |
+| --- | --- | --- | --- |
+| PLAN-18 | GraphRAG / 知识图谱（备忘） | **结题期不启动**；仅主线全部完成且稳定后若演示需要再议 | 默认不做；不阻塞 Agent/业务验收 |
+| PLAN-11 | 复杂 PDF 专项增强 | 有代表页证明解析问题影响目标问答 | 小样本比较质量、来源、耗时与成本 |
+| PLAN-12 | Rerank / 外部 LLM 标签等 | 已定位失败且有公平基线 | 仅在稳定收益、隐私与成本可接受时采用 |
+| PLAN-13 | 额外数据源/个体化分析 | 有合法授权的有效学习结果数据和治理方案 | 另行立项，不由当前问句日志推断个体能力 |
+
+## D. 执行与证据规则
+
+- 一次会话一个实现项；开工前检查 git status --short 并保护已有改动。
+- 真实 Embedding/LLM/Vision/reranker、真实问句外发、全量解析/重入库、破坏性迁移和大依赖下载须当次明确授权。
+- 用户独立试用已取消，采用脚本化测试与开发者 Vite 观察；观察结果必须明确标注，不得写成独立用户验证。
+- 空白机部署与备份恢复暂缓；任何交付报告都应如实记录。
+- PLAN-14～16 是教师 Agent 深入版的必做主线；Harness 是工程验收的一部分，不以模型自评替代。
+- GraphRAG / 知识图谱结题不做；PLAN-18 仅为结题后可选备忘。
+- Fake/Replay 通过只证明流程控制合同；开发者题目核验不等于独立答案核验。
+- 不默认 push/发布；每张任务卡需记录真实命令、退出码、原始输出摘要、未完成项与恢复说明。
 

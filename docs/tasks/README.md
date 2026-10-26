@@ -1,6 +1,6 @@
 # 任务卡（docs/tasks）
 
-结题施工的**可执行切片**放这里；路线图仍以 [implementation-plan.md](../implementation-plan.md) 的 PLAN-00～13 为准。
+结题施工的**可执行切片**放这里；拍板见 [结题已拍板规格](../结题已拍板规格.md)；路线图以 [implementation-plan.md](../implementation-plan.md) 为准。PLAN-14～17 是确定性主线；PLAN-18（GraphRAG）结题不做，仅备忘。
 
 ## 约定
 
@@ -19,4 +19,4 @@
 | 路线图 | [implementation-plan.md](../implementation-plan.md) |
 | 本卡 | `docs/tasks/*.md`（开工与勾选） |
 
-阶段 2 已生成 [backlog](backlog.md) 与 PLAN-00～10 任务卡；按 backlog 的依赖和建议顺序开工，PLAN-11～13 暂缓。所有卡均为待执行，ready 不代表已实现或已获高成本动作授权。
+已有 PLAN-00～13 记录既有工作与待补证据；[backlog](backlog.md) 与 PLAN-14～17 为后期主线。PLAN-18 结题期不启动。任务卡状态不代表产品验收通过；ready/draft 不代表已获真实模型/正式库迁移等授权。

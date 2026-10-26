@@ -47,3 +47,13 @@ corpus/local/**
 
 
 output/
+
+# Local run logs (dev servers)
+.tmp-*.log
+.tmp-uvicorn-*.log
+.tmp-vite-*.log
+
+
+# Local eval outputs (keep on disk; do not commit)
+results/
+
