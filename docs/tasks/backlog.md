@@ -2,6 +2,8 @@
 
 本表反映当前施工顺序与证据缺口。拍板摘要见 [结题已拍板规格](../结题已拍板规格.md)；产品方向以 [产品合同](../结题产品定义与完工标准.md) 为准；详细路线见 [implementation-plan.md](../implementation-plan.md)。任务卡状态不等于结题验收通过；Fake、开发者观察、人工核验与独立核验分别记录。
 
+> 2026-10-26：前端视觉已通过；审阅必须改项已确认、文档收口完成，待用户下令开 M1。M1/M2/M3 退出、预算与 Harness/E5-A 以 [拍板规格](../结题已拍板规格.md) 及其所链任务合同为准。
+
 ## A. 既有任务与未完成证据
 
 | ID | 任务 | 当前证据/状态 | 后续处理 |
@@ -26,14 +28,14 @@
 | ID | 标题 | 依赖 | 优先级 | 状态 | 任务卡 |
 | --- | --- | --- | --- | --- | --- |
 | PLAN-14 | 教师 Agent 合同与 Harness 基线 | PLAN-01、02；参考 PLAN-03～05 | P0 | in_progress | [PLAN-14-agent-harness-contract.md](PLAN-14-agent-harness-contract.md) |
-| PLAN-15 | Agent 运行时可靠性与权限治理 | PLAN-14、02 | P0 | ready（计划就绪，尚未实现） | [PLAN-15-agent-runtime-reliability.md](PLAN-15-agent-runtime-reliability.md) |
+| PLAN-15 | Agent 运行时可靠性与权限治理 | PLAN-14、02 | P0 | 计划已确认待开工（尚未实现） | [PLAN-15-agent-runtime-reliability.md](PLAN-15-agent-runtime-reliability.md) |
 | PLAN-16 | 教师侧课程问题调查 Agent | PLAN-14、15、03～05 | P0 | draft | [PLAN-16-teacher-investigation-agent.md](PLAN-16-teacher-investigation-agent.md) |
 | PLAN-17 | 课程业务基础完善 | PLAN-02；与 PLAN-15/16 协调 | P1 | draft | [PLAN-17-course-business-foundation.md](PLAN-17-course-business-foundation.md) |
 
 ### 推荐顺序
 
-1. 文档/拍板规格与工作区收口；中期材料冻结。
-2. PLAN-14 合同与 Harness（含 12 类行为断言口径）整理可提交后，再开运行时。
+1. 文档/拍板规格收口完成，审阅必须改项已确认；待用户下令开 M1，中期材料冻结，保留原未跟踪项。
+2. M1：PLAN-14 合同/Fake Harness + PLAN-15 最小存储/课程教师 API 权限，创建后可独立读任务、无权者读不到；历史半成品须另卡复验。
 3. **并行**：PLAN-15（隔离迁移）与 PLAN-17 数据模型盘点（不先破坏性迁移）。
 4. PLAN-16：调查报告 + 教师 UI 最小闭环（验收对齐拍板规格）。
 5. 补齐 PLAN-17 最小业务页面/流程。

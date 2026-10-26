@@ -2,6 +2,8 @@
 
 结题施工的**可执行切片**放这里；拍板见 [结题已拍板规格](../结题已拍板规格.md)；路线图以 [implementation-plan.md](../implementation-plan.md) 为准。PLAN-14～17 是确定性主线；PLAN-18（GraphRAG）结题不做，仅备忘。
 
+2026-10-26：前端视觉已通过；[审阅必须改项已全部确认](PLAN-review-开工计划-2026-10-26.md)，文档收口完成，待用户下令开 M1。分期退出/权限/预算/Harness/E5-A 统一引用拍板规格及其所链任务合同，计划确认不代表实现通过。
+
 ## 约定
 
 1. 一卡一事；文件名建议 `PLAN-0x-短名.md` 或 `T-短名.md`。
@@ -21,6 +23,6 @@
 
 已有 PLAN-00～13 记录既有工作与待补证据；[backlog](backlog.md) 与 PLAN-14～17 为后期主线。PLAN-18 结题期不启动。任务卡状态不代表产品验收通过；ready/draft 不代表已获真实模型/正式库迁移等授权。
 
-## 前端翻新（优先于结题后端开工）
+## 前端翻新（视觉已通过，后续功能沿用）
 
 - [PLAN-FE-01-frontend-refresh.md](PLAN-FE-01-frontend-refresh.md) → 提示词 [../../frontend/prompts/FE-refresh-v1.md](../../frontend/prompts/FE-refresh-v1.md)

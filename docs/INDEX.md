@@ -18,7 +18,7 @@
 
 | 文档 | 用途 |
 | --- | --- |
-| [结题已拍板规格.md](结题已拍板规格.md) | **现行决策摘要**（Agent/业务/Key/GraphRAG 不做/顺序） |
+| [结题已拍板规格.md](结题已拍板规格.md) | **现行决策摘要**（2026-10-26 审阅已确认；M1–M3 退出/权限、状态/预算、Harness/E5-A；业务/Key/顺序） |
 | [结题产品定义与完工标准.md](结题产品定义与完工标准.md) | 做什么 / 不做 / 完工门槛 |
 | [validation.md](validation.md) | 怎样算验收通过（分层） |
 | [implementation-plan.md](implementation-plan.md) | PLAN-00～17 主线；PLAN-18 结题后可选备忘（GraphRAG 不做） |
@@ -35,7 +35,7 @@
 | [架构说明.md](架构说明.md) | 模块、表、时序、配置对照 |
 | [engineering.md](engineering.md) | 现行组件边界摘要 |
 | [teacher-agent-current-code-audit.md](teacher-agent-current-code-audit.md) | 教师 Agent 开工前的现有代码审查：数据模型、权限、日志留存与可复用能力 |
-| [teacher-agent-task-contract.md](teacher-agent-task-contract.md) | PLAN-14 任务/步骤状态、工具 allowlist、Trace、预算、留存与 Harness 合同 |
+| [teacher-agent-task-contract.md](teacher-agent-task-contract.md) | 用户确认冻结的任务/步骤状态、并发/retry、预算判定、Harness 分期、外发/PDF 硬验收与 E5-A 合同 |
 | [evaluation-results.md](evaluation-results.md) | 评测登记与口径（含 22 题分层） |
 | [retrieval-evidence-regression.md](retrieval-evidence-regression.md) | PLAN-07 历史证据分析与 Fake 回归；真实复跑/独立核验缺口 |
 | [stream-performance-baseline.md](stream-performance-baseline.md) | PLAN-08 SSE 合同与 Fake 1/5/10 并发基线；开发者 Vite S4 已观察 |
@@ -45,6 +45,8 @@
 | [final-delivery-checklist.md](final-delivery-checklist.md) | PLAN-10 交付清单/干净环境步骤；空白机暂缓；不得宣告结题通过 |
 | 历史：`中期答辩材料/笔记/04`、`…/07`（冻结） | Harness 12 类 / E5-A 原始论述；要点已摘入拍板规格 |
 | [中期演示运行卡.md](中期演示运行卡.md) | 演示切库/启动/固定问句（文件名历史遗留） |
+
+当前：前端视觉已通过，开工计划文档收口完成、必须改项已确认；实现待用户下令开 M1。确认历史见 [开工计划审阅记录](tasks/PLAN-review-开工计划-2026-10-26.md)。
 
 ## 任务与会话外状态
 
