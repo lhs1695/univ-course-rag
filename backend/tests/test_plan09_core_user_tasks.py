@@ -89,26 +89,10 @@ def test_student_answer_evidence_and_pdf_content(client, core_tasks, transport):
 
 
 def test_insufficient_evidence_and_system_fault_have_distinct_recovery(client, db, core_tasks):
+    """S3 Fake: timeout vs NO_EVIDENCE vs explicit retry after restore."""
     course, teacher, student, chunk, _ = core_tasks
     document_url = f"/courses/{course.id}/documents/{chunk.document_id}"
     ask_url = f"/courses/{course.id}/ask"
-    login_as(client, teacher.username, "pass")
-    assert client.patch(document_url, json={"retrieval_enabled": False}).status_code == 200
-    login_as(client, student.username, "pass")
-    insufficient = client.post(ask_url, json={"query": QUERY})
-    assert insufficient.status_code == 200
-    assert insufficient.json()["error_code"] == "NO_EVIDENCE"
-    assert insufficient.json()["answer"] is None
-    assert insufficient.json()["citations"] == []
-    # Disabled sources are hidden from students; teachers can still preview them.
-    assert client.get(f"{document_url}/content").status_code == 404
-
-    login_as(client, teacher.username, "pass")
-    assert client.get(f"{document_url}/content").status_code == 200
-    assert client.patch(document_url, json={"retrieval_enabled": True}).status_code == 403
-    admin = add_user(db, "p09-admin", "pass", UserRole.admin)
-    login_as(client, admin.username, "pass")
-    assert client.patch(document_url, json={"retrieval_enabled": True}).status_code == 200
     login_as(client, student.username, "pass")
 
     class TimeoutLLM(FakeLLM):
@@ -123,10 +107,30 @@ def test_insufficient_evidence_and_system_fault_have_distinct_recovery(client, d
     assert failed.json()["citations"] == []
     assert "private-p09-provider-detail" not in failed.text
 
+    # Same query with disabled source is lack of evidence, not upstream failure.
+    login_as(client, teacher.username, "pass")
+    assert client.patch(document_url, json={"retrieval_enabled": False}).status_code == 200
+    login_as(client, student.username, "pass")
+    insufficient = client.post(ask_url, json={"query": QUERY})
+    assert insufficient.status_code == 200
+    assert insufficient.json()["error_code"] == "NO_EVIDENCE"
+    assert insufficient.json()["answer"] is None
+    assert insufficient.json()["citations"] == []
+    assert client.get(f"{document_url}/content").status_code == 404
+
+    login_as(client, teacher.username, "pass")
+    assert client.get(f"{document_url}/content").status_code == 200
+    assert client.patch(document_url, json={"retrieval_enabled": True}).status_code == 403
+    admin = add_user(db, "p09-admin", "pass", UserRole.admin)
+    login_as(client, admin.username, "pass")
+    assert client.patch(document_url, json={"retrieval_enabled": True}).status_code == 200
+
     app.dependency_overrides[get_llm] = FakeLLM
+    login_as(client, student.username, "pass")
     retried = client.post(ask_url, json={"query": QUERY})
     assert retried.status_code == 200
     assert retried.json()["error_code"] is None
+    assert retried.json()["answer"]
     assert retried.json()["citations"][0]["chunk_id"] == str(chunk.id)
     db.expire_all()
     logs = list(db.scalars(select(QueryLog)))
@@ -136,6 +140,7 @@ def test_insufficient_evidence_and_system_fault_have_distinct_recovery(client, d
 
 
 def test_teacher_quality_candidate_action_and_refetch(client, db, core_tasks):
+    """T1 Fake: warning vs whole-file failed contrast; students hide failed rows."""
     course, teacher, student, chunk, _ = core_tasks
     failed_document = Document(
         course_id=course.id, uploaded_by=teacher.id, filename="p09-failed.pdf",
@@ -148,6 +153,14 @@ def test_teacher_quality_candidate_action_and_refetch(client, db, core_tasks):
     ))
     db.commit()
     login_as(client, student.username, "pass")
+    student_documents = client.get(f"/courses/{course.id}/documents")
+    assert student_documents.status_code == 200
+    student_document_ids = {row["id"] for row in student_documents.json()}
+    assert str(chunk.document_id) in student_document_ids
+    assert str(failed_document.id) not in student_document_ids
+    assert client.get(
+        f"/courses/{course.id}/documents/{failed_document.id}/content"
+    ).status_code == 404
     # Themes only surface cited_answer repeats when count >= 2 (exact_normalize).
     for _ in range(2):
         asked = client.post(f"/courses/{course.id}/ask", json={"query": QUERY})
@@ -166,6 +179,9 @@ def test_teacher_quality_candidate_action_and_refetch(client, db, core_tasks):
     assert failure["job_status"] == "failed"
     assert failure["error_message"] == "INGEST_FAILED"
     assert failure["chunk_count"] == 0
+    assert client.get(
+        f"/courses/{course.id}/documents/{failed_document.id}/content"
+    ).status_code == 404
 
     insights = client.get(f"/courses/{course.id}/insights")
     assert insights.status_code == 200
@@ -174,7 +190,6 @@ def test_teacher_quality_candidate_action_and_refetch(client, db, core_tasks):
     assert candidate["status"] == "candidate"
     assert candidate["kind"] == "cited_repeat"
     assert candidate["ask_count"] == 2
-    # Match the current UI form, which fixes confirmed/undecidable rather than editing them.
     payload = {
         "subject_type": "clue", "subject_key": candidate["label"],
         "intent_code": "concept", "knowledge_point": "事务/隔离级别",
