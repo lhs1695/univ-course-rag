@@ -1,4 +1,10 @@
+# Secrets / local env (keep .env.example tracked)
 .env
+.env.*
+!.env.example
+secrets.txt
+credentials.json
+.netrc
 .venv/
 backend/.venv/
 node_modules/
