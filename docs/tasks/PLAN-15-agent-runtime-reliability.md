@@ -5,7 +5,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-15 |
-| 状态 | **已落地**：M1/M2/M3 已实现并本地提交；cn_v2 已至 0015；developer Vite/API 观察 2026-10-26；待后置：物理 TTL / PG 真实并发 |
+| 状态 | **已落地**：M1/M2/M3 + **最小物理 TTL（2026-10-26）**；cn_v2 0015；待后置：PG 真实并发 / 完整 Trace UI |
 | 须授权 | 真实模型调用、真实课程问句外发、正式库破坏性迁移均须当次明确授权；优先隔离数据库和 Fake/Replay |
 
 ## 目标
@@ -48,7 +48,7 @@
 - [ ] PostgreSQL 独立并发集成：本轮只有离线 DDL，没有连接 PostgreSQL；不能以 SQLite 顺序/故障注入测试宣称真实 PG 并发已通过。
 - [ ] 15B 后续状态/检查点/执行事件追加与序号分配：M1 只写 sequence=1 的创建事件，未实现通用事件写接口、步骤持久化重建或执行者写入。
 - [x] M2 报告与有界 Fake/Replay 执行/来源门禁；M3 lease/token fencing/取消/显式 resume/retry API，SQLite H06/H07/H11/H-source。
-- [ ] M3 教师页 build 与 Vite PDF 实点闭环；代码已实现，环境 `spawn EPERM` 阻塞，不能宣称已退出。完整物理清理仍未做。
+- [ ] M3 教师页 build 与 Vite PDF 实点闭环；代码已实现，环境 `spawn EPERM` 阻塞，不能宣称已退出。完整物理 TTL 曾后置；**2026-10-26 已落地最小有界清理**（见下方专节）。
 
 M1 创建不分发执行器、不外发数据；`confirm_external_processing=false` 可以排队。真实外发路径创建前拒绝与三类调用=0 spies 属于 M2，不能从本轮无执行器推断已验该门禁。测试命令、原始计数、警告与环境限制统一见 [SESSION_STATE](SESSION_STATE.md)。上方跨期复合验收项保留未勾选，不能把 M1 创建成功等同于生产运行时完成。
 
@@ -60,7 +60,7 @@ M1 创建不分发执行器、不外发数据；`confirm_external_processing=fal
 - [x] POST resume/retry 重新执行当前课程教师权限与显式外发确认，resume 只读元数据复检来源及安全检查点；resume 后 run 前再检查来源。显式新 attempt 保留任务级累计预算；无额度 resume 为 budget_exceeded，retry 返回 409 agent_budget_exhausted；来源失效 failed/source_unavailable，检查点不安全 failed/investigation_checkpoint_unsafe。
 - [x] H07 包含真正子进程：隔离文件 SQLite 提交 claim + 调用预留后 `os._exit(17)`；新 Session 判过期后显式恢复，新 attempt 保留计数。H11 以 SQLite partial unique index 直接拒绝冲突 UPDATE，取消/恢复路径保留幂等 key；没有真实 PostgreSQL 并发通过声明。
 - 验证：9 个 `test_agent_*` 文件 **129 passed, 1 warning**；新增 runtime **22** 例；ruff `All checks passed!`。完整命令、环境失败、前端和本地提交限制见 [SESSION_STATE](SESSION_STATE.md#m3-本轮交付与证据2026-10-26)。
-- 未做：真实 provider 调用及阻塞 I/O 超时质量验证、PG 并发、完整物理 TTL、完整 Trace UI、M4/PLAN-17。`git add` 创建 `.git/index.lock` 被拒绝，因此尚无本地 commit；未 push。
+- 未做：真实 provider 调用及阻塞 I/O 超时质量验证、PG 并发、（历史）当时未做物理 TTL/Trace UI/M4；其后 M4 与最小 TTL 已另卡落地。`git add` 创建 `.git/index.lock` 被拒绝，因此尚无本地 commit；未 push。
 
 ## 约束
 
@@ -187,3 +187,11 @@ M1 已新增 SQLAlchemy 模型、0014、事务存储和创建/读取 API；没�
 4. 执行定向 pytest、ruff、必要的迁移测试和 git diff --check。
 5. 逐项贴原始输出；真实模型与正式库验证未授权时保持未完成。
 
+## 最小物理 TTL（2026-10-26 Asia/Shanghai）
+
+- [x] 服务 `maintain_agent_tasks`：按 `expires_at <= now(UTC)` 有界批次 dry_run/delete；**无新迁移**；依赖 FK CASCADE 清 events。
+- [x] 管理 API `POST /admin/agent-tasks/retention`（`require_admin`），batch 复用 `query_log_cleanup_batch_size`。
+- [x] 定向测试 `test_agent_task_retention.py`：过期等号、8 状态、未过期保留、has_more、CASCADE、非 admin 403。
+- 验证（bot 复验）：`test_agent_task_retention`+`test_query_log_retention` **20 passed**；+store+api **42 passed**；ruff All checks passed。
+- 说明：**物理 TTL ≠ 失效来源解析门禁**（后者 M2/M3 已有，不后置）。无后台 worker；未对演示库执行破坏性 delete。
+- 未做：定时扫描、PG 真实并发、完整 Trace UI。
