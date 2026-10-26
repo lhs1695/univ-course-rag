@@ -113,3 +113,30 @@ Synthetic fixture SHA-256: match frozen protocol
 ```
 
 `git diff --check` 退出 0，无空白错误输出；stderr 仅有 `LF will be replaced by CRLF the next time Git touches it` 换行提示。
+
+### 2026-10-26 框架复验
+
+- 仅复验现有离线框架、固定合成夹具与定向测试；未改业务默认分组行为，未改以上任何验收/框架交付复选框。
+- 合成夹具算术仍为 TP/FP/FN/TN = 1/1/1/2；总标注对 6、可判定对 5、不确定对 1；precision=1/2、recall=1/2；覆盖 3/8、单例 3/8、未分组 2/8。这些是固定合成算术断言，不是人工质量结果。
+- 正式人工标注、独立核验、知识点/主题人工核验、独立教师试用均仍未完成；对应验收复选框保持未勾选。框架复验通过不改变候选模式结论，也不替代真实证据。
+
+仓库根实际运行：
+
+```powershell
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_plan06_analytics_evaluation.py -q -p no:cacheprovider --tb=short
+```
+
+退出 0：
+
+```text
+..............                                                           [100%]
+14 passed, 1 warning in 0.70s
+```
+
+唯一警告为 Starlette `testclient.py:53` 引发的既有 `DeprecationWarning`：`The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.` 未改依赖或测试逻辑。
+
+```powershell
+backend/.venv/Scripts/python.exe -m ruff check backend/app/services/analytics_evaluation.py backend/tests/test_plan06_analytics_evaluation.py
+```
+
+退出 0：`All checks passed!`。本次复验只编辑本任务卡；无数据库、真实模型或教师试用操作。

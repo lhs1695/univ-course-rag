@@ -1,17 +1,17 @@
 # SESSION_STATE
 
-> 更新：2026-10-26 22:40（Asia/Shanghai）PLAN-08/15/09 本批（t271u；未 push）。
+> 更新：2026-10-26 21:45（Asia/Shanghai）Trace 薄切 + PLAN-09 S3/T1 + PLAN-06 复验（t272u；未 push）。
 
 **结论**：
-- **本批**：PLAN-08 Fake SSE/并发基线复验并刷新文档；PLAN-15 **最小物理 TTL**（服务+admin API+测试，无新迁移/无 worker）；PLAN-09 覆盖矩阵对照 10-26 M3/M4 观察补记（S3/T1-failed 诚实 SKIP）。
-- **PLAN-08**：`test_plan08` **-q -s → 12 passed**；合跑 ask+plan08 **85 passed**；ruff OK；前端 ask stream **10/10**。基线表已换为 10-26 复验数字；**真实模型高并发未做**。
-- **PLAN-15 TTL**：`maintain_agent_tasks` + `POST /admin/agent-tasks/retention`；定向 retention+query_log **20 passed**；+store+api **42 passed**；ruff OK。TTL ≠ 来源失效门禁。
-- **PLAN-09**：矩阵已写；`test_plan09` **4 passed**；不伪造独立试用。
-- **未做 / 不得宣告**：空白机/备份仍暂缓；PG 真实并发；完整 Trace UI；S3 Vite 故障剧本；T1 failed 资料；**不得宣告结题通过**；未 push。
+- **本批**：Agent 最小只读 Trace 时间线；PLAN-09 S3/T1 Fake/API PASS；PLAN-06 框架复验 14p（正式人工标注仍缺）。
+- **Trace**：events 白名单扩 step_no/tool_name/duration_ms/created_at/安全 evidence_refs；调查页 details 极薄展示；合跑 Agent+plan09+plan06 **69 passed**；investigation Node **5 pass**；完整 Trace UI 仍后置；本批 Vite SKIP。
+- **PLAN-09**：S3 Timeout→NO_EVIDENCE→恢复 cited_answer；T1 failed vs 警告 + 学生不可见 failed；**4 passed**；Vite/演示库诚实 SKIP；不伪造独立试用。
+- **PLAN-06**：框架复验 **14 passed** + ruff；正式人工标注/独立核验/教师试用**未做**。
+- **未做 / 不得宣告**：完整 Trace UI；PG 并发；PLAN-06/07 正式人工核验；Vite S3；演示库 failed；空白机/备份暂缓；**不得宣告结题通过**；未 push。
 
 ## 当前目标
 
-本批 PLAN-08/15/09 已本地收口（不 push）。后续可选：Trace UI、PG 并发、授权后 PLAN-06/07 核验。
+本批 t272u 已本地收口（不 push）。后续可选：完整 Trace UI、PG 并发、授权后正式核验、push。
 
 ## M4 本轮交付与证据（2026-10-26）
 
