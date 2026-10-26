@@ -5,7 +5,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-15 |
-| 状态 | ready（开工计划已细化；实现尚未开始） |
+| 状态 | 待审阅确认（实现尚未开始；必须改项见本轮审阅报告） |
 | 须授权 | 真实模型调用、真实课程问句外发、正式库破坏性迁移均须当次明确授权；优先隔离数据库和 Fake/Replay |
 
 ## 目标
@@ -24,7 +24,7 @@
 
 ## 验收标准
 
-- [ ] 任务和步骤状态可持久化，成功、失败、取消、等待确认、超预算等状态可区分；错误不会留下永久运行中的任务。
+- [ ] 任务和步骤状态可持久化，成功、失败、取消、超预算等首版状态可区分；错误不会留下永久运行中的任务。`waiting_approval` 仅保留为未来写工具语义，首版只读流程不得进入，不要求实现业务审批。
 - [ ] 步骤状态可从持久化事件流重建；每个 `(task_id, sequence)` 唯一，状态/检查点/事件原子提交，回滚后没有半条 Trace。
 - [ ] 同一 `(course_id, created_by, idempotency_key_hash)` 并发创建最多得到一个任务；相同指纹复用，不同指纹冲突。未运行独立 PostgreSQL 并发测试时，必须明确记录该证据缺口。
 - [ ] 取消后不启动新的工具步骤；超时和异常均记录原因与终态。
@@ -69,26 +69,28 @@
 
 `last_event_sequence` 用于在持有任务行锁/执行原子更新时分配序号；事件写入、序号更新、任务状态与检查点更新必须原子提交。所有执行者写入都携带当前 `run_token`，过期执行者不能覆盖新 attempt 的状态或检查点。
 
-`checkpoint_json` 只保存恢复所需的有界结构化状态/已完成只读工具结果，不保存完整 Prompt、原始模型输出或原始学生问句。报告与 Trace 只保留来源 ID；展示时在当前权限下动态解析 QueryLog，已删除/过期的来源显示 unavailable。若 checkpoint 保存课件 snippet/excerpt，也必须纳入任务 TTL 并限制长度。
+`checkpoint_json` 只保存恢复所需的有界控制状态、来源 ID、Chunk/Document/Page 元数据与预算游标，不保存完整 Prompt、原始模型输出、原始学生问句或 snippet/excerpt。报告与 Trace 的来源引用只保留 ID；展示时在当前权限下动态解析 QueryLog，已删除/过期的来源显示 unavailable。报告仍须保存事实/证据/候选原因/未知/建议的结构化内容。
 
 ### 留存、恢复与并发约束
 
 - 创建任务时，将输入时间窗口统一转换为 UTC；窗口超出当前 QueryLog 保留范围或结束时间明显晚于当前时间时拒绝，不静默截断。SQLite 往返可能丢失 timezone 标记，存储层读取时须规范化为 UTC-aware datetime。沿用 `query_log_retention_days`，首版不新增第二个容易漂移的留存配置。
 - 初始 `expires_at = created_at + query_log_retention_days`；保存报告/检查点时，根据其中实际引用的 QueryLog，将过期时间收紧为 `min(当前 expires_at, min(source.created_at + retention_days))`。不得因任务引用旧问句而延长原始问句寿命。源日志被提前删除时，报告仍可存在至任务 TTL，但 UI/来源解析必须显示 `unavailable`，不得从 Trace/checkpoint 恢复原文。
-- 新增有界、最旧优先的任务清理服务；同一事务内删除过期事件和任务，清理批次沿用 `query_log_cleanup_batch_size`。首版只提供可测试的显式清理入口，不宣称已配置定时清理；调度/运维入口另行确认。
+- 完整有界清理服务可后置，不作为 M1/M2 的前置；任务读取、来源解析和恢复仍须遵守过期/删除与当前权限边界，不得因物理清理暂缓继续展示失效来源。若实施显式清理入口，沿用 `query_log_cleanup_batch_size`，不宣称已配置定时清理。
 - 预算是任务级累计预算，不因 retry/resume 重置；`budget_used_json` 必须与事件计数保持一致，恢复前计算剩余调用/时间额度。任务执行 claim 时增加 `attempt` 并设置 `run_token/lease_expires_at`；心跳/进度更新延长 lease，所有写入校验 token。
 - 取消 `queued` 任务可直接进入 `cancelled`；取消 `running` 任务先记 `cancel_requested`，执行者只在模型/工具调用安全边界停止后确认 `cancelled`。不能保证强行中断阻塞调用；HTTP/provider timeout 仍须独立生效。
 - 启动扫描可重新分发尚未领取的 `queued` 任务（领取操作必须使用原子 compare-and-set，确保多 worker 只有一个拿到 lease）；将 lease 已过期的 `running` 任务标为 `interrupted`（若已有取消请求，则收敛为 `cancelled`，并保留可解释事件）。不自动恢复 `interrupted`。用户显式 resume 后重新验证教师权限、来源存在性、文档可检索状态、外部处理确认与剩余预算。
 - 检查点只保存有界的控制状态、来源 ID、Chunk/Document/Page 元数据与预算游标，不保存完整 Prompt、原始模型输出、原始问句、snippet/excerpt 或异常原文。若检查点不足以安全续跑，则从确定性安全边界重新调查；只读工具可以重跑，但必须计入累计预算并重新执行权限检查。首版无业务写工具，不宣称通用 exactly-once 副作用保障。
-- 事件 `safe_summary` 只能由服务端固定模板生成；`evidence_refs_json` 仅放 ID/页码等必要引用，不放查询文本或片段。报告 JSON 遵守产品合同，仅存来源 ID；报告自由文本的问句复述检查由 PLAN-16 报告生成链路验收。
+- 事件 `safe_summary` 只能由服务端固定模板生成；`evidence_refs_json` 仅放 ID/页码等必要引用，不放查询文本或片段。报告 JSON 包含结构化发现等正文，来源引用仅存 ID，不复制原始问句；报告自由文本的问句复述检查由 PLAN-16 报告生成链路验收。
 
 ### 分批实施计划（每批独立验收；本轮仅完善计划）
+
+批次是工作拆分，不要求按 15A～15E 全部完成后才开始 PLAN-16。M1 取 15A/15B 与最小权限/任务读取，M2 接入报告 API 所需的有界执行、终态与工具权限，M3 再补 15C 最小 lease/取消/恢复和教师 UI；15D 的对应验收随各期执行。完整 TTL 清理与 Trace UI 可后置；各期 API 责任与退出条件须按 [审阅报告](PLAN-review-开工计划-2026-10-26.md) 确认后开实现卡。
 
 | 批次 | 范围与文件 | 必须证明 | 退出条件 |
 | --- | --- | --- | --- |
 | 15A 数据模型与迁移 | 新增 `backend/app/models/agent_task.py`、`backend/alembic/versions/0014_agent_task_runtime.py`、`backend/tests/test_agent_task_migration.py`；更新 `backend/app/models/__init__.py` 与 `backend/alembic/env.py` | 模型可由现有 SQLite fixture 创建；迁移链为 `0013 → 0014`；升级/降级仅影响新表；FK/唯一约束/索引与 PostgreSQL DDL 编译正确 | 专项迁移测试通过；无 repository/API/worker 变更；不连接默认 `DATABASE_URL` |
 | 15B 事务存储与幂等 | 新增 `backend/app/services/agent_task_store.py`、`backend/tests/test_agent_task_store.py` | 相同 key+指纹复用任务；不同指纹冲突；序号单调；任务状态/检查点/事件原子提交；事务失败不留下半条状态；事件不包含原始查询/模型输出 | 定向存储测试通过；并发正确性依赖唯一约束，PostgreSQL 并发集成只能使用单独授权的隔离测试库 |
-| 15C 生命周期与留存 | 新增 `backend/app/services/agent_task_runtime.py`、`backend/app/services/agent_task_retention.py` 及对应测试 | 合法状态转移；取消安全边界；lease/token fencing；queued 安全重新分发、stale running→interrupted；显式 resume/retry；累计预算；来源 TTL 收紧；过期任务与事件有界清理 | 生命周期/留存测试通过；无自动重试、无隐式恢复、无定时清理的虚假承诺 |
+| 15C 生命周期与留存 | `backend/app/services/agent_task_runtime.py` 及对应测试；完整 `agent_task_retention.py` 清理可后置 | M2 有界执行/累计预算/异常终态；M3 最小 lease/token fencing、取消安全边界、stale running→interrupted、显式 resume/retry；各期不绕过来源留存边界 | 对应阶段定向测试通过；完整物理清理不阻塞报告 API；不声称通用 exactly-once、隐式恢复或定时清理已实现 |
 | 15D 权限与 Harness 集成 | 新增 `backend/app/agent/tool_registry.py`（或按实际代码布局调整）、`backend/tests/test_agent_task_permissions.py`；扩展 Harness adapter 测试 | 固定 allowlist/schema；每次工具调用重新校验当前教师 membership、task.course_id、Document/Chunk 课程归属与 `retrieval_enabled`；跨课程伪造 ID 不返回内容 | H01–H12 中 PLAN-15 可承担的持久化/权限场景通过；完整调查流程与 UI 留给 PLAN-16 |
 | 15E 统一收口 | 更新本卡与 `SESSION_STATE.md`；必要时补专门的迁移/恢复证据 | 定向 pytest、ruff、`git diff --check`；列明 Fake/SQLite 与 PostgreSQL 真实并发验证的证据差异 | 所有可验证项有命令/输出；真实模型、外发问句、正式库迁移仍明确未做 |
 
@@ -124,7 +126,7 @@ git diff --check
 
 上述分批文件名是计划目标；如果实现前发现仓库布局已有更合适的等价模块，先更新本卡再改代码。每批结束都更新真实文件、测试结果和剩余风险，不把后续批次预先标记通过。
 
-当前只完成静态盘点和开工计划；尚未新增 SQLAlchemy 模型、Alembic 迁移、存储服务、API 或运行时服务。下一实现项为 15A；本卡变为 `ready` 仅表示计划清晰，不代表迁移获准应用到正式库。实施前仍须重新检查 `git status --short` 并保持正式演示库不变。
+既有记录只声明完成静态盘点和开工计划，尚未新增 SQLAlchemy 模型、Alembic 迁移、存储服务、API 或运行时服务；本次审阅未读代码核验。下一实现项须先确认审阅中的必须改项，再从 M1 对应最小子集开始；首个可演示交付仍为 M2 调查报告。迁移仅在隔离库验证，不得应用到正式演示库；实施前重新检查 `git status --short` 并保护现有未提交工作。
 
 ## 禁止改动的路径
 

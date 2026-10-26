@@ -76,7 +76,7 @@ Trace 不记录 API Key、Cookie/Session、完整 Prompt、完整模型原始输
 | 预算 | `agent_step_or_runtime_budget_exceeded`、`agent_model_or_runtime_budget_exceeded`、`agent_tool_budget_exceeded`、`agent_evidence_budget_exceeded`、`agent_runtime_budget_exceeded`、`report_character_budget_exceeded`、`report_evidence_budget_exceeded` | 终止新增调用，保留可安全读取的已完成结果 |
 | 执行/状态 | `tool_execution_failed`、`tool_result_schema_invalid`、`action_source_failed`、`replay_exhausted`、`transition_not_allowed`、`step_transition_not_allowed`、`explicit_resume_required`、`explicit_retry_required` | 只记录稳定类别，不保存异常原文；恢复/重试必须显式发起 |
 
-任务结果与 Trace 的留存不能绕过 QueryLog 当前的留存策略。PLAN-15 已确定首版沿用 `query_log_retention_days`：任务创建时设置保守 TTL，报告/检查点关联来源后再按最早来源的 `created_at + retention_days` 收紧 `expires_at`；过期清理使用有界批次。源 QueryLog 被提前删除时，报告显示来源不可用，不从 Trace/checkpoint 复原原文。具体存储与清理实现仍待 PLAN-15 验收。
+任务结果与 Trace 的留存不能绕过 QueryLog 当前的留存策略。PLAN-15 的最小方案沿用 `query_log_retention_days`：任务创建时设置保守过期时间，报告/检查点关联来源后按最早来源的 `created_at + retention_days` 收紧 `expires_at`；读取/恢复时验证来源有效性。完整 TTL 物理清理可后置，不阻塞 M2 报告 API；若实施清理则使用有界批次。源 QueryLog 被提前删除时，报告显示来源不可用，不从 Trace/checkpoint 复原原文。具体行为仍待对应阶段验收。
 
 ## 5. 首版工具 allowlist
 
@@ -157,11 +157,11 @@ Fake/Replay 通过只证明控制流程合同。真实模型的报告质量、�
 
 ## 10. 设计门槛与后续
 
-- PLAN-14：冻结上述 schema/状态/预算/留存合同，并建立可重复 Harness。
-- PLAN-15：首版采用 `agent_tasks` + append-only `agent_task_events` 两表；步骤状态由事件流按 `(task_id, attempt, step_no)` 重建，不另建步骤表。按 15A～15E 分批实现迁移、幂等/事务存储、lease/取消/恢复/留存、权限与 Harness 集成。该决策是实施计划，不代表数据库迁移或运行时已完成。
-- PLAN-16：接入教师课程问题调查工作流和 UI，复用现有统计/检索/人工复核能力。
-- PLAN-17：单独盘点学期、班级、名单与个人资料模型。
-- PLAN-18：知识点关系收益验证只有在样本和核验资源明确时才启动。
+- PLAN-14：M1 冻结上述 schema/状态/预算/留存合同并建立可重复 Harness；结合 PLAN-15 最小存储/权限子集完成任务落库可读，内存回放不代表 M1 全部完成。
+- PLAN-15：首版采用 `agent_tasks` + append-only `agent_task_events` 两表；步骤状态由事件流按 `(task_id, attempt, step_no)` 重建，不另建步骤表。按 M1/M2/M3 提供对应的持久化、权限、有界执行与最小 lease/取消/恢复，不要求 15A～15E 全量完成后才接报告 API；完整 TTL 清理可后置。该决策是实施计划，不代表数据库迁移或运行时已完成。
+- PLAN-16：M2 先交调查报告 API，M3 沿已完成的前端视觉补教师 UI、必要事件摘要与最小恢复，复用现有统计/检索/人工复核能力；完整 Trace UI 可暂缓。
+- PLAN-17：与 Agent 运行时薄切并行盘点学期、班级、CSV 名单、极简主页（无提问历史）、资料两步启用检索，不阻塞首个调查报告交付。
+- PLAN-18：GraphRAG / 知识图谱结题不做；全项目完成且稳定后再议演示锦上添花，不按样本或资源就绪提前启动。
 
 本文不授权真实模型调用、真实问句外发、正式演示库操作或破坏性迁移。实施前先检查工作区未提交改动并遵循 `AGENTS.md`。
 
