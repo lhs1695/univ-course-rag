@@ -31,13 +31,13 @@
 - 6 项已确认决策写入拍板规格与 task-contract；implementation-plan、PLAN-14～17、审阅确认记录与交接/索引同步。
 - PLAN-14～17 四处历史笔记断链改为 `中期答辩材料/笔记/...` 纯文本；详细预算只在合同维护。
 - Agent 半成品与两份测试、中期笔记目录仍未跟踪；本轮不读、不改、不暂存。未改业务代码/中期正文、未读密钥、未运行产品测试/迁移/模型/服务；仅做文档内容/链接与 diff 自检。
-- 本轮按明确清单执行 git add（13 份 docs Markdown）失败：`fatal: Unable to create 'D:/workspace/univ-course-rag/.git/index.lock': Permission denied`（退出码 1）。当前环境 Git 元数据不可写，未暂存、未提交、无新 SHA；未 push。待可写 Git 环境补本地提交：`docs(plan): freeze M1-M3 exits, budget, harness map after review confirm`。
+- 本地提交：`ee8578e` `docs(plan): freeze M1-M3 exits, budget, harness map after review confirm`（13 份 Markdown）；`main` 比远程 ahead 7；**未 push**。
 
 ## 本轮实际验证（纯文档）
 
 - `backend/.venv/Scripts/python.exe -`（stdin 文档自检，不导入业务代码）：6 项确认决策/预算/硬验收与 H01–H12、timeout/external 分期检查 PASS；13 份 Markdown、175 个本地链接（含 17 个节锚点）检查，broken_links=0；四处旧笔记断链已移除；初审必须改/建议改/可开工正文保持原样，待确认勾选=0。
 - `git diff --check`：退出码 0、无输出。`git status --short` 初检仅原有未跟踪 Agent/测试/中期笔记，另有临时目录访问被拒警告，未进入临时目录。
-- 未运行 pytest、ruff、build、Vite、迁移或模型；没有把历史 26 passed/前端记录当成本轮输出。本地提交受上述 Git 文件系统权限限制。
+- 未运行 pytest、ruff、build、Vite、迁移或模型；没有把历史 26 passed/前端记录当成本轮输出。本地提交已完成（ee8578e）；未 push。
 
 ## 工作区分堆（整理时）
 
