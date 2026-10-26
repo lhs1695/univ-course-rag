@@ -1,18 +1,17 @@
 # SESSION_STATE
 
-> 更新：2026-10-26 21:20（Asia/Shanghai）PLAN-02/07/10 本批收口（t269u；未 push）。
+> 更新：2026-10-26 22:40（Asia/Shanghai）PLAN-08/15/09 本批（t271u；未 push）。
 
 **结论**：
-- **本批**：PLAN-02 生命周期回归（M4 门控后夹具/矩阵对齐）；PLAN-07 Fake 复跑 + developer 短问证据并入回归笔记（不修 PROB-F02、不跑 22 题全量）；PLAN-10 清单刷新到 Alembic **0015** + 本机门禁复跑。
-- **门禁**：全量 pytest **795 passed, 2 skipped**；`ruff check backend` All checks passed；`frontend` `npm run build` ✓ ~8.3s。证据 [`docs/final-delivery-gate-2026-10-26.output.txt`](../final-delivery-gate-2026-10-26.output.txt)。
-- **PLAN-02**：定向 `test_plan02`+`test_course_business` **44 passed**；全量夹具对齐后相关 ask/keyword/storage/courses 等随门禁绿。矩阵已写管理员启用/教师停用/学生仅已启用/软关/名单不开户。
-- **PLAN-07**：Fake **79 passed, 2 skipped**；链到 [observation-2026-10-26](../user-task-scripts/observation-2026-10-26-developer-m3-m4.md)。**developer ≠ 独立评测**；不宣称 Hybrid 优于 Dense；**PROB-F02 未修复**。
-- **演示库** cn_v2 仍为 **0015**；代码本批提交前 HEAD=`8fc05b3`（ahead 以 git status 为准）。
-- **未做 / 不得宣告**：空白机/备份恢复仍暂缓；**不得宣告结题通过**；未 push；物理 TTL / 完整 Trace UI / PLAN-06 正式人工核验仍后置。
+- **本批**：PLAN-08 Fake SSE/并发基线复验并刷新文档；PLAN-15 **最小物理 TTL**（服务+admin API+测试，无新迁移/无 worker）；PLAN-09 覆盖矩阵对照 10-26 M3/M4 观察补记（S3/T1-failed 诚实 SKIP）。
+- **PLAN-08**：`test_plan08` **-q -s → 12 passed**；合跑 ask+plan08 **85 passed**；ruff OK；前端 ask stream **10/10**。基线表已换为 10-26 复验数字；**真实模型高并发未做**。
+- **PLAN-15 TTL**：`maintain_agent_tasks` + `POST /admin/agent-tasks/retention`；定向 retention+query_log **20 passed**；+store+api **42 passed**；ruff OK。TTL ≠ 来源失效门禁。
+- **PLAN-09**：矩阵已写；`test_plan09` **4 passed**；不伪造独立试用。
+- **未做 / 不得宣告**：空白机/备份仍暂缓；PG 真实并发；完整 Trace UI；S3 Vite 故障剧本；T1 failed 资料；**不得宣告结题通过**；未 push。
 
 ## 当前目标
 
-本批 PLAN-02/07/10 文档与回归已收口（本地提交、不 push）。后续仅授权后的证据补缺与可选后置项。
+本批 PLAN-08/15/09 已本地收口（不 push）。后续可选：Trace UI、PG 并发、授权后 PLAN-06/07 核验。
 
 ## M4 本轮交付与证据（2026-10-26）
 

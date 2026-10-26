@@ -25,6 +25,6 @@
 - 尚未执行的独立试用填写「未观察；计划 N=4/3」，不能写成已观察的 0/N、100% 或 PASS。开发者/API 测试用例通过数与人类任务 n/N 分栏，pytest 耗时不代替用户耗时。
 - S1 必须保留「授权提问→回答→依据→点引用→实际原 PDF 页」链路；HTTP 返回 PDF 和页码只覆盖接口段，不能证明浏览器跳页或主张正确。T3 的 GET 重取只覆盖数据库持久化，不能证明浏览器刷新体验。
 - S4 的 Vite 流式/取消/重试：开发者观察已执行（见 observation-2026-10-23-developer）；Node 单测仍只是逻辑 smoke。教师候选是备课线索，不表示学生掌握度、知识点事实或教学效果。
-- 仍缺可选补证：S3 隔离故障场景、T1 整份失败资料对照。
+- 仍缺可选补证：S3 隔离故障场景、T1 整份失败资料对照（见 [PLAN-09 覆盖矩阵 2026-10-26](../tasks/PLAN-09-core-user-tasks.md#覆盖矩阵补记2026-10-26-asiashanghai--对照-m3m4-观察与门禁)）。
 
 合同入口：[PLAN-09 任务卡](../tasks/PLAN-09-core-user-tasks.md)、[验收合同](../validation.md)、[PLAN-05 闭环](../teacher-action-loop.md)、[生命周期/权限](../lifecycle-permissions-matrix.md)。PLAN-10 清单已建；**不得宣称独立试用或结题验收通过**。

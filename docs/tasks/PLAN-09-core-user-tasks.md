@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-09 |
-| 状态 | done（脚本+Fake；用户授权开发者 Vite 代观察已完成；独立试用按用户指示取消） |
+| 状态 | done（脚本+Fake；10-23/10-26 开发者观察已对齐；独立试用取消；S3/T1-failed 仍诚实缺口） |
 | 须授权 | 招募/联系参与者或发送外部消息须用户明确指示；真实模型调用、真实资料操作须当次明确授权；默认可先写脚本和用 Fake 排练 |
 
 ## 目标
@@ -78,3 +78,20 @@
 - 诚实缺口（Fake 排练当时）：独立试用尚未安排；Vite 人工当时未做（同日已由开发者观察补证，见上方「补充」）。
 - 本地提交：`docs(PLAN-09): core user task scripts and Fake rehearsal`；随后 `docs(PLAN-09): developer Vite observation and real small-sample evidence`（见 git log）；不 push。
 - next：无必须实现卡；可选补 S3 隔离故障与 T1 failed 资料对照。独立试用已按用户指示取消，不得再当作未关门禁。
+
+## 覆盖矩阵补记（2026-10-26 Asia/Shanghai · 对照 M3/M4 观察与门禁）
+
+> **developer 观察 ≠ 独立用户试用**；不得宣告结题通过。
+
+| 路径 | 10-23 观察 | 10-26 M3/M4 观察 | Fake/API | 仍缺 |
+| --- | --- | --- | --- | --- |
+| S1 提问→依据→`#page=` | PASS（含真短问） | 真短问 API+`#page=10` PASS；浏览器 PDF 实落页 **SKIP** | `test_plan09` 覆盖问答/PDF 接口段 | 浏览器实落页仍 SKIP |
+| S2 依据不足 | 近似（LA-R） | 未单列复测 | Fake NO_EVIDENCE 路径有 | 独立理解恢复路径 **未观察** |
+| S3 系统故障恢复 | 前置缺失 | **仍缺**（未注入隔离故障） | API 超时/故障区分有；Vite 故障剧本未补 | 诚实 SKIP |
+| S4 流式/取消/重试 | 开发者部分 | 学生 ask 路由 PASS；取消以 API/调查 UI 部分为准 | PLAN-08 Node 10/10 + SSE Fake | 完整 Vite 流式逐项点验仍可选 |
+| T1 资料质量 | 警告 PDF 可开、无 failed 对照 | 检索启停门控 PASS；整份 failed 样例仍无 | Fake 质量列表有 | failed 资料对照诚实 SKIP |
+| T2/T3 候选处理与刷新 | PASS | 未本轮复点（既有 10-23） | Fake insight-review 重取有 | 无新产品阻断 |
+| M3 调查闭环 | — | API+UI Fake/Replay/取消/retry PASS；UI 取消某态 SKIP | Agent 定向绿 | PDF 实落页 SKIP |
+| M4 业务五件套 | — | 学期/班级/CSV/profile/检索门控 PASS | `test_course_business` | — |
+
+本批未伪造独立试用；未新增必须代码。`pytest backend/tests/test_plan09_core_user_tasks.py -q` → **4 passed**（2026-10-26 复跑）。可选补证仍是 S3 隔离故障与 T1 failed 资料。
