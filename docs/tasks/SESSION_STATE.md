@@ -4,7 +4,7 @@
 
 ## 当前目标
 
-结题文档与工作区收口后，进入 Codex **审开工计划**（尚未授权实现）。产品主线：教师侧课内问题调查 Agent（M1→M2→M3）与课程业务最小集并行盘点；**GraphRAG/知识图谱结题不做**。
+**前端全面翻新优先**（提示词已落档：`frontend/prompts/FE-refresh-v1.md`，任务卡 `docs/tasks/PLAN-FE-01-frontend-refresh.md`）。用户要求先完成前端翻新并验收，**再**审结题开工计划 / 实现 PLAN-14～17。产品主线仍是：教师侧课内问题调查 Agent（M1→M2→M3）与课程业务最小集并行盘点；**GraphRAG/知识图谱结题不做**。
 
 ## 已确认决策（2026-10-26 拍板）
 
@@ -17,6 +17,7 @@
 - 中期答辩材料/**冻结**；结题以 `docs/` 为准。精华摘自 `中期答辩材料/笔记/04`（Harness 12 类）、`…/07`（E5-A）。
 - 用户独立试用已取消；空白机/备份恢复暂缓。
 - 真实模型、问句外发、正式库破坏性迁移须当次授权；不默认 push。
+- **前端翻新优先**：学生学/问可切换（默认学）；教师「册」、管理「衡」；同源 token；三角色+登录一次换齐；结题导航占位灰项；先 FE 后后端开工。提示词见 `frontend/prompts/FE-refresh-v1.md`。
 
 ## 本轮文档整理
 
@@ -41,6 +42,7 @@
 
 ## 下一步
 
-1. 用户确认文档 commit 后，**Codex 只审**开工计划包：结题已拍板规格、implementation-plan、PLAN-14～17、teacher-agent-task-contract（对照 Harness 12 类与 E5-A）。
-2. 审通过并用户点头后：整理 PLAN-14 半成品本地提交（可选）→ 授权 15A（仅隔离库迁移）或 17 盘点。
-3. 不对默认 `DATABASE_URL` / 正式 `cn_v2` 跑迁移；不 push 除非用户点名。
+1. **先做前端翻新**：用户授权后按 `frontend/prompts/FE-refresh-v1.md` 开 Codex（gpt-6.1-sol / high）；本轮仅提示词已落档，实现未开工。
+2. 前端验收通过后，再 **Codex 只审**开工计划包：结题已拍板规格、implementation-plan、PLAN-14～17、teacher-agent-task-contract（对照 Harness 12 类与 E5-A）。
+3. 审通过并用户点头后：整理 PLAN-14 半成品本地提交（可选）→ 授权 15A（仅隔离库迁移）或 17 盘点。
+4. 不对默认 `DATABASE_URL` / 正式 `cn_v2` 跑迁移；不 push 除非用户点名。

@@ -20,3 +20,7 @@
 | 本卡 | `docs/tasks/*.md`（开工与勾选） |
 
 已有 PLAN-00～13 记录既有工作与待补证据；[backlog](backlog.md) 与 PLAN-14～17 为后期主线。PLAN-18 结题期不启动。任务卡状态不代表产品验收通过；ready/draft 不代表已获真实模型/正式库迁移等授权。
+
+## 前端翻新（优先于结题后端开工）
+
+- [PLAN-FE-01-frontend-refresh.md](PLAN-FE-01-frontend-refresh.md) → 提示词 [../../frontend/prompts/FE-refresh-v1.md](../../frontend/prompts/FE-refresh-v1.md)
