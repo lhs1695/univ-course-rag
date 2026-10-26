@@ -4,7 +4,7 @@
 
 ## 当前目标
 
-**前端全面翻新优先**（提示词已落档：`frontend/prompts/FE-refresh-v1.md`，任务卡 `docs/tasks/PLAN-FE-01-frontend-refresh.md`）。用户要求先完成前端翻新并验收，**再**审结题开工计划 / 实现 PLAN-14～17。产品主线仍是：教师侧课内问题调查 Agent（M1→M2→M3）与课程业务最小集并行盘点；**GraphRAG/知识图谱结题不做**。
+**PLAN-FE-01 前端全面翻新已落地（本地提交，未 push）**。下一步：用户本机 Vite 点验 UI → 再 Codex 审结题开工计划 / PLAN-14～17。产品主线仍是教师侧课内问题调查 Agent（M1→M2→M3）与课程业务最小集；**GraphRAG/知识图谱结题不做**。
 
 ## 已确认决策（2026-10-26 拍板）
 
@@ -42,7 +42,7 @@
 
 ## 下一步
 
-1. **先做前端翻新**：用户授权后按 `frontend/prompts/FE-refresh-v1.md` 开 Codex（gpt-6.1-sol / high）；本轮仅提示词已落档，实现未开工。
-2. 前端验收通过后，再 **Codex 只审**开工计划包：结题已拍板规格、implementation-plan、PLAN-14～17、teacher-agent-task-contract（对照 Harness 12 类与 E5-A）。
+1. 用户本机 `npm run dev` 按 `frontend/DESIGN-TOKENS.md` 验收学/问、三角色与演示闭环观感。
+2. 验收通过后，**Codex 只审**开工计划包：结题已拍板规格、implementation-plan、PLAN-14～17、teacher-agent-task-contract（对照 Harness 12 类与 E5-A）。
 3. 审通过并用户点头后：整理 PLAN-14 半成品本地提交（可选）→ 授权 15A（仅隔离库迁移）或 17 盘点。
 4. 不对默认 `DATABASE_URL` / 正式 `cn_v2` 跑迁移；不 push 除非用户点名。

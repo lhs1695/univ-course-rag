@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><h1>课程与授权</h1></header>
+    <header class="page-heading"><p class="eyebrow">管理 / 课程</p><h1>课程与授权</h1><p class="page-description">选择课程，查看成员，分配课内教师与学生角色。</p></header>
     <section class="panel-card course-list-card">
     <div class="course-toolbar"><h2>课程列表</h2><el-form :inline="true" @submit.prevent="onCreateCourse">
       <el-form-item label="标题">

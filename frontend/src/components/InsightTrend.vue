@@ -23,6 +23,7 @@ function render() {
   const data = trendChartData(props.points);
   const options = {
     responsive: true,
+    animation: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? false : undefined,
     maintainAspectRatio: false,
     scales: {
       x: { stacked: true, ticks: { autoSkip: true, maxRotation: 0 } },

@@ -2,7 +2,7 @@
   <div class="course-shelf" :class="{ 'staff-shelf': !isStudent }">
     <header class="shelf-heading">
       <div>
-        <h1>{{ isStudent ? "今天，想读懂什么？" : "备课，从本课资料开始" }}</h1>
+        <p class="eyebrow">{{ isStudent ? "我的课程 / 课程书架" : "教学 / 课程目录" }}</p><h1>{{ isStudent ? "我的课程书架" : "课程备课台" }}</h1>
         <p>{{ isStudent ? "选择一门课程，把疑问交给资料。" : "检查资料依据，管理本课学生，核对问答反馈。" }}</p>
       </div>
       <span v-if="loaded && !failure" class="shelf-count">{{ courses.length }} 门已加入的课程</span>
@@ -16,22 +16,15 @@
     </div>
     <ul v-else class="shelf-list">
       <li v-for="(row,index) in courses" :key="row.id" class="shelf-course" :class="`book-tone-${index % 4}`">
-        <div class="book-spine" aria-hidden="true"><span>{{ row.title }}</span></div>
-        <div class="book-cover">
-          <span class="book-caption">课程知识库</span>
-          <h2>{{ row.title }}</h2>
-          <span class="book-bottom">{{ isStudent ? "带着问题，回到原文。" : "核对资料，再问一句。" }}</span>
-          <span class="cover-orbit" aria-hidden="true"></span>
-        </div>
+        <div class="course-card-heading"><span class="course-index" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span><span class="course-membership">{{ row.membership_role === 'teacher' ? '课内教师' : '已加入' }}</span><span class="course-card-glyph" aria-hidden="true">↗</span></div>
         <div class="book-details">
-          <span class="course-membership">{{ row.membership_role === 'teacher' ? '教师课程' : '已加入课程' }}</span>
-          <h3>{{ row.title }}</h3>
-          <p v-if="isStudent">从课堂上的疑问出发，<br>让每一个回答都有资料可循。</p>
+          <h2>{{ row.title }}</h2>
+          <p v-if="isStudent">阅读课程资料，或带着课堂上的疑问开始提问。</p>
           <p v-else>备课时核对资料，关注待核对问句，补充教学依据。</p>
           <div class="book-actions">
             <template v-if="isStudent">
-              <el-button type="primary" @click="openAsk(row)">开始提问</el-button>
-              <button class="text-button" @click="openDocs(row)">浏览资料 <span aria-hidden="true">↗</span></button>
+              <el-button type="primary" @click="surface === 'study' ? openDocs(row) : openAsk(row)">{{ surface === 'study' ? '浏览资料' : '开始提问' }}</el-button>
+              <button class="text-button" @click="surface === 'study' ? openAsk(row) : openDocs(row)">{{ surface === 'study' ? '课程提问' : '浏览资料' }} <span aria-hidden="true">↗</span></button>
             </template>
             <template v-else>
               <el-button type="primary" @click="openDocs(row)">进入备课</el-button>
@@ -54,8 +47,10 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { session } from "../session";
+import { studentSurface } from "../theme";
 import { api } from "../api";
 
+const { surface } = studentSurface;
 const router = useRouter();
 const isStudent = computed(() => session.user?.role === "student");
 const courses = ref([]);

@@ -1,6 +1,6 @@
 <template>
   <div class="document-library">
-    <header class="library-heading"><div><h1>课程资料，随时翻阅。</h1><p>问答的依据都在这里。打开资料，也可以直接跳到某一页。</p></div><el-button :loading="loading" @click="$emit('refresh')">刷新资料</el-button></header>
+    <header class="library-heading"><div><p class="eyebrow">课程资料 / 阅读目录</p><h1>课程资料</h1><p>问答的依据都在这里。打开资料，也可以直接跳到某一页。</p></div><el-button :loading="loading" @click="$emit('refresh')">刷新资料</el-button></header>
     <el-alert v-if="failure" :title="failure" type="error" :closable="false"/>
     <div class="library-search"><label for="document-search">查找资料</label><el-input id="document-search" v-model="search" placeholder="按文件名搜索" clearable/><span>{{ filtered.length }} 份资料</span></div>
     <p v-if="loading" class="study-empty" role="status">正在整理课程资料…</p>

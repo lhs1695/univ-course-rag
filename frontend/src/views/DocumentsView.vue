@@ -1,7 +1,7 @@
 <template>
   <StudentDocuments v-if="session.user?.role === 'student'" :documents="documents" :loading="loading" :failure="failure" :course-id="courseId" @refresh="refreshDocuments" />
   <div v-else class="page">
-    <header class="page-heading"><p class="eyebrow">课程资源</p><h1>课程资料</h1></header>
+    <header class="page-heading"><p class="eyebrow">教学 / 课程资源</p><h1>课程资料</h1><p class="page-description">整理本课资料，检查入库与检索状态，打开原文核对。</p></header>
 
     <div class="doc-actions">
       <el-upload
@@ -330,15 +330,15 @@ async function onRetry(row) {
   margin: 0 0 16px;
   padding: 18px 20px;
   flex-wrap: wrap;
-  background: #fff;
-  border: 1px solid #e6ebe8;
-  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
 }
 
 .doc-actions .el-button + .el-button { margin-left: 0; }
 
 
-:deep(.filename-cell .cell) { color: #29463d; font-weight: 600; overflow-wrap: anywhere; }
+:deep(.filename-cell .cell) { color: var(--text-strong); font-weight: 600; overflow-wrap: anywhere; }
 .job-failure { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--el-color-danger); }
 .student-open { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .student-open .el-link { font-weight: 600; }
@@ -346,8 +346,6 @@ async function onRetry(row) {
 .subtle { font-size: 12px; color: var(--text-muted); }
 
 .docs-table { width: 100%; }
-:deep(.docs-table .el-table__header-wrapper),
-:deep(.docs-table .el-table__body-wrapper),
-:deep(.docs-table .el-scrollbar__wrap) { overflow-x: hidden !important; }
-:deep(.docs-table .el-scrollbar__bar.is-horizontal) { display: none !important; }
+/* Preserve horizontal access to every column on narrow screens. */
+:deep(.docs-table .el-scrollbar__wrap) { overflow-x: auto; }
 </style>

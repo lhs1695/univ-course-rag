@@ -32,7 +32,7 @@ test('question grouping limit is not reported as an oversized upload', async () 
   globalThis.fetch = async () => reply({ detail: 'stored-path' }, 413);
   await assert.rejects(
     api('/courses/course-one/documents', { method: 'POST' }),
-    error => error.message.includes('15 MB') && !error.message.includes('stored-path'),
+    error => error.message.includes('文件过大') && !error.message.includes('stored-path'),
   );
   globalThis.fetch = async () => reply({ error_code: 'QUESTION_GROUPING_DISABLED', message: 'raw' }, 503);
   await assert.rejects(

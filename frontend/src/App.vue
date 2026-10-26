@@ -1,78 +1,67 @@
 <template>
-  <div class="study-app" v-if="studentSurface">
+  <div class="workspace" :class="{ 'student-workspace': isStudent, 'staff-workspace': !isStudent, 'entry-workspace': isLogin }">
     <a class="skip-link" href="#main-content" @click.prevent="focusMain">跳到主要内容</a>
-    <header class="study-header">
-      <router-link to="/courses" class="study-brand"><span class="bookmark-logo" aria-hidden="true">课</span>课程知识库</router-link>
-      <div v-if="session.user" class="study-account"><router-link v-if="isAdmin" to="/admin/users">管理后台</router-link><span>{{ session.user.username }}</span><button class="quiet-button" @click="onLogout">退出登录</button></div>
-      <span v-else class="brand-promise">让每一个答案，有出处。</span>
-    </header>
-    <main id="main-content" tabindex="-1" class="study-main" :class="{ 'is-login': route.path === '/login' }">
-      <nav v-if="session.user" class="study-navigation" aria-label="课程导航">
-        <router-link to="/courses" class="shelf-link">我的课程</router-link>
-        <template v-if="currentCourse"><span aria-hidden="true">/</span><strong>{{ currentCourse.title }}</strong><div class="study-tabs"><router-link :to="`/courses/${currentCourse.id}`" exact-active-class="is-active">提问</router-link><router-link :to="`/courses/${currentCourse.id}/documents`" exact-active-class="is-active">资料</router-link><router-link v-if="currentCourse.capabilities.can_manage_members" :to="`/courses/${currentCourse.id}/members`">本课学生</router-link><router-link v-if="currentCourse.capabilities.can_view_insights" :to="`/courses/${currentCourse.id}/insights`">问答反馈</router-link></div></template>
-        <span v-else class="navigation-note">从一门课开始，读懂一个问题。</span>
-      </nav>
-      <div v-if="recoveryError" class="recovery-box"><el-alert :title="recoveryError.message" type="warning" :closable="false"/><el-button v-if="recoveryError.status !== 401" :loading="recovering" @click="retryConnection">重试连接</el-button><el-button v-else @click="router.push({path:'/login',query:{next:route.fullPath}})">重新登录</el-button></div>
-      <router-view v-if="pageAllowed" :key="`${route.fullPath}:${courseAccess.revision}`"/>
-      <div v-else-if="!recoveryError" class="study-empty"><h2>访问权限已变化</h2><p>请重新选择课程或登录。</p><router-link :to="session.user ? '/courses' : '/login'">返回</router-link></div>
-    </main>
-    <footer class="study-footer"><span>课程知识库</span><span>以课内资料为据，带着问题阅读。</span></footer>
-  </div>
-
-  <el-container v-else class="app-shell">
-    <el-header class="app-header" v-if="session.user">
-      <router-link class="app-title" :to="homePath"><span class="staff-bookmark" aria-hidden="true">课</span><span>课程知识库<small>{{ isAdmin ? "账号 · 课程 · 授权" : "备课 · 资料 · 学情" }}</small></span></router-link>
-      <div class="app-user">
-        <span class="role-pill">{{ roleLabel }}</span>
-        <span class="username">{{ session.user.username }}</span>
-        <el-button text @click="onLogout">退出登录</el-button>
+    <header class="workspace-header">
+      <router-link :to="homePath" class="brand"><span class="brand-mark" aria-hidden="true">课</span><span>课程知识库<small>以课内资料为据</small></span></router-link>
+      <div v-if="isStudent && !isLogin" class="surface-switch" role="group" aria-label="学习工作态">
+        <button :aria-pressed="surface === 'study'" @click="selectSurface('study')"><span>学</span> 浏览与阅读</button>
+        <button :aria-pressed="surface === 'ask'" @click="selectSurface('ask')"><span>问</span> 提问与核对</button>
       </div>
-    </el-header>
-    <nav v-if="session.user" class="global-nav" aria-label="主导航">
-      <template v-if="isAdmin">
-        <router-link to="/admin/users">账号管理</router-link>
-        <router-link to="/admin/courses">课程与授权</router-link>
-        <router-link to="/admin/maintenance">提问日志</router-link>
-        <router-link to="/admin/system">系统状态</router-link>
-      </template>
-      <router-link v-else to="/courses" :aria-current="route.path === '/courses' ? 'page' : undefined" :class="{ 'nav-selected': route.path === '/courses' }">我的课程</router-link>
-    </nav>
-    <el-main id="main-content" tabindex="-1">
-      <nav v-if="pageAllowed && currentCourse" class="course-nav" aria-label="当前课程导航">
-        <div class="course-context"><span>当前课程</span><strong>{{ currentCourse.title }}</strong><span class="role-pill">课内{{ currentCourse.membership_role === 'teacher' ? '教师' : '学生' }}</span></div>
-        <div class="course-tabs">
-          <router-link :to="`/courses/${currentCourse.id}`" exact-active-class="tab-selected">提问</router-link>
-          <router-link :to="`/courses/${currentCourse.id}/documents`" exact-active-class="tab-selected">资料</router-link>
-          <router-link v-if="currentCourse.capabilities.can_manage_members" :to="`/courses/${currentCourse.id}/members`" exact-active-class="tab-selected">本课学生</router-link>
-          <router-link v-if="currentCourse.capabilities.can_view_insights" :to="`/courses/${currentCourse.id}/insights`" exact-active-class="tab-selected">问答反馈</router-link>
-        </div>
-      </nav>
-      <template v-if="recoveryError">
-        <el-alert :title="recoveryError.message" type="warning" :closable="false" />
-        <el-button v-if="recoveryError.status !== 401" :loading="recovering" @click="retryConnection">重试连接</el-button>
-        <el-button v-else @click="router.push({ path: '/login', query: { next: route.fullPath } })">重新登录</el-button>
-      </template>
-      <router-view v-if="pageAllowed" :key="`${route.fullPath}:${courseAccess.revision}`" />
-      <template v-else-if="!recoveryError">
-        <el-alert title="访问权限已变化，请重新选择课程或登录。" type="warning" :closable="false" />
-        <el-button @click="router.push(session.user ? (session.user.role === 'admin' ? '/admin/users' : '/courses') : '/login')">返回</el-button>
-      </template>
-    </el-main>
-    <footer v-if="isAdmin" class="staff-footer">课程知识库 · 管理</footer>
-  </el-container>
+      <div v-if="session.user && !isLogin" class="account-menu"><span class="role-pill">{{ roleLabel }}</span><span class="username">{{ session.user.username }}</span><button class="quiet-button" @click="onLogout">退出登录</button></div>
+      <span v-else class="entry-header-note">课内资料 · 有据可查</span>
+    </header>
+    <div class="workspace-body" :class="{ 'without-rail': isLogin || !session.user }">
+      <aside v-if="session.user && !isLogin" class="workspace-rail">
+        <div class="rail-heading">{{ isAdmin ? '管理工作台' : isStudent ? '学习空间' : '教学工作台' }}</div>
+        <nav class="primary-nav" aria-label="主导航">
+          <template v-if="isAdmin">
+            <router-link to="/admin/users"><span aria-hidden="true">01</span>账号管理</router-link>
+            <router-link to="/admin/courses"><span aria-hidden="true">02</span>课程与授权</router-link>
+            <router-link to="/admin/maintenance"><span aria-hidden="true">03</span>提问日志</router-link>
+            <router-link to="/admin/system"><span aria-hidden="true">04</span>系统状态</router-link>
+          </template>
+          <router-link v-else to="/courses"><span aria-hidden="true">▤</span>我的课程</router-link>
+        </nav>
+        <nav v-if="pageAllowed && currentCourse" class="course-navigation" aria-label="当前课程导航">
+          <div class="rail-heading">当前课程</div><strong class="course-context-title">{{ currentCourse.title }}</strong>
+          <router-link :to="'/courses/' + currentCourse.id" exact-active-class="is-current">提问 <span aria-hidden="true">↗</span></router-link>
+          <router-link :to="'/courses/' + currentCourse.id + '/documents'" exact-active-class="is-current">课程资料</router-link>
+          <router-link v-if="currentCourse.capabilities.can_manage_members" :to="'/courses/' + currentCourse.id + '/members'" exact-active-class="is-current">本课学生</router-link>
+          <router-link v-if="currentCourse.capabilities.can_view_insights" :to="'/courses/' + currentCourse.id + '/insights'" exact-active-class="is-current">问答反馈</router-link>
+        </nav>
+        <div class="planned-navigation"><div class="rail-heading">后续功能</div><button disabled>{{ isAdmin ? '学期 / 班级' : '课程调查' }}<small>即将推出</small></button></div>
+        <div class="rail-footnote"><span class="rail-rule" aria-hidden="true"></span><p>{{ isAdmin ? '账号与课内授权分别管理。' : '从资料出发，回到原文核对。' }}</p></div>
+      </aside>
+      <main id="main-content" tabindex="-1" class="workspace-main">
+        <div v-if="!isLogin && session.user" class="context-bar"><span>{{ isAdmin ? '管理' : isStudent ? '我的课程' : '教学' }}<template v-if="currentCourse"> / {{ currentCourse.title }}</template></span><span>{{ isStudent ? (surface === 'study' ? '浏览 · 阅读' : '提问 · 核对') : '课程知识库' }}</span></div>
+        <div v-if="recoveryError" class="recovery-box"><el-alert :title="recoveryError.message" type="warning" :closable="false"/><el-button v-if="recoveryError.status !== 401" :loading="recovering" @click="retryConnection">重试连接</el-button><el-button v-else @click="router.push({path:'/login',query:{next:route.fullPath}})">重新登录</el-button></div>
+        <router-view v-if="pageAllowed" :key="route.fullPath + ':' + courseAccess.revision"/>
+        <div v-else-if="!recoveryError" class="study-empty"><h2>访问权限已变化</h2><p>请重新选择课程或登录。</p><router-link :to="session.user ? homePath : '/login'">返回</router-link></div>
+      </main>
+    </div>
+    <footer class="workspace-footer"><span>课程知识库</span><span>回答供学习参考，请结合原资料核对。</span></footer>
+  </div>
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { logout, refreshMe, session } from "./session";
+import { studentSurface } from "./theme";
 import { clearCourseAccess, courseAccess, refreshCourseAccess } from "./courseAccess";
 
 const router = useRouter();
 const route = useRoute();
-const studentSurface = computed(() => route.path === "/login" || (session.user?.role === "student" && route.path.startsWith("/courses")));
+const isStudent = computed(() => session.user?.role === "student");
+const isLogin = computed(() => route.path === "/login");
+const { surface, select: selectSurface } = studentSurface;
+
 const isAdmin = computed(() => session.user?.role === "admin");
+watchEffect(() => {
+  document.documentElement.dataset.theme = isStudent.value && !isLogin.value ? surface.value : "study";
+  document.documentElement.dataset.surface = isLogin.value ? "entry" : isStudent.value ? "student" : isAdmin.value ? "balance" : "ce";
+});
 const homePath = computed(() => (session.user?.role === "admin" ? "/admin/users" : "/courses"));
 const roleLabel = computed(() => ({ admin: "管理员", teacher: "教师", student: "学生" }[session.user?.role] || ""));
 const currentCourse = computed(() => courseAccess.course?.id === route.params.courseId ? courseAccess.course : null);

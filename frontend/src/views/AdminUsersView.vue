@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><h1>账号管理</h1></header>
+    <header class="page-heading"><p class="eyebrow">管理 / 账号</p><h1>账号管理</h1><p class="page-description">创建与查找账号；课程访问由课内授权决定。</p></header>
     <section class="panel-card">
     <h2>创建账号</h2>
     <el-form :inline="true" :model="form" :disabled="creating" @submit.prevent="onCreate">
