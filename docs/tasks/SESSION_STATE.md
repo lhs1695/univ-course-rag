@@ -1,16 +1,18 @@
 # SESSION_STATE
 
-> 更新：2026-10-26 22:03（Asia/Shanghai）Trace Vite 代点验 + PLAN-03/04/05 Agent 复核 + 运行文档刷新（t273u；未 push）。
+> 更新：2026-10-27 09:40（Asia/Shanghai）上传 100MB + 浅树资料夹 + 两课入库 + 管理员删概率论（t278–t279；未 push）。
 
 **结论**：
-- **本批**：① Trace 时间线 Vite/Playwright developer 代点验 **全 PASS**（白名单可见、无秘密标记；证据见 observation-2026-10-26-developer-trace）；② PLAN-03/04/05 **只读集成复核**（可复用 API / 过时 UI 假设 / 不宣称新功能）；③ README、中期演示运行卡、workflow **最小刷新**（Alembic 0015、调查/业务入口、默认不 push、空白机暂缓、不得宣告结题通过）；**未改** `中期答辩材料/` 正文。
-- **验证**：plan03+04+05+insights **19 passed**；ruff OK；investigation Node **5 pass**；Trace UI matrix 0 fail。
-- **未做 / 不得宣告**：完整 Trace UI；PG 并发；PLAN-06/07 正式人工核验；空白机/备份暂缓；**不得宣告结题通过**；未 push。
+- **本批**：① 上传上限 **100MB**（`6124773`）；② 浅树 `CourseFolder` Alembic **0016**（`7729aaa`）；③ 修 ingest UOW：`documents` flush 后再写 `ingest_jobs`（`5d9b571`，否则带 folder 上传 503）；④ 新建课「机器学习」「智能移动机器人」，资料夹 + 22 份入库并两步启用检索；⑤ 管理员 DELETE「概率论与统计学」物理级联清库 **PASS**。
+- **演示库现状（cn_v2）**：5 课（人力/教育/线代/机器学习/智能移动机器人）；机器学习 17 文档 / 2 夹 / 359 chunks；智能移动机器人 5 文档 / 1 夹 / 426 chunks；全库约 38 docs / 1774 chunks。**中期「4 课 / 27 PDF / 2501 chunks」仅为历史基线，已过时。**
+- **证据**：`docs/user-task-scripts/observation-2026-10-27-courses-folders-ingest.md`；`observation-2026-10-27-delete-probability.md`。
+- **未做**：调查 Agent 重设计；按夹限检索；空白机；**不得宣告结题通过**；未 push。大课件在 `corpus/local/extra-2026-10-27/`（gitignore，未入 git）。
 
 ## 当前目标
 
-本批 t273u 已本地收口（不 push）。后续可选：完整 Trace UI、PG 并发、授权后正式核验、push。
+本批资料夹/两课/删课已本地收口（不 push）。后续可选：调查 Agent 重设计讨论落地、完整 Trace UI、push。
 
+---
 ## M4 本轮交付与证据（2026-10-26）
 
 - 范围只含学期、课内行政班、CSV 名单、无提问历史的极简个人主页、资料两步启用检索；Agent 分期仍止于 M3。复用既有身份/课程/成员、Session、FastAPI/SQLAlchemy/Alembic、Element Plus 与视觉 token，无新依赖或第二套 RAG，无 Agent 合同/主路径变更。
