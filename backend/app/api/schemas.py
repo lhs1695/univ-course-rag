@@ -342,21 +342,6 @@ class QueryLogRetentionResponse(BaseModel):
     cutoff: datetime
 
 
-class AgentTaskRetentionRequest(BaseModel):
-    mode: Literal["dry_run", "delete"] = "dry_run"
-
-
-class AgentTaskRetentionResponse(BaseModel):
-    """Physical cleanup by persisted expires_at; cutoff is the current UTC time."""
-
-    mode: Literal["dry_run", "delete"]
-    batch_limit: int
-    matched_count: int
-    deleted_count: int
-    has_more: bool
-    cutoff: datetime
-
-
 class InsightReviewCreate(BaseModel):
     subject_type: Literal["group", "clue", "query_text"]
     subject_key: str = Field(min_length=1, max_length=512)

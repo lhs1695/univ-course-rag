@@ -1,6 +1,10 @@
 # SESSION_STATE
 
-> 更新：2026-10-27（Asia/Shanghai）业务优化三件套已落地并本地提交；cn_v2 Alembic **0018**；未 push。
+> 更新：2026-10-27（Asia/Shanghai）课内调查 Agent 产品已撤下；Key 槽位与 schema 保留；未 push。详见 [本卡](T-retire-investigation-agent.md)。
+
+**现行变更**：删除调查前端路由/菜单/页面/API helper、后端任务与 retention API、runner/runtime/store、专用合同/Replay 与产品测试。`AGENT_DEEPSEEK_API_KEY` / `AGENT_DEEPSEEK_MODEL` / `AGENT_DEEPSEEK_BASE_URL` 保留，调查产品已撤下，目前无调查运行时使用。`agent_tasks` / `agent_task_events` 模型与 Alembic 历史保留（schema retained），未 DROP 表、未执行迁移或数据清理。Insights 问答反馈与 RAG 主路径继续保留；业务门控测试去除调查工具依赖，继续覆盖 Dense/Hybrid 与资料授权。下方 M1–M3/Trace/调查 API 测试及“入口保留”等为历史证据，不再是当前产品能力或验收要求。
+
+**本卡验证/收尾**：后端标准无 tmp_path 子集 28 passed；会话级隔离临时目录下 auth/docs/business/folders/colleges/profile/Insights/保留迁移 136 passed；全量仅收集 729 项，无调查产品测；ruff PASS；前端 65 passed。完整 build 为 `spawn EPERM`，标准 pytest tmp_path 为 WinError 5，未计通过；精确 stage 34 项被 `.git/index.lock` Permission denied 阻塞，无新 SHA。待 bot 按任务卡精确清单复验 build 并本地提交，不 push。
 
 **结论**：
 - 用户授权「全都加上」三件套已完成：① 角色主页+工号 `72c0e51`（0017）；② 最小学院 `6a9b75f`（0018）；③ 资料夹 UX+换父 `4229838`。规格/任务卡先行 `8573ea1`。
@@ -11,7 +15,7 @@
 
 ## 当前目标
 
-本批业务三件套已本地收口。后续可选：本机 Vite 人工点验清单、调查 Agent 讨论落地、push。
+本卡只撤下调查产品并保留 Key/schema，不设计新 Agent。业务三件套已本地收口；后续仍可按独立任务进行本机 Vite 人工点验。默认不 push。
 
 ---
 ## M4 本轮交付与证据（2026-10-26）

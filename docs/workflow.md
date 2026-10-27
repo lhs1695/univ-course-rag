@@ -1,6 +1,6 @@
 # 开发与运行工作流（精简）
 
-更新：2026-10-26（t273u）。文档地图见 [INDEX.md](INDEX.md)；任务下一步见 [当前交接.md](当前交接.md)；任务卡见 [tasks/](tasks/README.md)；演示逐步见 [中期演示运行卡.md](中期演示运行卡.md)。
+更新：2026-10-27（撤下调查产品）。文档地图见 [INDEX.md](INDEX.md)；任务下一步见 [当前交接.md](当前交接.md)；任务卡见 [tasks/](tasks/README.md)。
 
 ## 会话纪律（摘要）
 
@@ -38,10 +38,12 @@ npm run dev
 
 | 入口 | 说明 |
 | --- | --- |
-| 教师 → 课程 → **课程调查** | M3 Agent：外发确认 → Fake/Replay → 报告/最小 Trace 时间线；非真模型质量验收 |
+| 教师 → 课程 → **问答反馈** | 保留既有 Insights 统计与反馈；课内调查 Agent 产品已撤下，无调查页面、任务 API 或 runner |
 | 管理员 → **业务** `/admin/business` | M4/PLAN-17：学期、班级、CSV 名单 |
 | **个人主页** `/profile` | 姓名/学号/角色/班级；**无提问历史** |
 | 资料两步启用 | 新资料默认不可检索；仅管理员可启用；教师可停用/软移出 |
+
+教师 Agent 的 `AGENT_DEEPSEEK_API_KEY` / `AGENT_DEEPSEEK_MODEL` / `AGENT_DEEPSEEK_BASE_URL` 仅预留配置槽位，不触发调查调用。`agent_tasks` / `agent_task_events` 模型与迁移历史保留（schema retained），本卡不 DROP 表、不迁移或清理现有任务数据。M1–M3 调查验收与 Trace/Fake/Replay 操作说明仅作历史，不再作为当前产品入口或必验路径。
 
 ## 测试入口
 

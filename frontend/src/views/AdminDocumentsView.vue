@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理 / 课程资料</p><h1>启用资料检索</h1><p class="page-description">教师上传后默认待启用。核对资料，再启用检索；停用后检索与课程调查均不再引用。</p></header>
+    <header class="page-heading"><p class="eyebrow">管理 / 课程资料</p><h1>启用资料检索</h1><p class="page-description">教师上传后默认待启用。核对资料，再启用检索；停用后问答检索不再引用。</p></header>
     <section class="panel-card" v-loading="busy">
       <div class="admin-document-toolbar">
       <el-select v-model="courseId" aria-label="选择课程" style="width:260px" :disabled="busy"><el-option v-for="c in courses" :key="c.id" :label="c.title" :value="c.id" /></el-select>

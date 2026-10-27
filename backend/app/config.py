@@ -55,7 +55,8 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-flash"
-    # Teacher Agent (optional isolation). Empty key/model/url fall back to DEEPSEEK_*.
+    # Teacher Agent reserved; investigation product withdrawn. No runner consumes these slots.
+    # Empty key/model/url still fall back to DEEPSEEK_* via the accessors below.
     agent_deepseek_api_key: str = ""
     agent_deepseek_base_url: str = ""
     agent_deepseek_model: str = ""

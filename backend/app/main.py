@@ -8,8 +8,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session as DbSession
 
 from app.api.admin_courses import router as admin_courses_router
-from app.api.agent_task_retention import router as agent_task_retention_router
-from app.api.agent_tasks import router as agent_tasks_router
 from app.api.ask import router as ask_router
 from app.api.auth import router as auth_router
 from app.api.colleges import router as colleges_router
@@ -122,8 +120,6 @@ app.include_router(search_router)
 app.include_router(ask_router)
 app.include_router(insights_router)
 app.include_router(insight_reviews_router)
-app.include_router(agent_tasks_router)
-app.include_router(agent_task_retention_router)
 app.include_router(query_log_retention_router)
 
 

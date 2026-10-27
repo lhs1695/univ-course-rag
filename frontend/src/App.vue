@@ -31,7 +31,6 @@
           <router-link :to="'/courses/' + currentCourse.id + '/documents'" exact-active-class="is-current">课程资料</router-link>
           <router-link v-if="currentCourse.capabilities.can_manage_members" :to="'/courses/' + currentCourse.id + '/members'" exact-active-class="is-current">本课学生</router-link>
           <router-link v-if="currentCourse.capabilities.can_view_insights" :to="'/courses/' + currentCourse.id + '/insights'" exact-active-class="is-current">问答反馈</router-link>
-          <router-link v-if="currentCourse.capabilities.can_view_insights" :to="'/courses/' + currentCourse.id + '/investigation'" exact-active-class="is-current">课程调查</router-link>
         </nav>
         <div class="rail-footnote"><span class="rail-rule" aria-hidden="true"></span><p>{{ isAdmin ? '账号与课内授权分别管理。' : '从资料出发，回到原文核对。' }}</p></div>
       </aside>

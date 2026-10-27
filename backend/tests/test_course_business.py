@@ -5,14 +5,12 @@ from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import pytest
-from app.agent.contracts import InvalidReportReferences
 from app.api import documents
 from app.config import Settings, get_settings
 from app.db import get_db, get_session_maker
 from app.main import app
 from app.models import Chunk, Course, CourseClass, CourseMember, Document
 from app.models.user import UserRole
-from app.services.agent_investigation import _fake_tools
 from app.services.embedder import FakeEmbedder, get_embedder
 from app.services.llm import FakeLLM, get_llm
 from app.services.retrieve import retrieve_chunks
@@ -300,7 +298,7 @@ def test_admin_profile_management_and_identity_reuse(client, db, scope):
 
 
 @pytest.mark.parametrize("strategy", ["dense", "hybrid"])
-def test_upload_admin_enable_retrieval_and_agent_gate(client, db, scope, strategy):
+def test_upload_admin_enable_retrieval_gate(client, db, scope, strategy):
     login(client, "teacher")
     root = f"/courses/{scope.course.id}"
     uploaded = client.post(
@@ -321,13 +319,7 @@ def test_upload_admin_enable_retrieval_and_agent_gate(client, db, scope, strateg
     )
     db.add(chunk)
     db.commit()
-    tools = _fake_tools(db, SimpleNamespace(course_id=scope.course.id))
     assert retrieve_chunks(db, scope.course.id, text, embedder, strategy=strategy) == []
-    assert tools.search_course_evidence(text).hits == []
-    with pytest.raises(InvalidReportReferences):
-        tools.open_evidence(chunk.id)
-    with pytest.raises(InvalidReportReferences):
-        tools.get_document_quality(did)
     path = root + f"/documents/{did}"
     assert client.patch(path, json={"retrieval_enabled": True}).status_code == 403
     login(client, "other")
@@ -365,16 +357,12 @@ def test_upload_admin_enable_retrieval_and_agent_gate(client, db, scope, strateg
         ].document_id
         == did
     )
-    assert tools.search_course_evidence(text).hits[0].chunk_id == chunk.id
-    assert tools.open_evidence(chunk.id).excerpt == text
     login(client, "student")
     assert client.get(path + "/content").content.startswith(b"%PDF")
     login(client, "teacher")
     assert client.delete(path).status_code == 204
     assert db.get(Document, did) is not None and db.get(Chunk, chunk.id) is not None
     assert retrieve_chunks(db, scope.course.id, text, embedder, strategy=strategy) == []
-    with pytest.raises(InvalidReportReferences):
-        tools.open_evidence(chunk.id)
 
 
 def test_anonymous_profile_and_business_denied(client, scope):

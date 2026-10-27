@@ -32,12 +32,6 @@ const knownDetails = {
   "CSV header must be 学号,姓名,班级 (UTF-8)": "请使用 UTF-8 CSV，第一行为：学号,姓名,班级。",
   "Invalid UTF-8 CSV": "CSV 格式或编码错误，请另存为 UTF-8 CSV。",
   "CSV has no data rows": "名单只有表头，请补充学生行。",
-  external_processing_confirmation_required: "请先勾选本次外发处理确认，再创建或恢复调查。",
-  active_investigation_conflict: "本课已有活跃调查，请先完成或取消该任务。",
-  idempotency_conflict: "创建请求已变化，请发起新的调查。",
-  investigation_checkpoint_unsafe: "检查点无法安全恢复，请核对来源后显式重试。",
-  source_unavailable: "调查依据已不可用，请核对课程资料与授权。",
-  agent_budget_exhausted: "累计预算已耗尽，不能继续此任务。",
 
   "Invalid credentials": "用户名或密码不正确，请重新输入。",
   "User not found": "找不到该学生账号，请先让管理员创建。",
@@ -162,27 +156,3 @@ async function readAskStream(response, onEvent) {
 export function askStream(path, options) {
   return api(`${path}/stream`, options);
 }
-
-const investigationPath = (courseId, taskId = "") => `/courses/${courseId}/agent-tasks${taskId ? `/${taskId}` : ""}`;
-export const investigationApi = {
-  create(courseId, body) {
-    if (!body.confirm_external_processing) {
-      return Promise.reject(new ApiError(knownDetails.external_processing_confirmation_required, 422));
-    }
-    return api(investigationPath(courseId), { method: "POST", json: body });
-  },
-  async read(courseId, taskId) {
-    const task = await api(investigationPath(courseId, taskId));
-    const events = await api(`${investigationPath(courseId, taskId)}/events`);
-    return { ...task, events };
-  },
-  report: (courseId, taskId) => api(`${investigationPath(courseId, taskId)}/report`),
-  action(courseId, taskId, action, confirmed, mode = "fake") {
-    if (["resume", "retry"].includes(action) && !confirmed) {
-      return Promise.reject(new ApiError(knownDetails.external_processing_confirmation_required, 422));
-    }
-    return api(`${investigationPath(courseId, taskId)}/${action}`, {
-      method: "POST", json: { confirm_external_processing: confirmed, mode }, timeoutMs: 130000,
-    });
-  },
-};

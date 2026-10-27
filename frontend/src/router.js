@@ -6,7 +6,6 @@ import CoursesView from "./views/CoursesView.vue";
 import AskView from "./views/AskView.vue";
 import DocumentsView from "./views/DocumentsView.vue";
 import InsightsView from "./views/InsightsView.vue";
-import InvestigationView from "./views/InvestigationView.vue";
 import MembersView from "./views/MembersView.vue";
 import AdminUsersView from "./views/AdminUsersView.vue";
 import AdminCoursesView from "./views/AdminCoursesView.vue";
@@ -32,7 +31,6 @@ export const router = createRouter({
     { path: "/courses/:courseId/documents", component: DocumentsView },
     { path: "/courses/:courseId/members", component: MembersView, meta: { capability: "can_manage_members" } },
     { path: "/courses/:courseId/insights", component: InsightsView, meta: { capability: "can_view_insights" } },
-    { path: "/courses/:courseId/investigation", component: InvestigationView, meta: { capability: "can_view_insights" } },
     { path: "/courses/:courseId", component: AskView },
   ],
 });

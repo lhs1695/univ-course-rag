@@ -1,3 +1,5 @@
+"""Schema retained; investigation product withdrawn. No task API or runner is exposed."""
+
 from __future__ import annotations
 
 import uuid
