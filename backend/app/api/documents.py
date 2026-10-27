@@ -178,10 +178,13 @@ def upload_document(
         retrieval_enabled=False,
         folder=folder,
     )
-    job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
     db.add(document)
-    db.add(job)
     try:
+        # Flush document first so ingest_jobs.document_id FK is satisfied
+        # (IngestJob has no relationship(); bare UUID does not create UOW dependency).
+        db.flush()
+        job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
+        db.add(job)
         db.commit()
     except Exception:
         db.rollback()

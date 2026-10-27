@@ -85,6 +85,11 @@ async def fusion_rejected(request: Request, exc: FusionError):
 
 @app.exception_handler(SQLAlchemyError)
 async def database_unavailable(request: Request, exc: SQLAlchemyError):
+    logger.exception(
+        "database_unavailable path=%s error_type=%s",
+        request.url.path,
+        type(exc).__name__,
+    )
     return _service_error("DATABASE_UNAVAILABLE", "数据库暂时不可用，请稍后重试。", 503)
 
 
@@ -159,3 +164,4 @@ def runtime_status(
         "migration": "not_checked",
         "index": "not_checked",
     }
+
