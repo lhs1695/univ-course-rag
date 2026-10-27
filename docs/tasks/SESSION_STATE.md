@@ -1,18 +1,17 @@
 # SESSION_STATE
 
-> 更新：2026-10-27（Asia/Shanghai）仓库清理 + 砍人力资源管理；**未 push**。
+> 更新：2026-10-27（Asia/Shanghai）TASK-midterm-demo-ui-six（Codex 实现 + bot 补验提交）；**未 push**。
 
 **结论**：
-- 演示库 `univ_course_rag_cn_v2` 现 **4 课**：线性代数、教育学原理、机器学习、智能移动机器人。已 DELETE 人力资源管理（`e7ba1d17-…`，docs/chunks→0）。证据：`docs/user-task-scripts/observation-2026-10-27-delete-hr.md`。约 **29 docs / 1506 chunks**。
-- 学生 `/courses` 四课；教育学资料 content **6/6=200**。
-- 清理：本机 `.codex*`/`.pytest-tmp*`/`.tmp-*`/`output`；中期旧附件（已 D）stage 删除并重写 `中期答辩材料/README.md`；过期 tasks → `docs/archive/tasks-2026-10-27/`。
-- 本轮曾因 Docker Desktop/Postgres 未起导致 API 挂起；已拉起 postgres 并重启 uvicorn:8000。
-- **未做**：push；浏览器端到端人工点验（待用户验收）；真实大规模问答调用。
+- 学生显示名 `lhs`（账号 student 不变）；Profile 已藏名单班、去掉刷新资料；课程列表前二为机器学习/智能移动机器人；页眉 eyebrow「A / B」已清。
+- 资料页内预览：`DocumentPreviewView` + pdf.js / @vue-office/docx+pptx / markdown-it；content 对 pdf/pptx/docx/md/txt 一律 inline。
+- 验证（bot）：`node --test --test-isolation=none frontend/tests/*.test.mjs` → **75 pass**；`npm run build` → ✓ ~40s；pytest `test_storage`+`test_seed` → **21 passed**；ruff All checks passed。
+- **未做**：push；浏览器五格式人工点验（待用户）。
 - **不得宣告结题通过**。
 
 ## 当前目标
 
-用户验收前端四课与主路径后，再 push 供队友做 PPT。
+用户点验预览与四课后，再 push 供队友做 PPT。
 
 ---
 

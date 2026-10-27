@@ -20,6 +20,9 @@ def seed_demo_users(db: DbSession, settings: Settings) -> None:
                     username=username,
                     password_hash=hash_password(password),
                     role=role.value,
+                    full_name="lhs" if role == UserRole.student else None,
                 )
             )
+        elif role == UserRole.student and existing.full_name in (None, "", "验收学生甲"):
+            existing.full_name = "lhs"
     db.commit()

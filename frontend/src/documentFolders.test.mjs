@@ -274,15 +274,17 @@ test('student rendering hides retrieval state and provides same-origin named dow
   app.component('ElTree', { render: () => null });
   app.component('ElInput', { render: () => null });
   for (const name of ['ElAlert', 'ElButton', 'ElEmpty']) app.component(name, { render: () => null });
-  app.component('RouterLink', { render() { return vue.h('a', null, this.$slots.default?.()); } });
+  app.component('RouterLink', { props: ['to'], render() { return vue.h('a', { href: this.to }, this.$slots.default?.()); } });
   const html = await renderToString(app);
   assert.doesNotMatch(html, /检索|启用|停用|刷新资料/);
   assert.match(html, /全部资料/);
   assert.match(html, /讲义 \/ 第一章/);
-  assert.match(html, /href="\/courses\/course\/documents\/enabled\/content#page=1"/);
+  assert.match(html, /href="\/courses\/course\/documents\/enabled\/preview\?page=1"/);
   assert.match(html, /href="\/courses\/course\/documents\/enabled\/content" download="讲义.pdf"/);
   assert.match(html, /href="\/courses\/course\/documents\/disabled\/content" download="补充材料.txt"/);
   assert.doesNotMatch(html, /download="待处理.pdf"/);
+  assert.doesNotMatch(html, /target="_blank"/);
+  assert.match(html, /href="\/courses\/course\/documents\/disabled\/preview\?page=1"/);
 });
 
 test('shared library rendering searches the whole course and leaves folder selection intact', async () => {

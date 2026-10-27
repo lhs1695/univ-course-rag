@@ -1,7 +1,7 @@
 <template>
   <StudentDocuments v-if="session.user?.role === 'student'" :documents="documents" :folders="folders" :loading="loading" :failure="failure" :course-id="courseId" />
   <div v-else class="page">
-    <header class="page-heading"><p class="eyebrow">教学 / 课程资源</p><h1>课程资料</h1><p class="page-description">整理本课资料，检查入库与检索状态，打开原文核对。</p></header>
+    <header class="page-heading"><h1>课程资料</h1><p class="page-description">整理本课资料，检查入库与检索状态，打开原文核对。</p></header>
 
     <FolderLibrary v-model="selectedFolderId" v-model:search="search" :documents="documents" :folders="folders" :loading="loading">
       <template #actions><el-button v-if="canManage" :disabled="folderBusy" @click="openFolderDialog('create')">新建资料夹</el-button></template>
@@ -62,9 +62,9 @@
               class="page-input"
               :aria-label="`打开页码：${row.filename}`"
             />
-            <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">
+            <router-link :to="studentOpenUrl(row)" title="在应用内预览资料" :aria-label="`打开资料：${row.filename}（页内预览）`" @click="correctPage(row)">
               打开
-            </el-link>
+            </router-link>
             <a :href="documentDownloadUrl(courseId, row)" :download="row.filename" class="document-download" :aria-label="`下载资料：${row.filename}`">下载</a>
           </div>
           <span v-else class="subtle">暂不可打开</span>
@@ -174,14 +174,6 @@ function correctPage(row) {
 function studentOpenUrl(row) {
   return documentContentUrl(courseId.value, row, pageSelections.value[row.id] ?? 1);
 }
-
-function openStudentDocument(row, event) {
-  if (!isPdfDocument(row)) return;
-  correctPage(row);
-  event.preventDefault();
-  window.open(studentOpenUrl(row), "_blank", "noopener");
-}
-
 function jobFailure(code) {
   if (code === "UPSTREAM_TIMEOUT") return "向量服务超时，可显式重试入库。";
   if (code === "UPSTREAM_UNAVAILABLE") return "向量服务暂时不可用，请稍后重试。";

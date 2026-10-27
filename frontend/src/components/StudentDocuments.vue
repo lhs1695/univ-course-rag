@@ -1,6 +1,6 @@
 <template>
   <div class="document-library">
-    <header class="library-heading"><div><p class="eyebrow">课程资料 / 阅读目录</p><h1>课程资料</h1><p>问答的依据都在这里。打开资料，也可以直接跳到某一页。</p></div></header>
+    <header class="library-heading"><div><h1>课程资料</h1><p>问答的依据都在这里。打开资料，也可以直接跳到某一页。</p></div></header>
     <el-alert v-if="failure" :title="failure" type="error" :closable="false"/>
     <FolderLibrary v-model="selectedFolderId" v-model:search="search" :documents="documents" :folders="folders" :loading="loading">
       <template #default="{ group }">
@@ -16,7 +16,7 @@
             <div class="library-file-info"><h3>{{ doc.filename }}</h3><p><span>{{ folderLabel(doc) }}</span><span v-if="isPdfDocument(doc) && doc.source_unit_count">{{ doc.source_unit_count }} 页</span></p></div>
             <div v-if="doc.job_status === 'succeeded'" class="library-file-actions">
               <label v-if="isPdfDocument(doc)" :for="`page-${doc.id}`">第 <input :id="`page-${doc.id}`" v-model="pages[doc.id]" type="number" min="1" :max="doc.source_unit_count || undefined" :aria-label="`${doc.filename} 打开页码`" @blur="correctPage(doc)"/> 页</label>
-              <a :href="url(doc)" target="_blank" rel="noopener" class="file-open" @click="correctPage(doc)" :aria-label="`打开${doc.filename}（新窗口）`">打开 <span aria-hidden="true">↗</span></a>
+              <router-link :to="url(doc)" class="file-open" @click="correctPage(doc)" :aria-label="`打开${doc.filename}（页内预览）`">打开 <span aria-hidden="true">↗</span></router-link>
               <a :href="documentDownloadUrl(courseId, doc)" :download="doc.filename" class="file-download" :aria-label="`下载${doc.filename}`">下载</a>
             </div>
             <span v-else class="unavailable-file">{{ doc.job_status === 'failed' ? '请联系教师处理' : '处理完成后可打开' }}</span>

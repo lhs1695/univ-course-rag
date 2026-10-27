@@ -332,7 +332,7 @@ def get_document_content(
             detail="Document content unavailable",
         ) from None
     suffix = Path(document.filename).suffix.lower()
-    disposition = "inline" if suffix in {".pdf", ".md", ".markdown", ".txt"} else "attachment"
+    disposition = "inline" if suffix in {".pdf", ".pptx", ".docx", ".md", ".markdown", ".txt"} else "attachment"
     return FileResponse(
         source,
         media_type=_CONTENT_TYPES.get(suffix, "application/octet-stream"),

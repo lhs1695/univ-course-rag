@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理 / 日志维护</p><h1>提问日志</h1><p class="page-description">按现有保留策略预览到期日志，再确认本批清理。</p></header>
+    <header class="page-heading"><h1>提问日志</h1><p class="page-description">按现有保留策略预览到期日志，再确认本批清理。</p></header>
 
     <el-card class="maintenance-card panel-card" shadow="never">
       <template #header>日志清理</template>

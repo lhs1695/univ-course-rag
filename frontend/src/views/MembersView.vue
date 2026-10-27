@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">教学 / 课程成员</p><h1>本课学生</h1><p v-if="courseTitle" class="page-description">{{ courseTitle }}</p></header>
+    <header class="page-heading"><h1>本课学生</h1><p v-if="courseTitle" class="page-description">{{ courseTitle }}</p></header>
 
     <CourseRosterPanel :course-id="courseId" @imported="loadMembers" />
     <el-form class="add-form" :inline="true" @submit.prevent="onAdd">

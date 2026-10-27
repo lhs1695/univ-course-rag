@@ -1,6 +1,6 @@
 <template>
   <div class="reading-desk" :aria-label="`课程问答：${courseTitle}`">
-    <header class="desk-heading"><p class="eyebrow">课程问答 / 证据阅读</p><h1>{{ deskTitle }}</h1><p>{{ deskSubtitle }}</p></header>
+    <header class="desk-heading"><h1>{{ deskTitle }}</h1><p>{{ deskSubtitle }}</p></header>
     <section class="question-sheet" aria-labelledby="question-title">
       <div class="question-sheet-label"><h2 id="question-title">我想问</h2><span>{{ readyDocumentCount }} 份可检索资料</span></div>
       <el-form @submit.prevent="submitQuestion">
@@ -19,7 +19,7 @@
       <div v-else-if="result?.answer" class="answer-content"><AnswerBody :answer="result.answer" :citations="result.citations || []" @citation="focusCitation"/></div>
       <section v-if="!selectedRound.pending" class="source-section" aria-labelledby="evidence-title"><div class="source-section-heading"><h3 id="evidence-title">回答从哪里来</h3><span>{{ result?.citations?.length || 0 }} 条资料依据</span></div>
         <p v-if="result?.citations?.length" class="source-hint">点击引用核对摘录，打开原文查看上下文。有引用不等于回答已被证明。</p>
-        <ol v-if="result?.citations?.length" class="source-list"><li v-for="(citation,index) in result.citations" :key="citation.chunk_id" :id="`source-${citation.chunk_id}`" tabindex="-1" class="source-slip"><div class="source-slip-top"><span class="source-cite-number">[{{ index + 1 }}]</span><h4>{{ citationTitle(filenameOf(citation.document_id)) }}</h4><span class="source-page-badge" v-if="citation.page != null">{{ citationPageLabel(citation.page) }}</span><a :href="citationUrl(citation)" target="_blank" rel="noopener" class="source-page-link" :aria-label="`${citationOpenLabel(citation.page)}：${filenameOf(citation.document_id)}（新窗口）`">{{ citationOpenLabel(citation.page) }} <span aria-hidden="true">↗</span></a></div><blockquote>{{ cleanExcerpt(citation.snippet, citation.page) }}</blockquote><small>{{ filenameOf(citation.document_id) }}<template v-if="citation.page != null"> · #page={{ citation.page }}</template></small></li></ol>
+        <ol v-if="result?.citations?.length" class="source-list"><li v-for="(citation,index) in result.citations" :key="citation.chunk_id" :id="`source-${citation.chunk_id}`" tabindex="-1" class="source-slip"><div class="source-slip-top"><span class="source-cite-number">[{{ index + 1 }}]</span><h4>{{ citationTitle(filenameOf(citation.document_id)) }}</h4><span class="source-page-badge" v-if="citation.page != null">{{ citationPageLabel(citation.page) }}</span><router-link :to="citationUrl(citation)" class="source-page-link" :aria-label="`${citationOpenLabel(citation.page)}：${filenameOf(citation.document_id)}（页内预览）`">{{ citationOpenLabel(citation.page) }} <span aria-hidden="true">↗</span></router-link></div><blockquote>{{ cleanExcerpt(citation.snippet, citation.page) }}</blockquote><small>{{ filenameOf(citation.document_id) }}<template v-if="citation.page != null"> · #page={{ citation.page }}</template></small></li></ol>
         <p v-else class="source-empty">本次没有可展示的引用，请调整问题或核对课程资料。</p>
       </section>
     </article>
@@ -29,6 +29,7 @@
 </template>
 <script setup>
 import { computed, onUnmounted, ref, watch } from "vue";
+import { documentContentUrl } from "../documentDisplay";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { api, askStream } from "../api";
@@ -134,10 +135,8 @@ function focusCitation(id) {
 }
 
 function citationUrl(citation) {
-  if (citation.page != null) {
-    return `${citation.content_url}#page=${citation.page}`;
-  }
-  return citation.content_url;
+  const source = documents.value.find(doc => doc.id === citation.document_id) || { id: citation.document_id };
+  return documentContentUrl(courseId.value, source, citation.page ?? 1);
 }
 
 function submitQuestion() {

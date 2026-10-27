@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理 / 课程</p><h1>课程与授权</h1><p class="page-description">选择课程，查看成员，分配课内教师与学生角色。</p></header>
+    <header class="page-heading"><h1>课程与授权</h1><p class="page-description">选择课程，查看成员，分配课内教师与学生角色。</p></header>
     <section class="panel-card course-list-card">
     <div class="course-toolbar"><h2>课程列表</h2><el-form :inline="true" @submit.prevent="onCreateCourse">
       <el-form-item label="标题">
@@ -81,6 +81,7 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
+import { sortCoursesForDisplay } from "../courseDisplay";
 import { session } from "../session";
 
 const router = useRouter();
@@ -107,7 +108,7 @@ const bindableUsers = computed(() => {
 });
 
 async function loadCourses(selectedId = selected.value?.id) {
-  courses.value = await api("/admin/courses");
+  courses.value = sortCoursesForDisplay(await api("/admin/courses"));
   const row = courses.value.find(course => course.id === selectedId) || courses.value[0] || null;
   await onSelectCourse(row);
   await nextTick();

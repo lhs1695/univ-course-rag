@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <header class="page-heading">
-      <p class="eyebrow">教学 / 问答回看</p><h1>问答反馈</h1>
+      <h1>问答反馈</h1>
       <p class="page-lead">本课学生提问统计；不推断学生能力；有引用不等于答对。</p>
     </header>
 

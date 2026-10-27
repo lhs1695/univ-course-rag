@@ -48,10 +48,10 @@ export function clampDocumentPage(page, document) {
   return upper == null ? safePage : Math.min(safePage, upper);
 }
 
-export function documentContentUrl(courseId, document, page = 1) {
-  const base = documentDownloadUrl(courseId, document);
-  if (!isPdfDocument(document)) return base;
-  return `${base}#page=${clampDocumentPage(page, document)}`;
+export function documentContentUrl(courseId, document, page = 1, { admin = false } = {}) {
+  const course = encodeURIComponent(courseId), id = encodeURIComponent(document.id);
+  const base = admin ? `/admin/documents/${course}/${id}` : `/courses/${course}/documents/${id}`;
+  return `${base}/preview?page=${clampDocumentPage(page, document)}`;
 }
 
 // Same-origin download links use the browser's download attribute; preview stays inline.

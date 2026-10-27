@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理 / 课程资料</p><h1>启用资料检索</h1><p class="page-description">教师上传后默认待启用。核对资料，再启用检索；停用后问答检索不再引用。</p></header>
+    <header class="page-heading"><h1>启用资料检索</h1><p class="page-description">教师上传后默认待启用。核对资料，再启用检索；停用后问答检索不再引用。</p></header>
     <section class="panel-card" v-loading="busy">
       <div class="admin-document-toolbar">
       <el-select v-model="courseId" aria-label="选择课程" style="width:260px" :disabled="busy"><el-option v-for="c in courses" :key="c.id" :label="c.title" :value="c.id" /></el-select>
@@ -14,7 +14,7 @@
         <el-table-column label="解析状态"><template #default="{row}">{{ {pending:'等待解析',running:'正在解析',succeeded:'已入库',failed:'解析失败'}[row.job_status] || row.job_status }}</template></el-table-column>
         <el-table-column label="检索" min-width="150"><template #default="{row}"><el-tag :type="row.retrieval_enabled ? 'success' : 'info'" effect="plain">{{ row.retrieval_enabled ? '已启用' : '待启用 / 已停用' }}</el-tag></template></el-table-column>
         <el-table-column label="操作" min-width="180"><template #default="{row}">
-          <el-link :href="documentContentUrl(courseId, row, 1)" target="_blank" rel="noopener">打开原文</el-link>
+          <router-link :to="documentContentUrl(courseId, row, 1, { admin: true })">打开原文</router-link>
           <el-button link type="primary" :disabled="busy" @click="toggle(row)">{{ row.retrieval_enabled ? '停用检索' : '启用检索' }}</el-button>
         </template></el-table-column>
       </el-table>

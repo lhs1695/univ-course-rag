@@ -1,8 +1,13 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import { viteStaticCopy } from "vite-plugin-static-copy";
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), viteStaticCopy({ targets: [
+    { src: 'node_modules/pdfjs-dist/cmaps', dest: 'pdfjs' },
+    { src: 'node_modules/pdfjs-dist/standard_fonts', dest: 'pdfjs' },
+    { src: 'node_modules/pdfjs-dist/wasm', dest: 'pdfjs' },
+  ] })],
   server: {
     port: 5173,
     proxy: {

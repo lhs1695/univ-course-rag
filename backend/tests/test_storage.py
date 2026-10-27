@@ -224,7 +224,7 @@ def test_document_content_hides_invalid_storage_paths(
         ),
     ],
 )
-def test_office_document_content_is_attachment(
+def test_office_document_content_is_inline(
     client: TestClient,
     db: Session,
     tmp_path: Path,
@@ -252,7 +252,7 @@ def test_office_document_content_is_attachment(
 
     assert response.status_code == 200
     assert response.headers["content-type"] == expected_type
-    assert response.headers["content-disposition"].startswith("attachment;")
+    assert response.headers["content-disposition"].startswith("inline;")
 
 
 def test_document_api_soft_disables_and_preserves_file_and_records(

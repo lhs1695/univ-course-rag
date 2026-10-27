@@ -32,15 +32,15 @@ test("coverage maps ingest state to student-friendly labels", () => {
   assert.deepEqual(documentCoverage({ ...pdf, job_status: "failed" }), { label: "暂不可用", type: "danger" });
 });
 
-test("PDF content URL clamps page and non-PDF has no hash", () => {
+test("all document formats use the application preview and clamp page", () => {
   assert.equal(isPdfDocument(pdf), true);
   assert.equal(clampDocumentPage(0, pdf), 1);
   assert.equal(clampDocumentPage(99, pdf), 12);
-  assert.equal(documentContentUrl("course-1", pdf, 3), "/courses/course-1/documents/doc-1/content#page=3");
-  assert.equal(documentContentUrl("course-1", pdf, 99), "/courses/course-1/documents/doc-1/content#page=12");
+  assert.equal(documentContentUrl("course-1", pdf, 3), "/courses/course-1/documents/doc-1/preview?page=3");
+  assert.equal(documentContentUrl("course-1", pdf, 99), "/courses/course-1/documents/doc-1/preview?page=12");
   assert.equal(
     documentContentUrl("course-1", { id: "doc-2", filename: "notes.md", source_unit_count: 1 }, 5),
-    "/courses/course-1/documents/doc-2/content",
+    "/courses/course-1/documents/doc-2/preview?page=1",
   );
 });
 

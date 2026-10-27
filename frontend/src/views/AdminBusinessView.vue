@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="page-heading"><p class="eyebrow">管理 / 课程业务</p><h1>学院 / 学期 / 班级</h1><p class="page-description">维护学院与学期归属，按课程管理课内名单班。学院仅用于展示，课程访问由课内授权决定。</p></header>
+    <header class="page-heading"><h1>学院 / 学期 / 班级</h1><p class="page-description">维护学院与学期归属，按课程管理课内名单班。学院仅用于展示，课程访问由课内授权决定。</p></header>
     <el-alert v-if="failure" :title="failure" type="error" :closable="false" />
     <section class="panel-card">
       <h2>{{ collegeEditingId ? '编辑学院' : '新增学院' }}</h2>

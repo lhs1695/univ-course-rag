@@ -2,7 +2,7 @@
   <div class="course-shelf" :class="{ 'staff-shelf': !isStudent }">
     <header class="shelf-heading">
       <div>
-        <p class="eyebrow">{{ isStudent ? "我的课程 / 课程书架" : "教学 / 课程目录" }}</p><h1>{{ isStudent ? "我的课程书架" : "课程备课台" }}</h1>
+        <h1>{{ isStudent ? "我的课程书架" : "课程备课台" }}</h1>
         <p>{{ isStudent ? "选择一门课程，把疑问交给资料。" : "检查资料依据，管理本课学生，核对问答反馈。" }}</p>
       </div>
       <span v-if="loaded && !failure" class="shelf-count">{{ courses.length }} 门已加入的课程</span>
@@ -50,6 +50,7 @@ import { ElMessage } from "element-plus";
 import { session } from "../session";
 import { studentSurface } from "../theme";
 import { api } from "../api";
+import { sortCoursesForDisplay } from "../courseDisplay";
 
 const { surface } = studentSurface;
 const router = useRouter();
@@ -69,7 +70,7 @@ async function loadCourses() {
   if (loading.value && loaded.value) return;
   loading.value = true;
   try {
-    courses.value = await api("/courses");
+    courses.value = sortCoursesForDisplay(await api("/courses"));
     failure.value = "";
   } catch (error) {
     failure.value = error.message;
