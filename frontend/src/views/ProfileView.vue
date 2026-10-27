@@ -5,11 +5,14 @@
     <section v-if="profile" class="panel-card">
       <el-descriptions :column="1" border>
         <el-descriptions-item label="姓名">{{ profile.full_name || '未填写，请联系管理员' }}</el-descriptions-item>
-        <el-descriptions-item label="学号">{{ profile.student_number || '未填写' }}</el-descriptions-item>
+        <el-descriptions-item v-if="profile.role === 'student'" label="学号">{{ profile.student_number || '未填写' }}</el-descriptions-item>
+        <el-descriptions-item v-else-if="profile.role === 'teacher' || profile.employee_number" label="工号">{{ profile.employee_number || '未填写' }}</el-descriptions-item>
         <el-descriptions-item label="角色">{{ {student:'学生', teacher:'教师', admin:'管理员'}[profile.role] }}</el-descriptions-item>
       </el-descriptions>
-      <h2>所属班级</h2>
-      <el-table :data="profile.classes" empty-text="暂无所属班级"><el-table-column prop="course_title" label="课程" /><el-table-column prop="class_name" label="班级" /></el-table>
+      <template v-if="profile.role === 'student'">
+        <h2>所属课内名单班</h2>
+        <el-table :data="profile.classes" empty-text="暂无所属课内名单班"><el-table-column prop="course_title" label="课程" /><el-table-column prop="class_name" label="班级" /></el-table>
+      </template>
     </section>
     <el-button :loading="loading" @click="load">刷新资料</el-button>
   </div>

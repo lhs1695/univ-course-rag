@@ -302,6 +302,7 @@ class ProfileClass(BaseModel):
 class ProfileOut(BaseModel):
     full_name: str | None
     student_number: str | None
+    employee_number: str | None
     role: str
     classes: list[ProfileClass]
 
@@ -319,10 +320,11 @@ def profile(user: Annotated[User, Depends(get_current_user)], db: Db):
         )
         .where(CourseMember.user_id == user.id)
         .order_by(Course.title, CourseClass.name)
-    )
+    ) if user.role == "student" else []
     return ProfileOut(
         full_name=user.full_name,
         student_number=user.student_number,
+        employee_number=user.employee_number,
         role=user.role,
         classes=[ProfileClass(course_title=c, class_name=k) for c, k in rows],
     )

@@ -26,6 +26,7 @@ class UserOut(BaseModel):
     role: str
     full_name: str | None = None
     student_number: str | None = None
+    employee_number: str | None = None
 
 
 class CreateUserRequest(BaseModel):
@@ -34,8 +35,9 @@ class CreateUserRequest(BaseModel):
     role: UserRole
     full_name: str | None = Field(default=None, min_length=1, max_length=100)
     student_number: str | None = Field(default=None, min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+    employee_number: str | None = Field(default=None, min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
 
-    @field_validator("full_name", "student_number", mode="before")
+    @field_validator("full_name", "student_number", "employee_number", mode="before")
     @classmethod
     def strip_profile_fields(cls, value):
         return value.strip() if isinstance(value, str) else value

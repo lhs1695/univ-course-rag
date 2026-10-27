@@ -25,6 +25,7 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(16), default=UserRole.student.value)
     full_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     student_number: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    employee_number: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

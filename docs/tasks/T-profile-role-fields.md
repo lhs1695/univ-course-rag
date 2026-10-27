@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-17 增量 / 业务优化 |
-| 状态 | ready |
+| 状态 | 实现完成；前端 build 验收受环境 EPERM 阻塞 |
 | 须授权 | 库迁移（本批用户已授权） |
 
 ## 目标
@@ -25,12 +25,12 @@
 
 ## 验收标准（可判定真假）
 
-- [ ] Alembic **0017**（或本批统一迁移号，父 **0016**）：`users.employee_number` 可空唯一；upgrade/downgrade 有隔离 SQLite 测 + PG offline DDL 测（仿 0015/0016）。
-- [ ] `GET /auth/profile` 响应含 `employee_number`；教师/管理员 `classes` 为空列表或不返回班级块；学生仍返回课内名单班。
-- [ ] 管理员创建/PATCH 用户可写 `employee_number`；唯一冲突 409。
-- [ ] `ProfileView.vue` 按 `role` 渲染：教师无「所属班级」、标签为工号；学生保留学号+班级。
-- [ ] `AdminUsersView.vue` 对教师展示/编辑工号语义（可与学号字段并存，表单按角色切换标签）。
-- [ ] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_course_business.py backend/tests/test_profile_role_fields.py -q -p no:cacheprovider --tb=short`（或卡内新建测）通过
+- [x] Alembic **0017**（父 **0016**）：`users.employee_number` 可空唯一；upgrade/downgrade 有隔离 SQLite 测 + PG offline DDL 测（仿 0015/0016）。
+- [x] `GET /auth/profile` 响应含 `employee_number`；教师/管理员 `classes` 为空列表；学生仍返回课内名单班。
+- [x] 管理员创建/PATCH 用户可写 `employee_number`；唯一冲突 409。
+- [x] `ProfileView.vue` 已实现按 `role` 渲染：教师无「所属班级」、标签为工号；学生保留学号+班级（SFC 编译通过，浏览器点验待补）。
+- [x] `AdminUsersView.vue` 已实现教师工号展示/编辑（双列展示，表单按角色切换；SFC 编译通过，浏览器点验待补）。
+- [x] 命令：`backend/.venv/Scripts/python.exe -m pytest backend/tests/test_course_business.py backend/tests/test_profile_role_fields.py -q -p no:cacheprovider --tb=short`（本次另含 `test_course_business_migration.py`）通过
 - [ ] 定向 ruff 通过；`cd frontend; npm run build`（必要时 `--configLoader native`）通过
 
 ## 约束
@@ -63,6 +63,12 @@
 
 ## 完成记录
 
-- 提交：
-- 验证摘要：
-- 未做 / 风险：
+- 提交：按本次用户指令不提交、不推送，由 bot 提交。
+- 验证摘要（2026-10-27）：
+  - `backend/.venv/Scripts/python.exe -m pytest backend/tests/test_course_business.py backend/tests/test_profile_role_fields.py backend/tests/test_course_business_migration.py -q -p no:cacheprovider --tb=short`
+    原始输出：`37 passed, 1 warning in 16.32s`。唯一 warning 是 Starlette / AnyIO `BlockingPortal` 弃用提示。
+  - `backend/.venv/Scripts/python.exe -m ruff check backend/app/models/user.py backend/app/api/schemas.py backend/app/api/users.py backend/app/api/auth.py backend/app/api/course_business.py backend/alembic/versions/0017_user_employee_number.py backend/tests/test_course_business.py backend/tests/test_profile_role_fields.py`
+    原始输出：`All checks passed!`。
+  - `cd frontend; npm run build` 原始输出：`failed to load config ... Error: spawn EPERM`（esbuild 子进程）。按卡重试 `npm run build -- --configLoader native`：`✓ 0 modules transformed.`、`[commonjs--resolver] spawn EPERM`（Vite `optimizeSafeRealPathSync` 子进程），未通过。
+  - 两个变更页面用现有 `@vue/compiler-sfc` 的 `parse` + `compileScript(..., { inlineTemplate: true })` 检查；原始输出：`PASS Vue SFC compile: src/views/ProfileView.vue`、`PASS Vue SFC compile: src/views/AdminUsersView.vue`。此检查不替代 build / 浏览器点验。
+- 未做 / 风险：正式库未执行迁移；仅隔离 SQLite 与 PG offline DDL 验证。前端完整 build 与浏览器点验待环境恢复后补齐。未扩展学院、资料夹、CSV 或密码流程。
