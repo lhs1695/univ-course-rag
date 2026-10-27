@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   clampDocumentPage,
   documentContentUrl,
+  documentDownloadUrl,
   documentCoverage,
   documentPageLabel,
   documentCoverageHint,
@@ -56,4 +57,10 @@ test("quality labels stay short regardless of file type or ingest statistics", (
     assert.equal(documentQualityLabel({ ...row, job_status }), "—");
     assert.equal(documentCoverageHint({ ...row, job_status, quality_warning: "COVERAGE_INCOMPLETE" }), "");
   }
+});
+
+test("download URLs use same-origin content without a preview page fragment", () => {
+  assert.equal(documentDownloadUrl('course-1', pdf), '/courses/course-1/documents/doc-1/content');
+  assert.equal(documentDownloadUrl('course-1', { ...pdf, filename: '讲义.pptx' }), documentDownloadUrl('course-1', pdf));
+  assert.equal(new URL(documentDownloadUrl('course-1', pdf), 'http://localhost:5173').origin, 'http://localhost:5173');
 });

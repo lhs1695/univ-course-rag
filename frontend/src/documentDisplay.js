@@ -49,9 +49,14 @@ export function clampDocumentPage(page, document) {
 }
 
 export function documentContentUrl(courseId, document, page = 1) {
-  const base = `/courses/${courseId}/documents/${document.id}/content`;
+  const base = documentDownloadUrl(courseId, document);
   if (!isPdfDocument(document)) return base;
   return `${base}#page=${clampDocumentPage(page, document)}`;
+}
+
+// Same-origin download links use the browser's download attribute; preview stays inline.
+export function documentDownloadUrl(courseId, document) {
+  return `/courses/${courseId}/documents/${document.id}/content`;
 }
 
 export function documentQualityLabel(document) {

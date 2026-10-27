@@ -19,7 +19,7 @@ const serviceMessages = {
 };
 const knownDetails = {
   "Folder name already exists": "同级已有同名资料夹，请换一个名称。",
-  "Folder depth cannot exceed two levels": "资料夹最多两层，请在根资料夹下创建子夹。",
+  "Folder depth cannot exceed two levels": "请选择根资料夹作为父级。",
   "Folder is not empty": "资料夹仍有子夹或资料，请先移走后再删除。",
   "Folder not found": "资料夹已不存在或不属于本课，请刷新列表。",
   "Semester is assigned to courses": "请先在课程归属中解除学期关联，再删除学期。",

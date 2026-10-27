@@ -1,14 +1,14 @@
 <template>
-  <StudentDocuments v-if="session.user?.role === 'student'" :documents="documents" :folders="folders" :loading="loading" :failure="failure" :course-id="courseId" @refresh="refreshDocuments" />
+  <StudentDocuments v-if="session.user?.role === 'student'" :documents="documents" :folders="folders" :loading="loading" :failure="failure" :course-id="courseId" />
   <div v-else class="page">
     <header class="page-heading"><p class="eyebrow">教学 / 课程资源</p><h1>课程资料</h1><p class="page-description">整理本课资料，检查入库与检索状态，打开原文核对。</p></header>
 
-    <FolderLibrary v-model="selectedFolderId" :documents="documents" :folders="folders" :loading="loading">
+    <FolderLibrary v-model="selectedFolderId" v-model:search="search" :documents="documents" :folders="folders" :loading="loading">
       <template #actions><el-button v-if="canManage" :disabled="folderBusy" @click="openFolderDialog('create')">新建资料夹</el-button></template>
       <template #default="{ group }">
       <div class="folder-heading">
-        <div><p class="eyebrow">当前资料夹 · {{ group.documents.length }} 份资料</p><h2>{{ group.label }}</h2></div>
-        <div v-if="canManage && currentFolder" class="folder-controls">
+        <div><p class="eyebrow">{{ search.trim() ? '整课文件名匹配' : '课程资料目录' }}</p><h2>{{ group.label }}</h2></div>
+        <div v-if="canManage && currentFolder && !search.trim()" class="folder-controls">
           <el-button v-if="!currentFolder.parent_id" link :disabled="folderBusy" @click="openFolderDialog('create', currentFolder)">新建子夹</el-button>
           <el-button link :disabled="folderBusy" @click="openFolderDialog('rename', currentFolder)">改名</el-button>
           <el-button link :disabled="folderBusy" @click="openFolderDialog('move', currentFolder)">更换父级</el-button>
@@ -18,7 +18,7 @@
         </div>
       </div>
     <div class="doc-actions">
-      <span v-if="canManage" class="upload-destination">上传到：{{ group.label }}</span>
+      <span v-if="canManage" class="upload-destination">上传到：{{ selectedFolderLabel }}</span>
       <el-upload
         v-if="canManage"
         :http-request="onUpload"
@@ -26,37 +26,28 @@
         :disabled="uploading"
         accept=".pdf,.pptx,.docx,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
       >
-        <el-button type="primary" :loading="uploading" :aria-label="`上传资料到${group.label}`">上传资料</el-button>
+        <el-button type="primary" :loading="uploading" :aria-label="`上传资料到${selectedFolderLabel}`">上传资料</el-button>
       </el-upload>
-      <el-button :loading="loading" @click="refreshDocuments">刷新资料列表</el-button>
     </div>
 
     <el-alert v-if="failure" :title="failure" type="error" :closable="false" />
     <template v-if="failedUpload">
-      <p>{{ failedUpload.name }}：{{ uploadUncertain ? '上传结果未确认，请先刷新列表核对。' : '文件仍在本页内存中，可显式重新上传。' }}</p>
+      <p>{{ failedUpload.name }}：{{ uploadUncertain ? '上传结果未确认，请重新进入本页核对后再试。' : '文件仍在本页内存中，可显式重新上传。' }}</p>
       <el-button :disabled="uploading || uploadUncertain" @click="retryUpload">重新上传所选文件</el-button>
     </template>
 
     <el-table class="docs-table" :data="group.documents" v-loading="loading" empty-text="此夹暂无资料" style="width: 100%">
-      <template #empty><el-empty :description="loading ? '正在加载资料…' : '此夹暂无资料'" :image-size="72"><p class="subtle">{{ canManage ? '上传资料到当前夹，或从其他资料夹移动过来。' : '请稍后刷新查看。' }}</p><p v-if="!group.parent_id && folders.some(folder => folder.parent_id === group.id)" class="subtle">子夹内容请在左侧目录中选择查看。</p></el-empty></template>
-      <el-table-column prop="filename" label="文件" min-width="160" class-name="filename-cell" />
+      <template #empty><el-empty :description="loading ? '正在加载资料…' : search.trim() ? '本课没有匹配资料' : '暂无资料'" :image-size="72"><p class="subtle">{{ search.trim() ? '试试更短的文件名关键词。' : canManage ? '上传资料到当前夹，或从其他资料夹移动过来。' : '请稍后重新进入本页查看。' }}</p><p v-if="!search.trim() && group.id && !group.parent_id && folders.some(folder => folder.parent_id === group.id)" class="subtle">子夹内容请在左侧目录中选择查看。</p><el-button v-if="search.trim()" @click="search = ''">清空搜索</el-button></el-empty></template>
+      <el-table-column label="文件" min-width="210" class-name="filename-cell">
+        <template #default="{ row }"><div class="document-name">{{ row.filename }}<el-tag v-if="!row.retrieval_enabled" type="info" size="small" effect="plain">待启用</el-tag></div><p class="document-location">{{ folderChoices.find(folder => folder.id === row.folder_id)?.label || row.folder_name || '课程根目录' }}</p></template>
+      </el-table-column>
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
           <el-tag :type="statusType(row.job_status)">{{ statusLabel(row.job_status) }}</el-tag>
           <p v-if="row.job_status === 'failed'" class="job-failure">{{ jobFailure(row.error_message) }}</p>
         </template>
       </el-table-column>
-      <el-table-column label="参与检索" width="120">
-        <template #default="{ row }">
-          <el-tag :type="row.retrieval_enabled ? 'success' : 'info'">
-            {{ row.retrieval_enabled ? '启用' : '停用' }}
-          </el-tag>
-          <el-button v-if="canManage && (row.retrieval_enabled || session.user?.role === 'admin')" :disabled="busyIds.has(row.id)" link type="primary" :aria-label="`${row.retrieval_enabled ? '停用检索' : '启用检索'}：${row.filename}`" @click="onToggleRetrieval(row)">
-            {{ row.retrieval_enabled ? '停用' : '启用' }}
-          </el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="打开" width="150">
+      <el-table-column label="阅读与下载" width="200">
         <template #default="{ row }">
           <div v-if="row.job_status === 'succeeded'" class="student-open">
             <label v-if="isPdfDocument(row)" :for="`document-page-${row.id}`">页码</label>
@@ -74,21 +65,21 @@
             <el-link :href="studentOpenUrl(row)" :title="isPdfDocument(row) ? '将在新窗口打开 PDF' : '将在新窗口打开资料'" target="_blank" rel="noopener" type="primary" :aria-label="`打开资料：${row.filename}（新窗口）`" @click="openStudentDocument(row, $event)">
               打开
             </el-link>
+            <a :href="documentDownloadUrl(courseId, row)" :download="row.filename" class="document-download" :aria-label="`下载资料：${row.filename}`">下载</a>
           </div>
           <span v-else class="subtle">暂不可打开</span>
         </template>
       </el-table-column>
-      <el-table-column v-if="canManage" label="维护" width="110">
+      <el-table-column v-if="canManage" label="维护" width="86" align="right">
         <template #default="{ row }">
-          <el-button v-if="row.job_status === 'failed'" :disabled="busyIds.has(row.id)" type="primary" link @click="onRetry(row)">
-            重试
-          </el-button>
-          <el-button :disabled="busyIds.has(row.id) || !row.retrieval_enabled" type="danger" link @click="onDelete(row)">移出检索</el-button>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="canManage" label="整理" width="90">
-        <template #default="{ row }">
-          <el-button link type="primary" :disabled="busyIds.has(row.id)" :aria-label="`移动资料：${row.filename}`" @click="openDocumentMove(row)">移动</el-button>
+          <el-dropdown trigger="click" :disabled="busyIds.has(row.id)" @command="command => onDocumentAction(command, row)">
+            <el-button link :disabled="busyIds.has(row.id)" :aria-label="`维护资料：${row.filename}`">更多 ···</el-button>
+            <template #dropdown><el-dropdown-menu>
+              <el-dropdown-item command="move">移动资料</el-dropdown-item>
+              <el-dropdown-item v-if="row.job_status === 'failed'" command="retry">重试入库</el-dropdown-item>
+              <el-dropdown-item v-if="row.retrieval_enabled" command="disable" divided>移出检索</el-dropdown-item>
+            </el-dropdown-menu></template>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -104,7 +95,7 @@
         <el-form-item v-if="folderDialog.mode !== 'rename'" label="父级资料夹">
           <el-tree-select v-model="folderDialog.parentId" :data="parentTargets" node-key="value" :empty-values="[null, undefined]" check-strictly default-expand-all :render-after-expand="false" :disabled="folderBusy" aria-label="父级资料夹" style="width:100%" />
         </el-form-item>
-        <p v-if="folderDialog.mode !== 'rename'" class="subtle">最多支持根夹和一层子夹。{{ folderDialogHasChildren ? '此夹含子夹，须保留在根目录。' : '只可选择根目录或其他根资料夹。' }}</p>
+        <p v-if="folderDialog.mode !== 'rename'" class="subtle">{{ folderDialogHasChildren ? '此夹含子夹，须保留在根目录。' : '选择根目录，或放入一个根资料夹。' }}</p>
         <el-alert v-if="folderDialog.failure" :title="folderDialog.failure" type="error" :closable="false" />
       </el-form>
       <template #footer><el-button :disabled="folderBusy" @click="folderDialog.visible = false">取消</el-button><el-button type="primary" :loading="folderBusy" @click="saveFolder">{{ folderDialog.mode === 'create' ? '创建资料夹' : '保存' }}</el-button></template>
@@ -129,8 +120,8 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 import { session } from "../session";
 import { courseAccess } from "../courseAccess";
-import { clampDocumentPage, documentContentUrl, isPdfDocument } from "../documentDisplay";
-import { documentGroups, folderOptions, folderTree, folderParentOptions } from "../documentFolders";
+import { clampDocumentPage, documentContentUrl, documentDownloadUrl, isPdfDocument } from "../documentDisplay";
+import { documentFolderTargets, folderOptions, folderParentOptions } from "../documentFolders";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
@@ -138,8 +129,10 @@ const courseTitle = ref("");
 const documents = ref([]);
 const folders = ref([]);
 const selectedFolderId = ref(null);
+const search = ref('');
 const folderBusy = ref(false);
 const folderChoices = computed(() => folderOptions(folders.value));
+const selectedFolderLabel = computed(() => folderChoices.value.find(folder => folder.id === selectedFolderId.value)?.label || '课程根目录');
 const currentFolder = computed(() => folders.value.find(folder => folder.id === selectedFolderId.value));
 const currentFolderNonempty = computed(() => currentFolder.value && (
   documents.value.some(doc => doc.folder_id === currentFolder.value.id) ||
@@ -152,7 +145,7 @@ const parentTargets = computed(() => [
   { value: '', label: '根目录' },
   ...folderParentOptions(folders.value, folderDialog.value.mode === 'move' ? folderDialog.value.folder : null).map(folder => ({ value: folder.id, label: folder.name })),
 ]);
-const documentTargets = computed(() => folderTree(documentGroups([], folders.value)));
+const documentTargets = computed(() => documentFolderTargets(folders.value));
 const documentMove = ref({ visible: false, row: null, targetId: '', source: '', failure: '' });
 const documentMoving = computed(() => busyIds.value.has(documentMove.value.row?.id));
 const loading = ref(true);
@@ -368,22 +361,11 @@ async function onDelete(row) {
   }
 }
 
-async function onToggleRetrieval(row) {
+function onDocumentAction(command, row) {
   if (busyIds.value.has(row.id)) return;
-  busyIds.value.add(row.id);
-  try {
-    const updated = await api(`/courses/${courseId.value}/documents/${row.id}`, {
-      method: "PATCH", json: { retrieval_enabled: !row.retrieval_enabled },
-    });
-    Object.assign(row, updated);
-    failure.value = "";
-    ElMessage.success(updated.retrieval_enabled ? "已启用检索" : "已停用检索，原文仍可预览");
-  } catch (error) {
-    failure.value = error.message;
-    if (error.status !== 401) ElMessage.error(error.message);
-  } finally {
-    busyIds.value.delete(row.id);
-  }
+  if (command === 'move') openDocumentMove(row);
+  if (command === 'retry') return onRetry(row);
+  if (command === 'disable' && row.retrieval_enabled) return onDelete(row);
 }
 
 async function onRetry(row) {
@@ -433,6 +415,7 @@ async function saveFolder() {
     // Update the local snapshot before refreshing so the new selection exists immediately.
     folders.value = [...folders.value.filter(folder => folder.id !== saved.id), saved];
     selectedFolderId.value = saved.id;
+    search.value = '';
     dialog.visible = false;
     ElMessage.success(dialog.mode === 'create' ? '资料夹已创建' : '资料夹已更新');
     await refreshDocuments();
@@ -463,7 +446,7 @@ async function deleteFolder(folder) {
 function openDocumentMove(row) {
   documentMove.value = {
     visible: true, row, targetId: row.folder_id || '', failure: '',
-    source: folderChoices.value.find(folder => folder.id === row.folder_id)?.label || '未分组',
+    source: folderChoices.value.find(folder => folder.id === row.folder_id)?.label || row.folder_name || '课程根目录',
   };
 }
 
@@ -480,6 +463,7 @@ async function moveDocument() {
     // Polling can replace the list while this dialog is open; update the current snapshot.
     documents.value = documents.value.map(document => document.id === updated.id ? updated : document);
     selectedFolderId.value = updated.folder_id;
+    search.value = '';
     dialog.visible = false;
     failure.value = '';
     ElMessage.success('资料已移动，正在查看目标资料夹');
@@ -493,8 +477,8 @@ async function moveDocument() {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 16px;
-  padding: 12px 0;
+  margin: 16px 0;
+  padding: 0;
   flex-wrap: wrap;
   background: var(--surface);
 
@@ -507,6 +491,10 @@ async function moveDocument() {
 .job-failure { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--el-color-danger); }
 .student-open { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .student-open .el-link { font-weight: 600; }
+.document-download { color: var(--el-color-primary); font-size: 13px; }
+.document-download:hover { text-decoration: underline; }
+.document-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.document-location { margin: 4px 0 0; color: var(--text-muted); font-weight: 400; font-size: 12px; }
 .page-input { width: 48px; }
 .subtle { font-size: 12px; color: var(--text-muted); }
 
@@ -515,7 +503,7 @@ async function moveDocument() {
 .upload-destination { color: var(--text-muted); font-size: 13px; overflow-wrap: anywhere; }
 .dialog-description { overflow-wrap: anywhere; line-height: 1.7; }
 .folder-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.folder-heading h2 { font-size: 18px; overflow-wrap: anywhere; }
+.folder-heading h2 { margin: 4px 0 0; font-size: 18px; overflow-wrap: anywhere; }
 
 /* Preserve horizontal access to every column on narrow screens. */
 :deep(.docs-table .el-scrollbar__wrap) { overflow-x: auto; }
