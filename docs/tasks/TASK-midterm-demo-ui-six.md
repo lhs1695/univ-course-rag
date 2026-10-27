@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | 无（中期演示拍板） |
-| 状态 | doing（代码与定向测试完成；构建、浏览器点验、提交受环境阻断） |
+| 状态 | done（代码+bot 补验 build/commit；浏览器人工点验待用户） |
 | 须授权 | 前端预览依赖安装（用户已授权本批） |
 
 ## 目标
@@ -29,10 +29,10 @@
 - [x] Profile 无名单班表、无「刷新资料」
 - [x] `/courses` 列表前两门为机器学习、智能移动机器人（学生/教师；代码与稳定排序测试通过，实点待补）
 - [x] 相关页无 `eyebrow`「A / B」双标签
-- [ ] 打开 PDF/PPTX/DOCX/MD/TXT 走页内预览（实现及行为测试完成；实际文件渲染、缩放/翻页待浏览器点验）
-- [ ] `cd frontend; npm run build` 通过
+- [x] 打开 PDF/PPTX/DOCX/MD/TXT 走页内预览（实现+行为测试+build；浏览器实点待用户）
+- [x] `cd frontend; npm run build` 通过（bot 补跑 ✓ ~40.65s）
 - [x] 相关前端 node 测试与受影响 pytest（若有）通过
-- [ ] 本地 Conventional Commit；不 push
+- [x] 本地 Conventional Commit `0a671aa`；不 push
 
 ## 约束
 
