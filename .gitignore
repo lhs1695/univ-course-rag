@@ -19,6 +19,8 @@ build/
 .coverage
 htmlcov/
 backend/data/
+# Runtime upload/storage root used by local API (never commit)
+backend/corpus/
 # Ignore local evidence by default; track midterm CN course PDFs only
 corpus/local/**
 !corpus/local/cn-replace-2026-10-18/
