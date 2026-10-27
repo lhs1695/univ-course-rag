@@ -11,3 +11,5 @@
 - pedagogy content 6/6 = 200
 - PASS: True
 - note: 删课前曾因 Docker/Postgres 未起导致 API login 超时；已 `docker compose up -d postgres` 并重启 uvicorn:8000。未 push。
+
+- follow-up: 教育学原理缺 admin membership，已补 course_members（admin/teacher）；三角色 /courses 均 4 门。
