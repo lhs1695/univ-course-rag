@@ -1,24 +1,21 @@
 # SESSION_STATE
 
-> 更新：2026-10-27（Asia/Shanghai）课内调查 Agent 产品已撤下；Key 槽位与 schema 保留；未 push。详见 [本卡](T-retire-investigation-agent.md)。
-
-**现行变更**：删除调查前端路由/菜单/页面/API helper、后端任务与 retention API、runner/runtime/store、专用合同/Replay 与产品测试。`AGENT_DEEPSEEK_API_KEY` / `AGENT_DEEPSEEK_MODEL` / `AGENT_DEEPSEEK_BASE_URL` 保留，调查产品已撤下，目前无调查运行时使用。`agent_tasks` / `agent_task_events` 模型与 Alembic 历史保留（schema retained），未 DROP 表、未执行迁移或数据清理。Insights 问答反馈与 RAG 主路径继续保留；业务门控测试去除调查工具依赖，继续覆盖 Dense/Hybrid 与资料授权。下方 M1–M3/Trace/调查 API 测试及“入口保留”等为历史证据，不再是当前产品能力或验收要求。
-
-**本卡验证/收尾**：后端标准无 tmp_path 子集 28 passed；会话级隔离临时目录下 auth/docs/business/folders/colleges/profile/Insights/保留迁移 136 passed；全量仅收集 729 项，无调查产品测；ruff PASS；前端 65 passed。完整 build 为 `spawn EPERM`，标准 pytest tmp_path 为 WinError 5，未计通过；精确 stage 34 项被 `.git/index.lock` Permission denied 阻塞，无新 SHA。待 bot 按任务卡精确清单复验 build 并本地提交，不 push。
+> 更新：2026-10-27（Asia/Shanghai）资料页打磨 + 教育学原文修复 + 调查 Agent 产品撤下；未 push。
 
 **结论**：
-- 用户授权「全都加上」三件套已完成：① 角色主页+工号 `72c0e51`（0017）；② 最小学院 `6a9b75f`（0018）；③ 资料夹 UX+换父 `4229838`。规格/任务卡先行 `8573ea1`。
-- 验证：profile/college/folders 定向 pytest + ruff + `npm run build` PASS；API 冒烟（教师工号/无班级、学院 CRUD、folders 列表）PASS。
-- 演示库已 `alembic upgrade head`→**0018**；已建学院「计算机学院」(CS)，教师 seed 工号 `T2026001`，机器学习课挂学院。
-- **未做**：按夹限检索；专业/年级树；按学院权限隔离；真选课；调查 Agent 重设计；push；浏览器人工点验仍建议本机再走一遍。
+- 教育学原理学生「打不开资料」根因：旧课 `storage_path` 在仓库根 `corpus\`，`upload_dir` 在 `backend\corpus\`，content 边界校验 404。已 copy+UPDATE 15 份（教育 6/人力 8/线代 1）；学生 content 6/6=200。证据：`docs/user-task-scripts/observation-2026-10-27-pedagogy-content-path.md`。
+- 资料库 UX：`6343cdf`（整课搜索、下载、去未分组/两层/刷新文案；学生不露启用；教师低调待启用；管理员保留启用）。
+- 调查 Agent 产品撤下：`4938e39`（删 UI/API/runner/产品测）；保留 `AGENT_DEEPSEEK_*` 与 `agent_tasks` 表/迁移；Insights 保留。
+- 任务卡先行：`5e39918`。
+- 验证：folders/business/auth/migration **48 passed**；frontend tests **65 pass**；`npm run build -- --configLoader native` **✓**；agent-tasks API **404**。
+- **未做**：按夹限检索；新 Agent 重设计；push；浏览器人工点验建议再走。
 - **不得宣告结题通过**。
 
 ## 当前目标
 
-本卡只撤下调查产品并保留 Key/schema，不设计新 Agent。业务三件套已本地收口；后续仍可按独立任务进行本机 Vite 人工点验。默认不 push。
+本批用户六点需求已本地收口。后续可选：本机 Vite 人工点验、Agent 重设计讨论、push。
 
----
-## M4 本轮交付与证据（2026-10-26）
+---## M4 本轮交付与证据（2026-10-26）
 
 - 范围只含学期、课内行政班、CSV 名单、无提问历史的极简个人主页、资料两步启用检索；Agent 分期仍止于 M3。复用既有身份/课程/成员、Session、FastAPI/SQLAlchemy/Alembic、Element Plus 与视觉 token，无新依赖或第二套 RAG，无 Agent 合同/主路径变更。
 - `0015` 父 `0014`：`semesters`、`course_classes`；users 姓名/唯一可空学号、courses 可空 semester_id、course_members 可空 class_id + 同课复合外键/学生约束；新 documents 默认 false，旧启用状态不变。仅 `sqlite://` 显式内存连接验证 upgrade/downgrade、保留旧行、约束及 FK check；PostgreSQL 仅离线 DDL 编译，不连接默认 URL/演示库/cn_v2。
@@ -223,3 +220,4 @@ git diff --check
 1. M3 已提交 `4587421`；当前只收口 M4 本机 build / Vite / 既有受影响定向回归与本地 commit，不另开实现项。
 2. 必须继续使用隔离测试库，禁止默认 DATABASE_URL/正式 cn_v2 upgrade；真实名单、模型与正式库操作仍须当次明确授权。
 3. 补齐任务卡的本机验收清单后，精确 stage 31 个 M4 文件，本地提交指定标题；不默认 push，不 stage 中期笔记。此前 M1–M3 各段是历史过程，顶部 M4 状态为当前状态。
+
