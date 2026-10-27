@@ -93,8 +93,8 @@
 
 | 卡 | 状态 | 说明 |
 | --- | --- | --- |
-| [T-profile-role-fields](T-profile-role-fields.md) | ready→doing | 按角色主页；`employee_number`；教师无班级 |
-| [T-college-minimal](T-college-minimal.md) | ready | 演示级 colleges；用户/课程可选挂；非权限边界 |
-| [T-folders-ux-redesign](T-folders-ux-redesign.md) | ready | 浅树能力不变；侧栏树+换父级；学生只读同树 |
+| [T-profile-role-fields](T-profile-role-fields.md) | **done** `72c0e51` | 按角色主页；`employee_number`；教师无班级 |
+| [T-college-minimal](T-college-minimal.md) | **done** `6a9b75f` | 演示级 colleges；用户/课程可选挂；非权限边界 |
+| [T-folders-ux-redesign](T-folders-ux-redesign.md) | **done** `4229838` | 浅树能力不变；侧栏树+换父级；学生只读同树 |
 
 非目标：专业/年级树、按学院隔离、真选课、按夹限检索、GraphRAG。迁移自 0017。

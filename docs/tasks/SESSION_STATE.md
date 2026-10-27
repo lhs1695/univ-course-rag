@@ -1,19 +1,19 @@
 # SESSION_STATE
 
-> 更新：2026-10-27（Asia/Shanghai）用户授权业务三件套全上：角色主页/工号、最小学院、资料夹 UX；规格已改，Codex 实现中（未 push）。
+> 更新：2026-10-27（Asia/Shanghai）业务优化三件套已落地并本地提交；cn_v2 Alembic **0018**；未 push。
 
-**结论（进行中）**：
-- 用户拍板「全都加上、演示质量优先、交 Codex」。任务卡：`T-profile-role-fields` → `T-college-minimal` → `T-folders-ux-redesign`。
-- 规格：`docs/结题已拍板规格.md` §3 已扩学院/按角色主页/资料夹交互；班级语义统一「课内名单班」。
-- 非目标：专业年级树、按学院权限隔离、真选课、教学班双轨、按夹限检索、GraphRAG。
-- 上一演示批（100MB/0016 浅树/两课入库/删概率论）仍有效；本批在其上增量。
+**结论**：
+- 用户授权「全都加上」三件套已完成：① 角色主页+工号 `72c0e51`（0017）；② 最小学院 `6a9b75f`（0018）；③ 资料夹 UX+换父 `4229838`。规格/任务卡先行 `8573ea1`。
+- 验证：profile/college/folders 定向 pytest + ruff + `npm run build` PASS；API 冒烟（教师工号/无班级、学院 CRUD、folders 列表）PASS。
+- 演示库已 `alembic upgrade head`→**0018**；已建学院「计算机学院」(CS)，教师 seed 工号 `T2026001`，机器学习课挂学院。
+- **未做**：按夹限检索；专业/年级树；按学院权限隔离；真选课；调查 Agent 重设计；push；浏览器人工点验仍建议本机再走一遍。
+- **不得宣告结题通过**。
 
 ## 当前目标
 
-按卡顺序 Codex 实现并本地提交；正式库迁移允许；不 push。
+本批业务三件套已本地收口。后续可选：本机 Vite 人工点验清单、调查 Agent 讨论落地、push。
 
 ---
-
 ## M4 本轮交付与证据（2026-10-26）
 
 - 范围只含学期、课内行政班、CSV 名单、无提问历史的极简个人主页、资料两步启用检索；Agent 分期仍止于 M3。复用既有身份/课程/成员、Session、FastAPI/SQLAlchemy/Alembic、Element Plus 与视觉 token，无新依赖或第二套 RAG，无 Agent 合同/主路径变更。
