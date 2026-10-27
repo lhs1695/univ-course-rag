@@ -26,7 +26,7 @@ _TEXT_RESOURCE_LIMIT = "extracted text exceeds resource limit"
 @dataclass(frozen=True)
 class ParseLimits:
     max_zip_entries: int = 2_000
-    max_uncompressed_bytes: int = 50 * 1024 * 1024
+    max_uncompressed_bytes: int = 100 * 1024 * 1024
     max_entry_bytes: int = 10 * 1024 * 1024
     max_compression_ratio: float = 100.0
     max_pages: int = 500

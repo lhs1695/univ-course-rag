@@ -27,10 +27,10 @@ class Settings(BaseSettings):
     upstream_max_retries: int = Field(default=2, ge=0, le=3)
     ooxml_max_zip_entries: int = Field(default=2_000, ge=10, le=20_000)
     ooxml_max_uncompressed_bytes: int = Field(
-        default=50 * 1024 * 1024, ge=1024 * 1024, le=200 * 1024 * 1024
+        default=100 * 1024 * 1024, ge=1024 * 1024, le=200 * 1024 * 1024
     )
     ooxml_max_entry_bytes: int = Field(
-        default=10 * 1024 * 1024, ge=1024 * 1024, le=50 * 1024 * 1024
+        default=50 * 1024 * 1024, ge=1024 * 1024, le=100 * 1024 * 1024
     )
     ooxml_max_compression_ratio: float = Field(default=100.0, ge=2.0, le=1_000.0)
     parse_max_pages: int = Field(default=500, ge=1, le=5_000)

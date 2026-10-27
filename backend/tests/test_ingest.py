@@ -103,6 +103,34 @@ def assert_safe_quality_metadata(payload: dict, chunks: list[Chunk]) -> None:
     assert {"text", "snippet", "storage_path"}.isdisjoint(payload)
 
 
+
+def test_upload_rejects_over_100mb(client: TestClient, db: Session) -> None:
+    teacher = add_user(db, "t1", "pass", UserRole.teacher)
+    course = add_course(db, "Course 1")
+    add_member(db, course, teacher, CourseMemberRole.teacher)
+    login_as(client, "t1", "pass")
+    # One byte over the 100 MiB gate.
+    oversized = b"x" * (100 * 1024 * 1024 + 1)
+    uploaded = client.post(
+        f"/courses/{course.id}/documents",
+        files={"file": ("huge.pdf", oversized, "application/pdf")},
+    )
+    assert uploaded.status_code == 413
+    assert uploaded.json()["detail"] == "file too large"
+
+
+def test_upload_limit_constant_is_100mb() -> None:
+    from app.api.documents import _MAX_UPLOAD_BYTES
+
+    assert _MAX_UPLOAD_BYTES == 100 * 1024 * 1024
+
+
+def test_ooxml_uncompressed_default_is_at_least_100mb() -> None:
+    settings = Settings(_env_file=None)
+    assert settings.ooxml_max_uncompressed_bytes >= 100 * 1024 * 1024
+    assert settings.ooxml_max_entry_bytes >= 50 * 1024 * 1024
+
+
 @pytest.mark.parametrize("threshold", [0, 5_001])
 def test_low_text_threshold_is_bounded(threshold: int) -> None:
     with pytest.raises(ValidationError):
