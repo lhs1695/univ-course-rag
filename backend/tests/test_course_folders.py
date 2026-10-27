@@ -87,7 +87,7 @@ def test_crud_depth_and_nonempty_children(client, scope):
     child = create(client, scope, "第一章", parent["id"])
     path = root(scope) + "/folders"
     assert client.post(path, json={"name": "第三层", "parent_id": child["id"]}).status_code == 400
-    assert client.patch(path + "/" + parent["id"], json={"name": "讲义", "parent_id": child["id"]}).status_code == 422
+    assert client.patch(path + "/" + parent["id"], json={"name": "讲义", "parent_id": child["id"]}).status_code == 400
     assert client.delete(path + "/" + parent["id"]).status_code == 409
     assert client.patch(path + "/" + child["id"], json={"name": "绪论"}).json()["name"] == "绪论"
     assert len(client.get(path).json()) == 2
@@ -108,6 +108,49 @@ def test_name_uniqueness_and_rename_conflict(client, scope):
     assert client.post(path, json={"name": "第一章", "parent_id": first["id"]}).status_code == 409
     create(client, scope, "第一章", second["id"])
     assert len(client.get(path).json()) == 4
+
+
+def test_reparent_and_move_to_root(client, scope):
+    login(client, "teacher")
+    first = create(client, scope)
+    second = create(client, scope, "练习")
+    child = create(client, scope, "第一章", first["id"])
+    doc = upload(client, scope, child["id"]).json()
+    path = root(scope) + "/folders/" + child["id"]
+    moved = client.patch(path, json={"parent_id": second["id"]})
+    assert moved.status_code == 200
+    assert moved.json()["parent_id"] == second["id"]
+    assert moved.json()["name"] == "第一章"
+    # Omitted parent_id preserves the parent; explicit null moves to root.
+    assert client.patch(path, json={"name": "新第一章"}).json()["parent_id"] == second["id"]
+    moved = client.patch(path, json={"parent_id": None})
+    assert moved.status_code == 200 and moved.json()["parent_id"] is None
+    moved = client.patch(path, json={"name": "绪论", "parent_id": first["id"]})
+    assert moved.status_code == 200 and moved.json()["name"] == "绪论"
+    assert moved.json()["parent_id"] == first["id"]
+    assert client.get(root(scope) + "/documents/" + doc["id"]).json()["folder_id"] == child["id"]
+    login(client, "student")
+    assert client.patch(path, json={"parent_id": None}).status_code == 403
+
+
+def test_reparent_rejects_depth_cycles_and_duplicates(client, scope):
+    login(client, "teacher")
+    first = create(client, scope)
+    second = create(client, scope, "练习")
+    child = create(client, scope, "第一章", first["id"])
+    sibling = create(client, scope, "第一章", second["id"])
+    root_collision = create(client, scope, "第一章")
+    path = root(scope) + "/folders/"
+    for folder, parent in [(first, first), (first, child), (second, child), (first, second)]:
+        result = client.patch(path + folder["id"], json={"parent_id": parent["id"]})
+        assert result.status_code == 400, result.text
+    for folder, parent_id in [(child, second["id"]), (child, None), (root_collision, second["id"])]:
+        assert client.patch(path + folder["id"], json={"parent_id": parent_id}).status_code == 409
+    listed = {folder["id"]: folder for folder in client.get(root(scope) + "/folders").json()}
+    assert listed[child["id"]]["parent_id"] == first["id"]
+    assert listed[sibling["id"]]["parent_id"] == second["id"]
+    for body in [{}, {"parent_id": "invalid"}, {"unknown": None}]:
+        assert client.patch(path + child["id"], json=body).status_code == 422
 
 
 @pytest.mark.parametrize("name", ["", "   ", "长" * 101, None])
@@ -148,6 +191,8 @@ def test_cross_course_and_missing_folder_rejected(client, scope):
     for folder_id in [foreign["id"], str(uuid4())]:
         assert client.post(path, json={"name": "子夹", "parent_id": folder_id}).status_code == 404
         assert client.patch(path + "/" + folder_id, json={"name": "改名"}).status_code == 404
+        local = create(client, scope, str(uuid4()))
+        assert client.patch(path + "/" + local["id"], json={"parent_id": folder_id}).status_code == 404
         assert client.delete(path + "/" + folder_id).status_code == 404
         login(client, "teacher")
         assert upload(client, scope, folder_id).status_code == 404

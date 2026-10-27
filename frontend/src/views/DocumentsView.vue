@@ -3,15 +3,22 @@
   <div v-else class="page">
     <header class="page-heading"><p class="eyebrow">教学 / 课程资源</p><h1>课程资料</h1><p class="page-description">整理本课资料，检查入库与检索状态，打开原文核对。</p></header>
 
+    <FolderLibrary v-model="selectedFolderId" :documents="documents" :folders="folders" :loading="loading">
+      <template #actions><el-button v-if="canManage" :disabled="folderBusy" @click="openFolderDialog('create')">新建资料夹</el-button></template>
+      <template #default="{ group }">
+      <div class="folder-heading">
+        <div><p class="eyebrow">当前资料夹 · {{ group.documents.length }} 份资料</p><h2>{{ group.label }}</h2></div>
+        <div v-if="canManage && currentFolder" class="folder-controls">
+          <el-button v-if="!currentFolder.parent_id" link :disabled="folderBusy" @click="openFolderDialog('create', currentFolder)">新建子夹</el-button>
+          <el-button link :disabled="folderBusy" @click="openFolderDialog('rename', currentFolder)">改名</el-button>
+          <el-button link :disabled="folderBusy" @click="openFolderDialog('move', currentFolder)">更换父级</el-button>
+          <el-tooltip content="仅能删除没有子夹和资料的空夹" :disabled="!currentFolderNonempty">
+            <span><el-button link type="danger" :disabled="folderBusy || currentFolderNonempty" @click="deleteFolder(currentFolder)">删除空夹</el-button></span>
+          </el-tooltip>
+        </div>
+      </div>
     <div class="doc-actions">
-      <template v-if="canManage">
-        <el-button :disabled="folderBusy" @click="createFolder()">新建根资料夹</el-button>
-        <label for="upload-folder">上传到</label>
-        <el-select id="upload-folder" v-model="uploadFolderId" :disabled="uploading" aria-label="上传目标资料夹" style="width:220px">
-          <el-option label="未分组" value="" />
-          <el-option v-for="folder in folderChoices" :key="folder.id" :label="folder.label" :value="folder.id" />
-        </el-select>
-      </template>
+      <span v-if="canManage" class="upload-destination">上传到：{{ group.label }}</span>
       <el-upload
         v-if="canManage"
         :http-request="onUpload"
@@ -19,7 +26,7 @@
         :disabled="uploading"
         accept=".pdf,.pptx,.docx,.md,.markdown,.txt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
       >
-        <el-button type="primary" :loading="uploading">上传资料</el-button>
+        <el-button type="primary" :loading="uploading" :aria-label="`上传资料到${group.label}`">上传资料</el-button>
       </el-upload>
       <el-button :loading="loading" @click="refreshDocuments">刷新资料列表</el-button>
     </div>
@@ -30,16 +37,8 @@
       <el-button :disabled="uploading || uploadUncertain" @click="retryUpload">重新上传所选文件</el-button>
     </template>
 
-    <section v-for="group in groups" :key="group.id || 'ungrouped'" class="folder-group" :class="{ 'child-folder': group.parent_id }">
-      <div class="folder-heading">
-        <h2>{{ group.label }} <small>（{{ group.documents.length }}）</small></h2>
-        <template v-if="canManage && group.name">
-          <el-button v-if="!group.parent_id" link :disabled="folderBusy" @click="createFolder(group.id)">新建子夹</el-button>
-          <el-button link :disabled="folderBusy" @click="renameFolder(group)">改名</el-button>
-          <el-button link type="danger" :disabled="folderBusy || group.documents.length > 0 || folders.some(folder => folder.parent_id === group.id)" @click="deleteFolder(group)">删除空夹</el-button>
-        </template>
-      </div>
     <el-table class="docs-table" :data="group.documents" v-loading="loading" empty-text="此夹暂无资料" style="width: 100%">
+      <template #empty><el-empty :description="loading ? '正在加载资料…' : '此夹暂无资料'" :image-size="72"><p class="subtle">{{ canManage ? '上传资料到当前夹，或从其他资料夹移动过来。' : '请稍后刷新查看。' }}</p><p v-if="!group.parent_id && folders.some(folder => folder.parent_id === group.id)" class="subtle">子夹内容请在左侧目录中选择查看。</p></el-empty></template>
       <el-table-column prop="filename" label="文件" min-width="160" class-name="filename-cell" />
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
@@ -87,43 +86,80 @@
           <el-button :disabled="busyIds.has(row.id) || !row.retrieval_enabled" type="danger" link @click="onDelete(row)">移出检索</el-button>
         </template>
       </el-table-column>
-      <el-table-column v-if="canManage" label="移动到" min-width="180">
+      <el-table-column v-if="canManage" label="整理" width="90">
         <template #default="{ row }">
-          <el-select :model-value="row.folder_id || ''" :disabled="busyIds.has(row.id)" :aria-label="`移动资料：${row.filename}`" @change="moveDocument(row, $event)">
-            <el-option label="未分组" value="" />
-            <el-option v-for="folder in folderChoices" :key="folder.id" :label="folder.label" :value="folder.id" />
-          </el-select>
+          <el-button link type="primary" :disabled="busyIds.has(row.id)" :aria-label="`移动资料：${row.filename}`" @click="openDocumentMove(row)">移动</el-button>
         </template>
       </el-table-column>
     </el-table>
-    </section>
+      </template>
+    </FolderLibrary>
+
+    <el-dialog v-model="folderDialog.visible" :title="folderDialogTitle" width="min(480px, 92vw)" :close-on-click-modal="false" :before-close="closeFolderDialog">
+      <el-form label-position="top" @submit.prevent="saveFolder">
+        <el-form-item v-if="folderDialog.mode !== 'move'" label="资料夹名称" :error="folderDialog.error">
+          <el-input v-model="folderDialog.name" :disabled="folderBusy" maxlength="100" show-word-limit placeholder="例如：第一章 课程讲义" aria-label="资料夹名称" />
+        </el-form-item>
+        <p v-else class="dialog-description">为「{{ folderDialog.folder?.name }}」选择新的父级，夹内资料保持归属。</p>
+        <el-form-item v-if="folderDialog.mode !== 'rename'" label="父级资料夹">
+          <el-tree-select v-model="folderDialog.parentId" :data="parentTargets" node-key="value" :empty-values="[null, undefined]" check-strictly default-expand-all :render-after-expand="false" :disabled="folderBusy" aria-label="父级资料夹" style="width:100%" />
+        </el-form-item>
+        <p v-if="folderDialog.mode !== 'rename'" class="subtle">最多支持根夹和一层子夹。{{ folderDialogHasChildren ? '此夹含子夹，须保留在根目录。' : '只可选择根目录或其他根资料夹。' }}</p>
+        <el-alert v-if="folderDialog.failure" :title="folderDialog.failure" type="error" :closable="false" />
+      </el-form>
+      <template #footer><el-button :disabled="folderBusy" @click="folderDialog.visible = false">取消</el-button><el-button type="primary" :loading="folderBusy" @click="saveFolder">{{ folderDialog.mode === 'create' ? '创建资料夹' : '保存' }}</el-button></template>
+    </el-dialog>
+
+    <el-dialog v-model="documentMove.visible" title="移动资料" width="min(480px, 92vw)" :close-on-click-modal="false" :before-close="closeDocumentMove">
+      <p class="dialog-description">将「{{ documentMove.row?.filename }}」从「{{ documentMove.source }}」移动到：</p>
+      <el-tree-select v-model="documentMove.targetId" :data="documentTargets" node-key="value" :empty-values="[null, undefined]" check-strictly default-expand-all :render-after-expand="false" :disabled="documentMoving" aria-label="移动目标资料夹" style="width:100%" />
+      <p class="subtle">仅调整资料归属，入库和检索状态保持不变。</p>
+      <el-alert v-if="documentMove.failure" :title="documentMove.failure" type="error" :closable="false" />
+      <template #footer><el-button :disabled="documentMoving" @click="documentMove.visible = false">取消</el-button><el-button type="primary" :loading="documentMoving" :disabled="documentMove.targetId === (documentMove.row?.folder_id || '')" @click="moveDocument">确认移动</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import StudentDocuments from "../components/StudentDocuments.vue";
+import FolderLibrary from "../components/FolderLibrary.vue";
 import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { api } from "../api";
 import { session } from "../session";
 import { courseAccess } from "../courseAccess";
 import { clampDocumentPage, documentContentUrl, isPdfDocument } from "../documentDisplay";
-import { documentGroups, folderOptions } from "../documentFolders";
+import { documentGroups, folderOptions, folderTree, folderParentOptions } from "../documentFolders";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
 const courseTitle = ref("");
 const documents = ref([]);
 const folders = ref([]);
-const uploadFolderId = ref("");
+const selectedFolderId = ref(null);
 const folderBusy = ref(false);
 const folderChoices = computed(() => folderOptions(folders.value));
-const groups = computed(() => documentGroups(documents.value, folders.value));
+const currentFolder = computed(() => folders.value.find(folder => folder.id === selectedFolderId.value));
+const currentFolderNonempty = computed(() => currentFolder.value && (
+  documents.value.some(doc => doc.folder_id === currentFolder.value.id) ||
+  folders.value.some(folder => folder.parent_id === currentFolder.value.id)
+));
+const folderDialog = ref({ visible: false, mode: 'create', folder: null, name: '', parentId: '', error: '', failure: '' });
+const folderDialogTitle = computed(() => ({ create: '新建资料夹', rename: '资料夹改名', move: '更换父级' })[folderDialog.value.mode]);
+const folderDialogHasChildren = computed(() => folderDialog.value.folder && folders.value.some(folder => folder.parent_id === folderDialog.value.folder.id));
+const parentTargets = computed(() => [
+  { value: '', label: '根目录' },
+  ...folderParentOptions(folders.value, folderDialog.value.mode === 'move' ? folderDialog.value.folder : null).map(folder => ({ value: folder.id, label: folder.name })),
+]);
+const documentTargets = computed(() => folderTree(documentGroups([], folders.value)));
+const documentMove = ref({ visible: false, row: null, targetId: '', source: '', failure: '' });
+const documentMoving = computed(() => busyIds.value.has(documentMove.value.row?.id));
 const loading = ref(true);
 const uploading = ref(false);
 const failure = ref("");
 const failedUpload = ref(null);
+const failedUploadFolderId = ref(null);
 const uploadUncertain = ref(false);
 const busyIds = ref(new Set());
 const pageSelections = ref({});
@@ -200,7 +236,7 @@ async function loadDocuments() {
     rows = result[0];
     if (active) {
       folders.value = result[1];
-      if (!folders.value.some(folder => folder.id === uploadFolderId.value)) uploadFolderId.value = "";
+      if (!folders.value.some(folder => folder.id === selectedFolderId.value)) selectedFolderId.value = null;
     }
   }
   finally { fetchingDocuments = false; }
@@ -269,12 +305,12 @@ onUnmounted(() => {
   stopPoll();
 });
 
-async function onUpload({ file }) {
+async function onUpload({ file }, folderId = selectedFolderId.value) {
   if (uploading.value) return;
   uploading.value = true;
   const formData = new FormData();
   formData.append("file", file);
-  if (uploadFolderId.value) formData.append("folder_id", uploadFolderId.value);
+  if (folderId) formData.append("folder_id", folderId);
   try {
     await api(`/courses/${courseId.value}/documents`, { method: "POST", formData });
     failedUpload.value = null;
@@ -283,6 +319,7 @@ async function onUpload({ file }) {
     ElMessage.success("已提交入库，待管理员启用检索");
   } catch (error) {
     failedUpload.value = file;
+    failedUploadFolderId.value = folderId;
     uploadUncertain.value = error.status === 0;
     failure.value = error.message;
     if (error.status !== 401) ElMessage.error(error.message);
@@ -299,7 +336,7 @@ async function retryUpload() {
     failure.value = "列表已有同名资料，请先核对；本次未重复上传。";
     return;
   }
-  await onUpload({ file: failedUpload.value });
+  await onUpload({ file: failedUpload.value }, failedUploadFolderId.value);
 }
 
 async function onDelete(row) {
@@ -364,52 +401,89 @@ async function onRetry(row) {
   }
 }
 
-async function editFolder(action) {
+function openFolderDialog(mode, folder = null) {
   if (folderBusy.value) return;
+  folderDialog.value = {
+    visible: true, mode, folder: mode === 'create' ? null : folder,
+    name: mode === 'create' ? '' : folder.name,
+    parentId: mode === 'create' ? (folder?.id || '') : (folder.parent_id || ''),
+    error: '', failure: '',
+  };
+}
+
+function closeFolderDialog(done) { if (!folderBusy.value) done(); }
+function closeDocumentMove(done) { if (!documentMoving.value) done(); }
+
+async function saveFolder() {
+  if (folderBusy.value) return;
+  const dialog = folderDialog.value;
+  dialog.error = '';
+  dialog.failure = '';
+  if (dialog.mode !== 'move' && !dialog.name.trim()) {
+    dialog.error = '请输入 1～100 字名称';
+    return;
+  }
   folderBusy.value = true;
   try {
-    await action();
+    const json = dialog.mode === 'move' ? { parent_id: dialog.parentId || null } : { name: dialog.name.trim() };
+    if (dialog.mode === 'create') json.parent_id = dialog.parentId || null;
+    const saved = await api(`/courses/${courseId.value}/folders${dialog.mode === 'create' ? '' : '/' + dialog.folder.id}`, {
+      method: dialog.mode === 'create' ? 'POST' : 'PATCH', json,
+    });
+    // Update the local snapshot before refreshing so the new selection exists immediately.
+    folders.value = [...folders.value.filter(folder => folder.id !== saved.id), saved];
+    selectedFolderId.value = saved.id;
+    dialog.visible = false;
+    ElMessage.success(dialog.mode === 'create' ? '资料夹已创建' : '资料夹已更新');
     await refreshDocuments();
   } catch (error) {
-    if (error !== 'cancel' && error !== 'close') failure.value = error.message;
+    dialog.failure = error.status === 409 ? '该父级下已有同名资料夹，请修改名称或选择其他父级。' : error.message;
   } finally { folderBusy.value = false; }
 }
 
-function createFolder(parentId = null) {
-  return editFolder(async () => {
-    const { value } = await ElMessageBox.prompt('资料夹名称（最多 100 字）', parentId ? '新建子夹' : '新建根资料夹', {
-      inputValidator: value => Boolean(value?.trim() && value.trim().length <= 100) || '请输入 1～100 字名称',
-    });
-    await api(`/courses/${courseId.value}/folders`, { method: 'POST', json: { name: value.trim(), parent_id: parentId } });
-  });
-}
-
-function renameFolder(folder) {
-  return editFolder(async () => {
-    const { value } = await ElMessageBox.prompt('资料夹名称（最多 100 字）', '资料夹改名', {
-      inputValue: folder.name,
-      inputValidator: value => Boolean(value?.trim() && value.trim().length <= 100) || '请输入 1～100 字名称',
-    });
-    await api(`/courses/${courseId.value}/folders/${folder.id}`, { method: 'PATCH', json: { name: value.trim() } });
-  });
-}
-
-function deleteFolder(folder) {
-  return editFolder(async () => {
-    await ElMessageBox.confirm(`删除空资料夹「${folder.label}」？`, '删除资料夹', { type: 'warning' });
-    await api(`/courses/${courseId.value}/folders/${folder.id}`, { method: 'DELETE' });
-  });
-}
-
-async function moveDocument(row, folderId) {
-  if (busyIds.value.has(row.id)) return;
-  busyIds.value.add(row.id);
+async function deleteFolder(folder) {
+  if (folderBusy.value) return;
+  folderBusy.value = true;
   try {
-    Object.assign(row, await api(`/courses/${courseId.value}/documents/${row.id}`, {
-      method: 'PATCH', json: { folder_id: folderId || null },
-    }));
+    await ElMessageBox.confirm(`删除空资料夹「${folder.name}」？`, '删除资料夹', {
+      type: 'warning', confirmButtonText: '删除空夹', cancelButtonText: '取消',
+    });
+    await api(`/courses/${courseId.value}/folders/${folder.id}`, { method: 'DELETE' });
+    folders.value = folders.value.filter(item => item.id !== folder.id);
+    selectedFolderId.value = folder.parent_id;
+    ElMessage.success('空资料夹已删除');
+    await refreshDocuments();
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      failure.value = error.status === 409 ? '资料夹仍有子夹或资料，请先移出后再删除。' : error.message;
+    }
+  } finally { folderBusy.value = false; }
+}
+
+function openDocumentMove(row) {
+  documentMove.value = {
+    visible: true, row, targetId: row.folder_id || '', failure: '',
+    source: folderChoices.value.find(folder => folder.id === row.folder_id)?.label || '未分组',
+  };
+}
+
+async function moveDocument() {
+  const dialog = documentMove.value;
+  const row = dialog.row;
+  if (!row || busyIds.value.has(row.id)) return;
+  busyIds.value.add(row.id);
+  dialog.failure = '';
+  try {
+    const updated = await api(`/courses/${courseId.value}/documents/${row.id}`, {
+      method: 'PATCH', json: { folder_id: dialog.targetId || null },
+    });
+    // Polling can replace the list while this dialog is open; update the current snapshot.
+    documents.value = documents.value.map(document => document.id === updated.id ? updated : document);
+    selectedFolderId.value = updated.folder_id;
+    dialog.visible = false;
     failure.value = '';
-  } catch (error) { failure.value = error.message; }
+    ElMessage.success('资料已移动，正在查看目标资料夹');
+  } catch (error) { dialog.failure = error.message; }
   finally { busyIds.value.delete(row.id); }
 }
 </script>
@@ -420,11 +494,10 @@ async function moveDocument(row, folderId) {
   align-items: center;
   gap: 8px;
   margin: 0 0 16px;
-  padding: 18px 20px;
+  padding: 12px 0;
   flex-wrap: wrap;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-panel);
+
 }
 
 .doc-actions .el-button + .el-button { margin-left: 0; }
@@ -438,11 +511,12 @@ async function moveDocument(row, folderId) {
 .subtle { font-size: 12px; color: var(--text-muted); }
 
 .docs-table { width: 100%; }
-.folder-group { margin-bottom: 24px; }
-.folder-heading { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.folder-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.upload-destination { color: var(--text-muted); font-size: 13px; overflow-wrap: anywhere; }
+.dialog-description { overflow-wrap: anywhere; line-height: 1.7; }
+.folder-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .folder-heading h2 { font-size: 18px; overflow-wrap: anywhere; }
-.folder-heading small { color: var(--text-muted); font-weight: normal; }
-.child-folder { margin-left: 18px; }
+
 /* Preserve horizontal access to every column on narrow screens. */
 :deep(.docs-table .el-scrollbar__wrap) { overflow-x: auto; }
 </style>

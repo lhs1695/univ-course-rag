@@ -26,3 +26,23 @@ export function documentGroups(documents, folders) {
   }
   return groups;
 }
+
+// Counts are direct contents: selecting a root never silently includes its children.
+export function folderTree(groups) {
+  const node = group => ({
+    ...group, key: group.id ?? 'ungrouped', value: group.id ?? '',
+    label: group.name || group.label, count: group.documents?.length ?? 0,
+  });
+  const ungrouped = groups.find(group => group.id === null);
+  return [
+    ...(ungrouped ? [node(ungrouped)] : []),
+    ...groups.filter(group => group.id !== null && !group.parent_id).map(root => ({
+      ...node(root), children: groups.filter(group => group.parent_id === root.id).map(node),
+    })),
+  ];
+}
+
+export function folderParentOptions(folders, folder = null) {
+  if (folder && folders.some(candidate => candidate.parent_id === folder.id)) return [];
+  return folders.filter(candidate => !candidate.parent_id && candidate.id !== folder?.id);
+}

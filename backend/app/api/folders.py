@@ -61,10 +61,24 @@ def create_folder(body: FolderCreateRequest, access: Access, db: Database) -> Fo
 
 
 @router.patch("/{folder_id}", response_model=FolderOut)
-def rename_folder(folder_id: UUID, body: FolderUpdateRequest, access: Access, db: Database) -> FolderOut:
+def update_folder(folder_id: UUID, body: FolderUpdateRequest, access: Access, db: Database) -> FolderOut:
     _teacher(access)
     folder = document_folder(db, access.course.id, folder_id)
-    folder.name = body.name
+    if "parent_id" in body.model_fields_set:
+        parent = document_folder(db, access.course.id, body.parent_id)
+        if parent is not None:
+            if parent.id == folder.id:
+                raise HTTPException(400, "Folder cannot be its own parent")
+            if parent.parent_id is not None:
+                raise HTTPException(400, "Folder depth cannot exceed two levels")
+            child = db.scalar(select(CourseFolder.id).where(
+                CourseFolder.parent_id == folder.id,
+            ).limit(1))
+            if child is not None:
+                raise HTTPException(400, "Folder with children must remain at root")
+        folder.parent_id = body.parent_id
+    if "name" in body.model_fields_set:
+        folder.name = body.name
     _commit(db)
     db.refresh(folder)
     return _out(folder)

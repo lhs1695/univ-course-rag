@@ -136,12 +136,21 @@ class FolderCreateRequest(BaseModel):
 class FolderUpdateRequest(BaseModel):
     model_config = {"extra": "forbid"}
 
-    name: str = Field(min_length=1, max_length=100)
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    parent_id: UUID | None = None
 
     @field_validator("name", mode="before")
     @classmethod
     def strip_name(cls, value):
         return value.strip() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def validate_patch(self):
+        if not self.model_fields_set:
+            raise ValueError("at least one field is required")
+        if "name" in self.model_fields_set and self.name is None:
+            raise ValueError("name cannot be null")
+        return self
 
 
 class FolderOut(BaseModel):
