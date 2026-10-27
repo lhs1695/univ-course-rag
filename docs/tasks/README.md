@@ -1,5 +1,7 @@
 # 任务卡（docs/tasks）
 
+> **2026-10-27**：过期调查 Agent 卡（PLAN-14/15/16、T-retire）与已合入业务 T 卡已迁至 [`docs/archive/tasks-2026-10-27/`](../archive/tasks-2026-10-27/)。本目录保留 SESSION_STATE、backlog、PLAN-00～10、PLAN-17*、PLAN-FE-01。
+
 结题施工的**可执行切片**放这里；拍板见 [结题已拍板规格](../结题已拍板规格.md)；路线图以 [implementation-plan.md](../implementation-plan.md) 为准。PLAN-14～17 是确定性主线；PLAN-18（GraphRAG）结题不做，仅备忘。
 
 2026-10-26：前端视觉已通过；[审阅必须改项已全部确认](PLAN-review-开工计划-2026-10-26.md)，文档收口完成，待用户下令开 M1。分期退出/权限/预算/Harness/E5-A 统一引用拍板规格及其所链任务合同，计划确认不代表实现通过。

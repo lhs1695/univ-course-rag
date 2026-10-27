@@ -1,19 +1,20 @@
 # SESSION_STATE
 
-> 更新：2026-10-27（Asia/Shanghai）资料页打磨 + 教育学原文修复 + 调查 Agent 产品撤下；未 push。
+> 更新：2026-10-27（Asia/Shanghai）仓库清理 + 砍人力资源管理；**未 push**。
 
 **结论**：
-- 教育学原理学生「打不开资料」根因：旧课 `storage_path` 在仓库根 `corpus\`，`upload_dir` 在 `backend\corpus\`，content 边界校验 404。已 copy+UPDATE 15 份（教育 6/人力 8/线代 1）；学生 content 6/6=200。证据：`docs/user-task-scripts/observation-2026-10-27-pedagogy-content-path.md`。
-- 资料库 UX：`6343cdf`（整课搜索、下载、去未分组/两层/刷新文案；学生不露启用；教师低调待启用；管理员保留启用）。
-- 调查 Agent 产品撤下：`4938e39`（删 UI/API/runner/产品测）；保留 `AGENT_DEEPSEEK_*` 与 `agent_tasks` 表/迁移；Insights 保留。
-- 任务卡先行：`5e39918`。
-- 验证：folders/business/auth/migration **48 passed**；frontend tests **65 pass**；`npm run build -- --configLoader native` **✓**；agent-tasks API **404**。
-- **未做**：按夹限检索；新 Agent 重设计；push；浏览器人工点验建议再走。
+- 演示库 `univ_course_rag_cn_v2` 现 **4 课**：线性代数、教育学原理、机器学习、智能移动机器人。已 DELETE 人力资源管理（`e7ba1d17-…`，docs/chunks→0）。证据：`docs/user-task-scripts/observation-2026-10-27-delete-hr.md`。约 **29 docs / 1506 chunks**。
+- 学生 `/courses` 四课；教育学资料 content **6/6=200**。
+- 清理：本机 `.codex*`/`.pytest-tmp*`/`.tmp-*`/`output`；中期旧附件（已 D）stage 删除并重写 `中期答辩材料/README.md`；过期 tasks → `docs/archive/tasks-2026-10-27/`。
+- 本轮曾因 Docker Desktop/Postgres 未起导致 API 挂起；已拉起 postgres 并重启 uvicorn:8000。
+- **未做**：push；浏览器端到端人工点验（待用户验收）；真实大规模问答调用。
 - **不得宣告结题通过**。
 
 ## 当前目标
 
-本批用户六点需求已本地收口。后续可选：本机 Vite 人工点验、Agent 重设计讨论、push。
+用户验收前端四课与主路径后，再 push 供队友做 PPT。
+
+---
 
 ---## M4 本轮交付与证据（2026-10-26）
 
