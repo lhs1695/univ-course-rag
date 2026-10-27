@@ -18,6 +18,10 @@ const serviceMessages = {
   QUESTION_GROUPING_LIMIT: "本次窗口内的问句数量或文本超出分组上限，请缩小时间范围后重试。",
 };
 const knownDetails = {
+  "Folder name already exists": "同级已有同名资料夹，请换一个名称。",
+  "Folder depth cannot exceed two levels": "资料夹最多两层，请在根资料夹下创建子夹。",
+  "Folder is not empty": "资料夹仍有子夹或资料，请先移走后再删除。",
+  "Folder not found": "资料夹已不存在或不属于本课，请刷新列表。",
   "Semester is assigned to courses": "请先在课程归属中解除学期关联，再删除学期。",
   "Class still has students": "班级还有学生，请先核对名单并移出课程。",
   "Name or membership conflict; refresh and retry": "名称或成员关联冲突，请刷新核对后再试。",

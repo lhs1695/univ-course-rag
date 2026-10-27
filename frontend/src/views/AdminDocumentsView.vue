@@ -7,6 +7,7 @@
       <el-alert v-if="failure" :title="failure" type="error" :closable="false" />
       <el-table :data="documents" empty-text="本课暂无资料">
         <el-table-column prop="filename" label="文件" />
+        <el-table-column label="资料夹"><template #default="{row}">{{ row.folder_name || '未分组' }}</template></el-table-column>
         <el-table-column label="解析状态"><template #default="{row}">{{ {pending:'等待解析',running:'正在解析',succeeded:'已入库',failed:'解析失败'}[row.job_status] || row.job_status }}</template></el-table-column>
         <el-table-column label="检索"><template #default="{row}">{{ row.retrieval_enabled ? '已启用' : '待启用 / 已停用' }}</template></el-table-column>
         <el-table-column label="操作" min-width="180"><template #default="{row}">

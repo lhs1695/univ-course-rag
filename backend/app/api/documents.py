@@ -9,6 +9,7 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     File,
+    Form,
     HTTPException,
     UploadFile,
     status,
@@ -22,6 +23,7 @@ from app.api.schemas import DocumentOut, DocumentUpdateRequest
 from app.config import Settings, get_settings
 from app.db import get_db, get_session_maker
 from app.models.course import CourseMember
+from app.models.course_folder import CourseFolder
 from app.models.document import Document, IngestJob, IngestJobStatus
 from app.models.user import User
 from app.security.deps import (
@@ -92,6 +94,8 @@ def _document_out(document: Document, job: IngestJob | None) -> DocumentOut:
     return DocumentOut(
         id=str(document.id),
         filename=document.filename,
+        folder_id=str(document.folder_id) if document.folder_id else None,
+        folder_name=document.folder.name if document.folder else None,
         retrieval_enabled=document.retrieval_enabled,
         job_status=job.status if job is not None else IngestJobStatus.pending.value,
         error_message=error if error is None or error in SAFE_INGEST_ERRORS else "INGEST_FAILED",
@@ -134,7 +138,9 @@ def upload_document(
     embedder: Annotated[Embedder, Depends(get_embedder)],
     session_maker: Annotated[SessionMaker, Depends(get_session_maker)],
     file: Annotated[UploadFile, File()],
+    folder_id: Annotated[UUID | None, Form()] = None,
 ) -> DocumentOut:
+    folder = document_folder(db, access.course.id, folder_id)
     original = Path(file.filename or "").name
     suffix = Path(original).suffix.lower()
     if not original or suffix not in _ALLOWED_SUFFIX:
@@ -170,6 +176,7 @@ def upload_document(
         filename=original,
         storage_path=str(dest),
         retrieval_enabled=False,
+        folder=folder,
     )
     job = IngestJob(document_id=document.id, status=IngestJobStatus.pending.value)
     db.add(document)
@@ -279,10 +286,26 @@ def update_document(
     if body.retrieval_enabled and access.user.role != "admin":
         raise HTTPException(403, "Admin only")
     document = visible_document(db, document_id, access)
-    document.retrieval_enabled = body.retrieval_enabled
+    if "folder_id" in body.model_fields_set:
+        document.folder = document_folder(db, access.course.id, body.folder_id)
+    if "retrieval_enabled" in body.model_fields_set:
+        document.retrieval_enabled = body.retrieval_enabled
     db.commit()
     db.refresh(document)
     return _document_out(document, latest_job(db, document.id))
+
+
+def document_folder(db: DbSession, course_id: UUID, folder_id: UUID | None) -> CourseFolder | None:
+    if folder_id is None:
+        return None
+    folder = db.scalar(
+        select(CourseFolder).where(
+            CourseFolder.id == folder_id, CourseFolder.course_id == course_id,
+        ).with_for_update()
+    )
+    if folder is None:
+        raise HTTPException(404, "Folder not found")
+    return folder
 
 
 @router.get("/{document_id}/content", response_class=FileResponse)

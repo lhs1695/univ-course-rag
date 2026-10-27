@@ -195,7 +195,7 @@ async function onDeleteCourse(row) {
   courseBusy.value = true;
   try {
     try {
-      await ElMessageBox.prompt(`删除课程「${row.title}」将移除成员关系、课内资料文件与入库记录、向量切片、提问日志，无法从本页恢复（已有外部备份不受影响）。请输入课程全名确认：`, "确认删除课程", {
+      await ElMessageBox.prompt(`删除课程「${row.title}」将永久清除：成员与班级、课内资料文件与入库记录、向量切片、提问日志、调查任务与反馈记录；上传目录一并删除，无法从本页恢复（外部备份不受影响）。请输入课程全名确认：`, "确认删除课程", {
         inputValidator: value => value === row.title || "请输入完整课程名称",
         inputPlaceholder: "课程全名",
         confirmButtonText: "删除课程", cancelButtonText: "取消", type: "warning",

@@ -100,12 +100,54 @@ class CourseMemberOut(BaseModel):
 
 
 class DocumentUpdateRequest(BaseModel):
-    retrieval_enabled: StrictBool
+    retrieval_enabled: StrictBool | None = None
+    folder_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def validate_patch(self):
+        if not self.model_fields_set:
+            raise ValueError("at least one field is required")
+        if "retrieval_enabled" in self.model_fields_set and self.retrieval_enabled is None:
+            raise ValueError("retrieval_enabled cannot be null")
+        return self
+
+
+class FolderCreateRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    name: str = Field(min_length=1, max_length=100)
+    parent_id: UUID | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_name(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+class FolderUpdateRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    name: str = Field(min_length=1, max_length=100)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_name(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+class FolderOut(BaseModel):
+    id: str
+    course_id: str
+    parent_id: str | None
+    name: str
+    created_at: datetime
 
 
 class DocumentOut(BaseModel):
     id: str
     filename: str
+    folder_id: str | None = None
+    folder_name: str | None = None
     job_status: str
     retrieval_enabled: bool
     error_message: str | None = None

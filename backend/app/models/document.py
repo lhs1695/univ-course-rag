@@ -15,7 +15,7 @@ from sqlalchemy import (
     false,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 from app.models.types import EmbeddingVector
@@ -35,6 +35,10 @@ class Document(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    folder_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("course_folders.id", ondelete="SET NULL"), nullable=True, index=True,
+    )
+    folder = relationship("CourseFolder", lazy="selectin")
     uploaded_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     filename: Mapped[str] = mapped_column(String(255))
     storage_path: Mapped[str] = mapped_column(String(1024))

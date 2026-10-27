@@ -15,6 +15,7 @@ from app.api.auth import router as auth_router
 from app.api.course_business import router as course_business_router
 from app.api.courses import router as courses_router
 from app.api.documents import router as documents_router
+from app.api.folders import router as folders_router
 from app.api.insight_reviews import router as insight_reviews_router
 from app.api.insights import router as insights_router
 from app.api.query_log_retention import router as query_log_retention_router
@@ -109,6 +110,7 @@ app.include_router(admin_courses_router)
 app.include_router(courses_router)
 app.include_router(course_business_router)
 app.include_router(documents_router)
+app.include_router(folders_router)
 app.include_router(search_router)
 app.include_router(ask_router)
 app.include_router(insights_router)

@@ -1,9 +1,17 @@
 <template>
-  <StudentDocuments v-if="session.user?.role === 'student'" :documents="documents" :loading="loading" :failure="failure" :course-id="courseId" @refresh="refreshDocuments" />
+  <StudentDocuments v-if="session.user?.role === 'student'" :documents="documents" :folders="folders" :loading="loading" :failure="failure" :course-id="courseId" @refresh="refreshDocuments" />
   <div v-else class="page">
     <header class="page-heading"><p class="eyebrow">教学 / 课程资源</p><h1>课程资料</h1><p class="page-description">整理本课资料，检查入库与检索状态，打开原文核对。</p></header>
 
     <div class="doc-actions">
+      <template v-if="canManage">
+        <el-button :disabled="folderBusy" @click="createFolder()">新建根资料夹</el-button>
+        <label for="upload-folder">上传到</label>
+        <el-select id="upload-folder" v-model="uploadFolderId" :disabled="uploading" aria-label="上传目标资料夹" style="width:220px">
+          <el-option label="未分组" value="" />
+          <el-option v-for="folder in folderChoices" :key="folder.id" :label="folder.label" :value="folder.id" />
+        </el-select>
+      </template>
       <el-upload
         v-if="canManage"
         :http-request="onUpload"
@@ -22,7 +30,16 @@
       <el-button :disabled="uploading || uploadUncertain" @click="retryUpload">重新上传所选文件</el-button>
     </template>
 
-    <el-table class="docs-table" :data="documents" v-loading="loading" empty-text="还没有资料" style="width: 100%">
+    <section v-for="group in groups" :key="group.id || 'ungrouped'" class="folder-group" :class="{ 'child-folder': group.parent_id }">
+      <div class="folder-heading">
+        <h2>{{ group.label }} <small>（{{ group.documents.length }}）</small></h2>
+        <template v-if="canManage && group.name">
+          <el-button v-if="!group.parent_id" link :disabled="folderBusy" @click="createFolder(group.id)">新建子夹</el-button>
+          <el-button link :disabled="folderBusy" @click="renameFolder(group)">改名</el-button>
+          <el-button link type="danger" :disabled="folderBusy || group.documents.length > 0 || folders.some(folder => folder.parent_id === group.id)" @click="deleteFolder(group)">删除空夹</el-button>
+        </template>
+      </div>
+    <el-table class="docs-table" :data="group.documents" v-loading="loading" empty-text="此夹暂无资料" style="width: 100%">
       <el-table-column prop="filename" label="文件" min-width="160" class-name="filename-cell" />
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
@@ -70,7 +87,16 @@
           <el-button :disabled="busyIds.has(row.id) || !row.retrieval_enabled" type="danger" link @click="onDelete(row)">移出检索</el-button>
         </template>
       </el-table-column>
+      <el-table-column v-if="canManage" label="移动到" min-width="180">
+        <template #default="{ row }">
+          <el-select :model-value="row.folder_id || ''" :disabled="busyIds.has(row.id)" :aria-label="`移动资料：${row.filename}`" @change="moveDocument(row, $event)">
+            <el-option label="未分组" value="" />
+            <el-option v-for="folder in folderChoices" :key="folder.id" :label="folder.label" :value="folder.id" />
+          </el-select>
+        </template>
+      </el-table-column>
     </el-table>
+    </section>
   </div>
 </template>
 
@@ -83,11 +109,17 @@ import { api } from "../api";
 import { session } from "../session";
 import { courseAccess } from "../courseAccess";
 import { clampDocumentPage, documentContentUrl, isPdfDocument } from "../documentDisplay";
+import { documentGroups, folderOptions } from "../documentFolders";
 
 const route = useRoute();
 const courseId = computed(() => String(route.params.courseId));
 const courseTitle = ref("");
 const documents = ref([]);
+const folders = ref([]);
+const uploadFolderId = ref("");
+const folderBusy = ref(false);
+const folderChoices = computed(() => folderOptions(folders.value));
+const groups = computed(() => documentGroups(documents.value, folders.value));
 const loading = ref(true);
 const uploading = ref(false);
 const failure = ref("");
@@ -160,7 +192,17 @@ async function loadDocuments() {
   if (fetchingDocuments || !active) return false;
   fetchingDocuments = true;
   let rows;
-  try { rows = await api(`/courses/${courseId.value}/documents`); }
+  try {
+    const result = await Promise.all([
+      api(`/courses/${courseId.value}/documents`),
+      api(`/courses/${courseId.value}/folders`),
+    ]);
+    rows = result[0];
+    if (active) {
+      folders.value = result[1];
+      if (!folders.value.some(folder => folder.id === uploadFolderId.value)) uploadFolderId.value = "";
+    }
+  }
   finally { fetchingDocuments = false; }
   if (!active) return false;
   documents.value = rows;
@@ -232,6 +274,7 @@ async function onUpload({ file }) {
   uploading.value = true;
   const formData = new FormData();
   formData.append("file", file);
+  if (uploadFolderId.value) formData.append("folder_id", uploadFolderId.value);
   try {
     await api(`/courses/${courseId.value}/documents`, { method: "POST", formData });
     failedUpload.value = null;
@@ -320,6 +363,55 @@ async function onRetry(row) {
     busyIds.value.delete(row.id);
   }
 }
+
+async function editFolder(action) {
+  if (folderBusy.value) return;
+  folderBusy.value = true;
+  try {
+    await action();
+    await refreshDocuments();
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') failure.value = error.message;
+  } finally { folderBusy.value = false; }
+}
+
+function createFolder(parentId = null) {
+  return editFolder(async () => {
+    const { value } = await ElMessageBox.prompt('资料夹名称（最多 100 字）', parentId ? '新建子夹' : '新建根资料夹', {
+      inputValidator: value => Boolean(value?.trim() && value.trim().length <= 100) || '请输入 1～100 字名称',
+    });
+    await api(`/courses/${courseId.value}/folders`, { method: 'POST', json: { name: value.trim(), parent_id: parentId } });
+  });
+}
+
+function renameFolder(folder) {
+  return editFolder(async () => {
+    const { value } = await ElMessageBox.prompt('资料夹名称（最多 100 字）', '资料夹改名', {
+      inputValue: folder.name,
+      inputValidator: value => Boolean(value?.trim() && value.trim().length <= 100) || '请输入 1～100 字名称',
+    });
+    await api(`/courses/${courseId.value}/folders/${folder.id}`, { method: 'PATCH', json: { name: value.trim() } });
+  });
+}
+
+function deleteFolder(folder) {
+  return editFolder(async () => {
+    await ElMessageBox.confirm(`删除空资料夹「${folder.label}」？`, '删除资料夹', { type: 'warning' });
+    await api(`/courses/${courseId.value}/folders/${folder.id}`, { method: 'DELETE' });
+  });
+}
+
+async function moveDocument(row, folderId) {
+  if (busyIds.value.has(row.id)) return;
+  busyIds.value.add(row.id);
+  try {
+    Object.assign(row, await api(`/courses/${courseId.value}/documents/${row.id}`, {
+      method: 'PATCH', json: { folder_id: folderId || null },
+    }));
+    failure.value = '';
+  } catch (error) { failure.value = error.message; }
+  finally { busyIds.value.delete(row.id); }
+}
 </script>
 
 <style scoped>
@@ -346,6 +438,11 @@ async function onRetry(row) {
 .subtle { font-size: 12px; color: var(--text-muted); }
 
 .docs-table { width: 100%; }
+.folder-group { margin-bottom: 24px; }
+.folder-heading { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.folder-heading h2 { font-size: 18px; overflow-wrap: anywhere; }
+.folder-heading small { color: var(--text-muted); font-weight: normal; }
+.child-folder { margin-left: 18px; }
 /* Preserve horizontal access to every column on narrow screens. */
 :deep(.docs-table .el-scrollbar__wrap) { overflow-x: auto; }
 </style>
