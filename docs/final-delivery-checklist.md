@@ -24,7 +24,7 @@
 | 依赖锁定 | `backend/pyproject.toml`（`pip install -e ".[dev]"`）；`frontend/package-lock.json` + `npm ci` | 有 |
 | 无密钥配置示例 | `.env.example`（勿提交 `.env`） | 有；本卡未打开 `.env` |
 | 迁移 | `backend/alembic/`，head **`0015`** | 有；cn_v2 已升 |
-| 启动 / 工作流 | 根 README「克隆后启动」；[workflow.md](workflow.md)；[中期演示运行卡.md](中期演示运行卡.md) | 有 |
+| 启动 / 工作流 | 根 README「克隆后启动」；[workflow.md](workflow.md) | 有 |
 | 架构 / 权限 / 生命周期 | [架构说明.md](架构说明.md)、[lifecycle-permissions-matrix.md](lifecycle-permissions-matrix.md)、[engineering.md](engineering.md) | 有 |
 | 许可证 | 根 [LICENSE](../LICENSE)（MIT，自有代码/文档）；[NOTICE](../NOTICE)（课件树不在 MIT 内） | 有 |
 | 数据公开边界 | NOTICE + README 密钥纪律；日志/问句不可当系统指令（AGENTS） | 有文字；无「公开数据集发布」授权声明外扩 |
@@ -34,7 +34,7 @@
 | 学情验证 | [analytics-validation-protocol.md](analytics-validation-protocol.md) 等 | 框架；正式人工/独立教师试用缺口 |
 | 性能 | [stream-performance-baseline.md](stream-performance-baseline.md) | Fake 1/5/10；真实模型未测 |
 | 用户任务 | [user-task-scripts/](user-task-scripts/README.md) | 脚本+Fake；独立试用取消→[开发者 Vite 观察](user-task-scripts/observation-2026-10-23-developer.md) |
-| 操作指南 / 演示 | README、中期演示运行卡、中期答辩材料 | 有；结题专用「空白机录屏」未做 |
+| 操作指南 / 演示 | README、workflow、中期答辩材料 | 有；结题专用「空白机录屏」未做 |
 | 备份恢复说明 | 本文 §2.5（隔离演练步骤） | 有文档；**未在隔离环境实跑** |
 
 ---
@@ -104,7 +104,7 @@ backend/.venv/Scripts/python.exe -m ruff check backend
 cd frontend; npm run build
 ```
 
-原始摘要见 §3 与 [final-delivery-gate.output.txt](final-delivery-gate.output.txt)。
+原始摘要见 §3 与 [final-delivery-gate.output.txt](archive/final-delivery-gate.output.txt)。
 
 ---
 
@@ -117,7 +117,7 @@ cd frontend; npm run build
 1. `test_ingest_errors_and_legacy_job_details_do_not_expose_raw_text`：裸 `Document()` 缺 `retrieval_enabled`（0012 后 pydantic 要求 bool）
 2. `test_query_outcome_migration_does_not_invent_historical_facts`：误要求 alembic head==`0011`，实际 head=`0013`
 
-最小修复：测试夹具补 `retrieval_enabled=True`；0011 行为测试改为断言 revision 存在于历史，不再钉死 head。业务代码未改。重跑：`641 passed, 2 skipped, 1 warning in 54.45s`（exit 0）。详见 `final-delivery-gate.output.txt`。
+最小修复：测试夹具补 `retrieval_enabled=True`；0011 行为测试改为断言 revision 存在于历史，不再钉死 head。业务代码未改。重跑：`641 passed, 2 skipped, 1 warning in 54.45s`（exit 0）。详见 `archive/final-delivery-gate.output.txt`。
 
 ### ruff
 
@@ -176,7 +176,7 @@ cd frontend; npm run build
 
 ## 2026-10-26 本机门禁刷新（空白机仍暂缓）
 
-时区：Asia/Shanghai。证据文件：[final-delivery-gate-2026-10-26.output.txt](final-delivery-gate-2026-10-26.output.txt)。
+时区：Asia/Shanghai。证据文件：[final-delivery-gate-2026-10-26.output.txt](archive/final-delivery-gate-2026-10-26.output.txt)。
 
 | 项 | 本轮口径 |
 | --- | --- |

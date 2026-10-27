@@ -1,6 +1,6 @@
 # PLAN-08：Fake 流式问答与并发基线
 
-执行：首次 2026-10-23 00:12（Asia/Shanghai）；**复验 2026-10-26 夜（Asia/Shanghai）** Fake 再跑。原始时间戳见 [逐请求样本与环境](stream-performance-baseline.samples.json)，[pytest -s 原始输出](stream-performance-baseline.output.txt)。云调用与费用：0 / ¥0。
+执行：首次 2026-10-23 00:12（Asia/Shanghai）；**复验 2026-10-26 夜（Asia/Shanghai）** Fake 再跑。原始时间戳见 [逐请求样本与环境](archive/stream-performance-baseline.samples.json)，[pytest -s 原始输出](archive/stream-performance-baseline.output.txt)。云调用与费用：0 / ¥0。
 
 ## 接口与实现边界
 

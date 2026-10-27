@@ -1,3 +1,5 @@
+> **2026-10-27**：课内调查 Agent **产品面已撤**；SESSION 下文历史段落勿当现行入口。结题附线设计见 [docs/教师侧问答分析Agent设计.md](../教师侧问答分析Agent设计.md)。
+
 # SESSION_STATE
 
 > 更新：2026-10-27（Asia/Shanghai）TASK-midterm-demo-ui-six（Codex 实现 + bot 补验提交）；**未 push**。
