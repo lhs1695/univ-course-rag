@@ -289,7 +289,9 @@ def test_postgres_executes_pgvector_top_k_and_has_filter_index() -> None:
     assert hits[0].snippet == query
     assert hits[0].score == pytest.approx(1.0)
     assert "Limit" in plan
-    assert "Sort Key: ((embedding <=>" in plan
+    # PG/SQLAlchemy may qualify the column as chunks.embedding in EXPLAIN output.
+    assert "Sort Key:" in plan
+    assert "embedding <=>" in plan
 
 
 def test_search_does_not_leak_other_course(client: TestClient, db: Session) -> None:
