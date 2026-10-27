@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DbSession
 
+from app.api.colleges import validate_college_id
 from app.api.schemas import (
     AdminAddMemberRequest,
     CourseCreateRequest,
@@ -26,7 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 def _course_out(course: Course) -> CourseOut:
-    return CourseOut(id=str(course.id), title=course.title, semester_id=course.semester_id)
+    return CourseOut(id=str(course.id), title=course.title, semester_id=course.semester_id,
+                     college_id=course.college_id,
+                     college_name=course.college.name if course.college else None)
 
 
 @router.post("", response_model=CourseOut, status_code=status.HTTP_201_CREATED)
@@ -37,7 +40,8 @@ def create_course(
 ) -> CourseOut:
     if body.semester_id is not None and db.get(Semester, body.semester_id) is None:
         raise HTTPException(status_code=404, detail="Semester not found")
-    course = Course(title=body.title, semester_id=body.semester_id)
+    validate_college_id(db, body.college_id)
+    course = Course(title=body.title, semester_id=body.semester_id, college_id=body.college_id)
     db.add(course)
     db.commit()
     db.refresh(course)
@@ -79,12 +83,16 @@ def update_course(
     _admin: Annotated[User, Depends(require_admin)],
 ) -> CourseOut:
     course = get_course_or_404(db, course_id)
+    if "college_id" in body.model_fields_set:
+        validate_college_id(db, body.college_id)
+    if body.semester_id is not None and db.get(Semester, body.semester_id) is None:
+        raise HTTPException(status_code=404, detail="Semester not found")
     if body.title is not None:
         course.title = body.title
     if "semester_id" in body.model_fields_set:
-        if body.semester_id is not None and db.get(Semester, body.semester_id) is None:
-            raise HTTPException(status_code=404, detail="Semester not found")
         course.semester_id = body.semester_id
+    if "college_id" in body.model_fields_set:
+        course.college_id = body.college_id
     db.commit()
     db.refresh(course)
     return _course_out(course)

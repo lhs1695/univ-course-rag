@@ -3,7 +3,7 @@
 | 项 | 值 |
 | --- | --- |
 | 对应 PLAN | PLAN-17 增量 / 业务优化 |
-| 状态 | ready |
+| 状态 | implemented / 构建及浏览器验收受环境阻塞 |
 | 须授权 | 库迁移（本批用户已授权） |
 
 ## 目标
@@ -24,11 +24,11 @@
 
 ## 验收标准（可判定真假）
 
-- [ ] Alembic 迁移（建议与 Profile 同 **0017** 或紧随 **0018**，父链清晰）：`colleges` + 两处可空 FK；隔离 SQLite upgrade/downgrade + PG offline DDL。
-- [ ] API：`GET/POST /admin/colleges`，`PUT/DELETE /admin/colleges/{id}`；code/name 校验；删前有用户或课程挂载 → 409。
-- [ ] `CourseCreate/Update`、管理员课程 PATCH、用户 create/PATCH 支持 `college_id`；`CourseOut`/`UserOut`/`ProfileOut` 带 `college_id`/`college_name`（或等价）。
+- [x] Alembic **0018 → 0017**：`colleges` + 两处可空 RESTRICT FK；隔离 SQLite upgrade/downgrade + PG offline DDL。
+- [x] API：`GET/POST /admin/colleges`，`PUT/DELETE /admin/colleges/{id}`；code/name 校验；删前有用户或课程挂载 → 409。
+- [x] `CourseCreate/Update`、管理员课程 PATCH、用户 create/PATCH 支持 `college_id`；`CourseOut`/`UserOut`/`ProfileOut` 带 `college_id`/`college_name`（或等价）。
 - [ ] 前端：`AdminBusinessView`（或等价）可 CRUD 学院；课程归属可选学院；`ProfileView` 显示学院；`AdminUsersView`/`AdminCoursesView` 可见可编辑。
-- [ ] pytest：新建 `test_colleges.py`（+ migration 测）通过；相关 business 回归不红
+- [x] pytest：新建 `test_colleges.py`（+ migration 测）通过；相关 business/profile 回归通过（60 passed，1 项既有弃用警告）
 - [ ] ruff + frontend build 通过
 
 ## 约束
@@ -57,6 +57,7 @@
 
 ## 完成记录
 
-- 提交：
-- 验证摘要：
-- 未做 / 风险：
+- 提交：按当次用户指令不提交，由 bot 提交。
+- 实现：学院模型与管理员 CRUD；课程及账号学院设置/清除；登录、个人资料、课程列表输出学院；管理页与课程书架展示学院。沿用 Element Plus，未修改课程权限或 Agent/RAG。
+- 验证摘要：见仓库根 `.codex-last-college.txt`，含实际命令及原始输出摘要。SQLite 仅隔离内存库；PG 仅 offline DDL，未迁移运行中的数据库。
+- 未做 / 风险：标准 `npm run build` 被 Windows `spawn EPERM` 阻断，`--configLoader native` 也被同一环境问题阻断；五个修改页面的 Vue 脚本及模板独立编译通过。浏览器新控件点击验收待补，不据此宣称前端构建/浏览器验收通过。

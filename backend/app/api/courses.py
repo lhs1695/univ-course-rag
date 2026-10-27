@@ -59,6 +59,8 @@ def _course_out(access: CourseAccess) -> CourseOut:
         id=str(access.course.id),
         title=access.course.title,
         semester_id=access.course.semester_id,
+        college_id=access.course.college_id,
+        college_name=access.course.college.name if access.course.college else None,
         membership_role=access.member.role,
         capabilities=access.capabilities,
     )

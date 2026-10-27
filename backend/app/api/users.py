@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DbSession
 
+from app.api.colleges import validate_college_id
 from app.api.schemas import CreateUserRequest, UserOut
 from app.db import get_db
 from app.models.user import User
@@ -19,7 +20,8 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 def _user_out(user: User) -> UserOut:
     return UserOut(id=str(user.id), username=user.username, role=user.role,
                    full_name=user.full_name, student_number=user.student_number,
-                   employee_number=user.employee_number)
+                   employee_number=user.employee_number, college_id=user.college_id,
+                   college_name=user.college.name if user.college else None)
 
 
 @router.get("/users", response_model=list[UserOut])
@@ -37,7 +39,9 @@ def create_user(
     db: Annotated[DbSession, Depends(get_db)],
     _admin: Annotated[User, Depends(require_admin)],
 ) -> UserOut:
+    validate_college_id(db, body.college_id)
     user = User(
+        college_id=body.college_id,
         username=body.username,
         password_hash=hash_password(body.password),
         role=body.role.value,
@@ -56,6 +60,7 @@ def create_user(
 
 
 class UserProfileUpdate(BaseModel):
+    college_id: UUID | None = None
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     full_name: str | None = Field(default=None, min_length=1, max_length=100)
     student_number: str | None = Field(default=None, min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
@@ -69,6 +74,7 @@ def update_user_profile(user_id: UUID, body: UserProfileUpdate,
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(404, "User not found")
+    validate_college_id(db, body.college_id)
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(user, key, value)
     try:
@@ -76,4 +82,5 @@ def update_user_profile(user_id: UUID, body: UserProfileUpdate,
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Username, student number or employee number taken") from None
+    db.refresh(user)
     return _user_out(user)

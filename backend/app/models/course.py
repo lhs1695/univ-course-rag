@@ -30,6 +30,10 @@ class Course(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(200))
     semester_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("semesters.id"), nullable=True)
+    college_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("colleges.id", ondelete="RESTRICT", name="fk_courses_college"), nullable=True
+    )
+    college = relationship("College", lazy="joined")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

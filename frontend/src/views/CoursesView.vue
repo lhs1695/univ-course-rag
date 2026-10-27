@@ -19,6 +19,7 @@
         <div class="course-card-heading"><span class="course-index" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span><span class="course-membership">{{ row.membership_role === 'teacher' ? '课内教师' : '已加入' }}</span><span class="course-card-glyph" aria-hidden="true">↗</span></div>
         <div class="book-details">
           <h2>{{ row.title }}</h2>
+          <p v-if="row.college_name">学院：{{ row.college_name }}</p>
           <p v-if="isStudent">阅读课程资料，或带着课堂上的疑问开始提问。</p>
           <p v-else>备课时核对资料，关注待核对问句，补充教学依据。</p>
           <div class="book-actions">

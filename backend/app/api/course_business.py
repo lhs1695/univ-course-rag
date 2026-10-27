@@ -300,6 +300,8 @@ class ProfileClass(BaseModel):
 
 
 class ProfileOut(BaseModel):
+    college_id: UUID | None = None
+    college_name: str | None = None
     full_name: str | None
     student_number: str | None
     employee_number: str | None
@@ -322,6 +324,8 @@ def profile(user: Annotated[User, Depends(get_current_user)], db: Db):
         .order_by(Course.title, CourseClass.name)
     ) if user.role == "student" else []
     return ProfileOut(
+        college_id=user.college_id,
+        college_name=user.college.name if user.college else None,
         full_name=user.full_name,
         student_number=user.student_number,
         employee_number=user.employee_number,

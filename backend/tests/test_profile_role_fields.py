@@ -40,6 +40,8 @@ def test_profile_fields_and_classes_by_global_role(client, db, scope, role):
     response = client.get("/auth/profile")
     assert response.status_code == 200
     assert response.json() == {
+        "college_id": None,
+        "college_name": None,
         "full_name": "测试姓名",
         "student_number": "00123" if role == "student" else None,
         "employee_number": None if role == "student" else "EMP-001",

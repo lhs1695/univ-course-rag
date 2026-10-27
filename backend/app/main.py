@@ -12,6 +12,7 @@ from app.api.agent_task_retention import router as agent_task_retention_router
 from app.api.agent_tasks import router as agent_tasks_router
 from app.api.ask import router as ask_router
 from app.api.auth import router as auth_router
+from app.api.colleges import router as colleges_router
 from app.api.course_business import router as course_business_router
 from app.api.courses import router as courses_router
 from app.api.documents import router as documents_router
@@ -114,6 +115,7 @@ app.include_router(admin_users_router)
 app.include_router(admin_courses_router)
 app.include_router(courses_router)
 app.include_router(course_business_router)
+app.include_router(colleges_router)
 app.include_router(documents_router)
 app.include_router(folders_router)
 app.include_router(search_router)

@@ -1,5 +1,6 @@
 
 from app.models.agent_task import AgentTask, AgentTaskEvent
+from app.models.college import College
 from app.models.course import (
     Course,
     CourseClass,
@@ -18,6 +19,7 @@ __all__ = [
     "AgentTask",
     "AgentTaskEvent",
     "Chunk",
+    "College",
     "Course",
     "CourseClass",
     "CourseFolder",

@@ -27,9 +27,12 @@ class UserOut(BaseModel):
     full_name: str | None = None
     student_number: str | None = None
     employee_number: str | None = None
+    college_id: UUID | None = None
+    college_name: str | None = None
 
 
 class CreateUserRequest(BaseModel):
+    college_id: UUID | None = None
     username: str = Field(min_length=1, max_length=64)
     password: str = Field(min_length=1, max_length=256)
     role: UserRole
@@ -44,11 +47,13 @@ class CreateUserRequest(BaseModel):
 
 
 class CourseCreateRequest(BaseModel):
+    college_id: UUID | None = None
     title: str = Field(min_length=1, max_length=200)
     semester_id: UUID | None = None
 
 
 class CourseUpdateRequest(BaseModel):
+    college_id: UUID | None = None
     title: str | None = Field(default=None, min_length=1, max_length=200)
     semester_id: UUID | None = None
 
@@ -66,6 +71,8 @@ class CourseCapabilities(BaseModel):
 
 
 class CourseOut(BaseModel):
+    college_id: UUID | None = None
+    college_name: str | None = None
     id: str
     title: str
     semester_id: UUID | None = None

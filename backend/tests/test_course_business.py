@@ -196,8 +196,13 @@ def test_roster_summary_idempotency_conflicts_profile(client, db, scope):
     assert next(m for m in member if m["role"] == "student")["class_name"] == "一班"
     login(client, "student")
     profile = client.get("/auth/profile").json()
-    assert set(profile) == {"full_name", "student_number", "employee_number", "role", "classes"}
+    assert set(profile) == {
+        "full_name", "student_number", "employee_number", "role", "classes",
+        "college_id", "college_name",
+    }
     assert profile == {
+        "college_id": None,
+        "college_name": None,
         "full_name": "张同学",
         "student_number": "00123",
         "employee_number": None,

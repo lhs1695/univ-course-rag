@@ -6,6 +6,7 @@
       <el-form-item label="标题">
         <el-input v-model="newTitle" />
       </el-form-item>
+      <el-form-item label="学院"><el-select v-model="newCollegeId" aria-label="新课程学院" clearable style="width:200px" :disabled="creating"><el-option v-for="c in colleges" :key="c.id" :label="c.name" :value="c.id" /></el-select></el-form-item>
       <el-form-item>
         <el-button type="primary" native-type="submit" :loading="creating">创建课程</el-button>
       </el-form-item>
@@ -20,6 +21,9 @@
       @current-change="onSelectCourse"
     >
       <el-table-column prop="title" label="课程" min-width="120" />
+      <el-table-column label="学院" min-width="210">
+        <template #default="{row}"><el-select :model-value="row.college_id || ''" :aria-label="`${row.title}所属学院`" :placeholder="row.college_name || '未设置学院'" clearable :disabled="courseBusy || loading" @click.stop @change="value => onAssignCollege(row, value)"><el-option v-for="c in colleges" :key="c.id" :label="c.name" :value="c.id" /></el-select></template>
+      </el-table-column>
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link :disabled="courseBusy || enteringId === row.id" :loading="enteringId === row.id" @click.stop="onJoinAndEnter(row)">进入</el-button>
@@ -81,6 +85,7 @@ import { session } from "../session";
 
 const router = useRouter();
 const courses = ref([]);
+const colleges = ref([]), newCollegeId = ref("");
 const enteringId = ref("");
 const courseTable = ref(null);
 const courseBusy = ref(false);
@@ -120,7 +125,7 @@ async function loadMembers(courseId) {
 
 onMounted(async () => {
   try {
-    await Promise.all([loadCourses(), loadUsers()]);
+    await Promise.all([loadCourses(), loadUsers(), api("/admin/colleges").then(rows => { colleges.value = rows; })]);
   } catch (error) {
     if (error.status !== 401) ElMessage.error(error.message);
   } finally {
@@ -155,8 +160,9 @@ async function onCreateCourse() {
   }
   creating.value = true;
   try {
-    const course = await api("/admin/courses", { method: "POST", json: { title } });
+    const course = await api("/admin/courses", { method: "POST", json: { title, college_id: newCollegeId.value || null } });
     newTitle.value = "";
+    newCollegeId.value = "";
     ElMessage.success("已创建课程");
     await loadCourses(course.id);
   } catch (error) {
@@ -188,6 +194,18 @@ async function onRenameCourse(row) {
   } finally {
     courseBusy.value = false;
   }
+}
+
+async function onAssignCollege(row, collegeId) {
+  if (courseBusy.value) return;
+  courseBusy.value = true;
+  try {
+    const updated = await api(`/admin/courses/${row.id}`, { method: "PATCH", json: { college_id: collegeId || null } });
+    Object.assign(row, updated);
+    ElMessage.success("课程学院已保存");
+  } catch (error) {
+    if (error.status !== 401) ElMessage.error(error.message);
+  } finally { courseBusy.value = false; }
 }
 
 async function onDeleteCourse(row) {
