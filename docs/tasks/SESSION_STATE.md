@@ -1,18 +1,19 @@
 # SESSION_STATE
 
-> 更新：2026-10-27 09:40（Asia/Shanghai）上传 100MB + 浅树资料夹 + 两课入库 + 管理员删概率论（t278–t279；未 push）。
+> 更新：2026-10-27（Asia/Shanghai）用户授权业务三件套全上：角色主页/工号、最小学院、资料夹 UX；规格已改，Codex 实现中（未 push）。
 
-**结论**：
-- **本批**：① 上传上限 **100MB**（`6124773`）；② 浅树 `CourseFolder` Alembic **0016**（`7729aaa`）；③ 修 ingest UOW：`documents` flush 后再写 `ingest_jobs`（`5d9b571`，否则带 folder 上传 503）；④ 新建课「机器学习」「智能移动机器人」，资料夹 + 22 份入库并两步启用检索；⑤ 管理员 DELETE「概率论与统计学」物理级联清库 **PASS**。
-- **演示库现状（cn_v2）**：5 课（人力/教育/线代/机器学习/智能移动机器人）；机器学习 17 文档 / 2 夹 / 359 chunks；智能移动机器人 5 文档 / 1 夹 / 426 chunks；全库约 38 docs / 1774 chunks。**中期「4 课 / 27 PDF / 2501 chunks」仅为历史基线，已过时。**
-- **证据**：`docs/user-task-scripts/observation-2026-10-27-courses-folders-ingest.md`；`observation-2026-10-27-delete-probability.md`。
-- **未做**：调查 Agent 重设计；按夹限检索；空白机；**不得宣告结题通过**；未 push。大课件在 `corpus/local/extra-2026-10-27/`（gitignore，未入 git）。
+**结论（进行中）**：
+- 用户拍板「全都加上、演示质量优先、交 Codex」。任务卡：`T-profile-role-fields` → `T-college-minimal` → `T-folders-ux-redesign`。
+- 规格：`docs/结题已拍板规格.md` §3 已扩学院/按角色主页/资料夹交互；班级语义统一「课内名单班」。
+- 非目标：专业年级树、按学院权限隔离、真选课、教学班双轨、按夹限检索、GraphRAG。
+- 上一演示批（100MB/0016 浅树/两课入库/删概率论）仍有效；本批在其上增量。
 
 ## 当前目标
 
-本批资料夹/两课/删课已本地收口（不 push）。后续可选：调查 Agent 重设计讨论落地、完整 Trace UI、push。
+按卡顺序 Codex 实现并本地提交；正式库迁移允许；不 push。
 
 ---
+
 ## M4 本轮交付与证据（2026-10-26）
 
 - 范围只含学期、课内行政班、CSV 名单、无提问历史的极简个人主页、资料两步启用检索；Agent 分期仍止于 M3。复用既有身份/课程/成员、Session、FastAPI/SQLAlchemy/Alembic、Element Plus 与视觉 token，无新依赖或第二套 RAG，无 Agent 合同/主路径变更。

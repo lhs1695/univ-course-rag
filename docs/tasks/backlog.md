@@ -89,3 +89,12 @@
 - Fake/Replay 通过只证明流程控制合同；开发者题目核验不等于独立答案核验。
 - 不默认 push/发布；每张任务卡需记录真实命令、退出码、原始输出摘要、未完成项与恢复说明。
 
+## 2026-10-27 业务优化三件套（进行中）
+
+| 卡 | 状态 | 说明 |
+| --- | --- | --- |
+| [T-profile-role-fields](T-profile-role-fields.md) | ready→doing | 按角色主页；`employee_number`；教师无班级 |
+| [T-college-minimal](T-college-minimal.md) | ready | 演示级 colleges；用户/课程可选挂；非权限边界 |
+| [T-folders-ux-redesign](T-folders-ux-redesign.md) | ready | 浅树能力不变；侧栏树+换父级；学生只读同树 |
+
+非目标：专业/年级树、按学院隔离、真选课、按夹限检索、GraphRAG。迁移自 0017。
